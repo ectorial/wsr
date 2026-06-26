@@ -10,5 +10,5 @@
 //!   before any download, so the cache key is always content-stable.
 //! - **Retry + backoff** — handles transient network failures transparently.
 //!
-//! Callers should always go through [`wsr-resolver`] rather than this crate
+//! Callers should always go through `wsr-resolver` rather than this crate
 //! directly; the resolver owns the decision of which source to use.

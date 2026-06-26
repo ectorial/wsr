@@ -25,7 +25,7 @@
 //!     lib.rs          ← this file
 //! ```
 //!
-//! CLI argument types live in [`wsr-cli`] — this crate bridges them to the
+//! CLI argument types live in `wsr-cli` — this crate bridges them to the
 //! implementations in `wsr-engine`, `wsr-git`, and the rest of the workspace.
 
 pub mod commands;

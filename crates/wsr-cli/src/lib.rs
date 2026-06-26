@@ -19,8 +19,8 @@ use clap::{Parser, Subcommand};
 /// Top-level CLI entry point.
 #[derive(Parser, Debug)]
 #[command(
-    name    = "wsr",
-    about   = "A local, Wasm-sandboxed CI runner — run your workflows before you push, not after.",
+    name = "wsr",
+    about = "A local, Wasm-sandboxed CI runner — run your workflows before you push, not after.",
     version
 )]
 pub struct Cli {
