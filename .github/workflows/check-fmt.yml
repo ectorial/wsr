@@ -1,0 +1,20 @@
+name: "check-fmt"
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  rust:
+    name: "cargo fmt"
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: "Install Rust toolchain"
+        run: rustup component add rustfmt
+      - name: "Format"
+        run: cargo fmt --all --check

@@ -1,20 +1,63 @@
-[package]
-  name        = "wsr"
-  version     = "0.0.2"
-  edition     = "2024"
-  description = "A local, Wasm-sandboxed CI runner for git hooks"
-  license     = "MIT"
-  repository  = "https://github.com/carlosferreyra/wsr"
-  authors     = ["Carlos Eduardo Ferreyra <eduferreyraok@gmail.com>"]
+[workspace]
+resolver = "2"
+members  = [
+    "crates/wsr",
+    "crates/wsr-bench",
+    "crates/wsr-cache",
+    "crates/wsr-cli",
+    "crates/wsr-client",
+    "crates/wsr-engine",
+    "crates/wsr-expr",
+    "crates/wsr-fs",
+    "crates/wsr-gha",
+    "crates/wsr-git",
+    "crates/wsr-resolver",
+    "crates/wsr-sandbox",
+    "crates/wsr-shell",
+    "crates/wsr-tracing",
+    "crates/wsr-types",
+    "crates/wsr-wasix",
+]
 
-[dependencies]
-anyhow      = "1"
-clap        = { version = "4", features = ["derive"] }
-serde       = { version = "1", features = ["derive"] }
-serde_json  = "1"
-serde_yaml  = "0.9"
+[workspace.package]
+version     = "0.0.2"
+edition     = "2024"
+license     = "MIT"
+repository  = "https://github.com/ectorial/wsr"
+authors     = ["Carlos Eduardo Ferreyra <eduferreyraok@gmail.com>"]
+homepage    = "https://github.com/ectorial/wsr"
+keywords    = ["ci", "wasm", "git-hooks", "github-actions", "sandbox"]
+categories  = ["development-tools", "command-line-utilities"]
+
+[workspace.dependencies]
+# Internal crates
+wsr-bench    = { path = "crates/wsr-bench" }
+wsr-cache    = { path = "crates/wsr-cache" }
+wsr-cli      = { path = "crates/wsr-cli" }
+wsr-client   = { path = "crates/wsr-client" }
+wsr-engine   = { path = "crates/wsr-engine" }
+wsr-expr     = { path = "crates/wsr-expr" }
+wsr-fs       = { path = "crates/wsr-fs" }
+wsr-gha      = { path = "crates/wsr-gha" }
+wsr-git      = { path = "crates/wsr-git" }
+wsr-resolver = { path = "crates/wsr-resolver" }
+wsr-sandbox  = { path = "crates/wsr-sandbox" }
+wsr-shell    = { path = "crates/wsr-shell" }
+wsr-tracing  = { path = "crates/wsr-tracing" }
+wsr-types    = { path = "crates/wsr-types" }
+wsr-wasix    = { path = "crates/wsr-wasix" }
+
+# External crates
+anyhow             = "1"
+clap               = { version = "4", features = ["derive"] }
+serde              = { version = "1", features = ["derive"] }
+serde_json         = "1"
+serde_yaml         = "0.9"
+thiserror          = "2"
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # The profile that 'dist' will build with
 [profile.dist]
-  inherits = "release"
-  lto      = "thin"
+inherits = "release"
+lto      = "thin"

@@ -1,0 +1,21 @@
+name: "check-lint"
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  clippy:
+    name: "cargo clippy"
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: Swatinem/rust-cache@v2
+      - name: "Install Rust toolchain"
+        run: rustup component add clippy
+      - name: "Clippy"
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings

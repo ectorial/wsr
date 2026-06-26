@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-fmt:
+    name: "format"
+    uses: ./.github/workflows/check-fmt.yml
+
+  check-lint:
+    name: "lint"
+    uses: ./.github/workflows/check-lint.yml
+
+  check-docs:
+    name: "docs"
+    uses: ./.github/workflows/check-docs.yml
+
+  test:
+    name: "test"
+    uses: ./.github/workflows/test.yml

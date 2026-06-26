@@ -1,0 +1,15 @@
+[package]
+name        = "wsr-bench"
+description = "Benchmark suite for wsr: step startup time, expression evaluation, cache hit rates"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+wsr-engine.workspace = true
+wsr-types.workspace  = true

@@ -1,0 +1,21 @@
+name: "check-docs"
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  docs:
+    name: "cargo doc"
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: "-D warnings"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: Swatinem/rust-cache@v2
+      - name: "Docs"
+        run: cargo doc --no-deps --workspace

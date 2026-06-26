@@ -1,0 +1,15 @@
+[package]
+name        = "wsr-shell"
+description = "Shell step executor for run: directives (bash, sh, pwsh) within the wsr sandbox"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+wsr-types.workspace = true

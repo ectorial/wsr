@@ -1,0 +1,15 @@
+[package]
+name        = "wsr-expr"
+description = "Provider-agnostic ${{ }} expression evaluator for wsr workflow definitions"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+wsr-types.workspace = true

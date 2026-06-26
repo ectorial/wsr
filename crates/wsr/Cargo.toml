@@ -1,0 +1,24 @@
+[package]
+name        = "wsr"
+description = "A local, Wasm-sandboxed CI runner. Run your workflows on every git hook — before you push, not after."
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[[bin]]
+name = "wsr"
+path = "src/bin/wsr.rs"
+
+[dependencies]
+anyhow.workspace      = true
+clap.workspace        = true
+wsr-cli.workspace     = true
+wsr-engine.workspace  = true
+wsr-git.workspace     = true
+wsr-tracing.workspace = true
+wsr-types.workspace   = true

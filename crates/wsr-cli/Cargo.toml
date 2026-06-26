@@ -1,0 +1,17 @@
+[package]
+name        = "wsr-cli"
+description = "Command-line interface types and argument definitions for wsr (clap v4)"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+clap.workspace      = true
+serde.workspace     = true
+wsr-types.workspace = true

@@ -1,0 +1,20 @@
+[package]
+name        = "wsr-engine"
+description = "Job DAG scheduler, step orchestrator, matrix expansion, and outputs propagation"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+anyhow.workspace      = true
+wsr-expr.workspace    = true
+wsr-resolver.workspace = true
+wsr-sandbox.workspace = true
+wsr-shell.workspace   = true
+wsr-types.workspace   = true
+wsr-wasix.workspace   = true

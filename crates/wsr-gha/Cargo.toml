@@ -1,0 +1,18 @@
+[package]
+name        = "wsr-gha"
+description = "GitHub Actions provider adapter: YAML parser, context builder, and trigger mapping"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+anyhow.workspace     = true
+serde.workspace      = true
+serde_yaml.workspace = true
+wsr-expr.workspace   = true
+wsr-types.workspace  = true

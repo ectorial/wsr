@@ -1,0 +1,18 @@
+[package]
+name        = "wsr-resolver"
+description = "Action reference resolver: maps uses: refs to Wasm components and assigns execution tier"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+anyhow.workspace     = true
+wsr-cache.workspace  = true
+wsr-client.workspace = true
+wsr-gha.workspace    = true
+wsr-types.workspace  = true

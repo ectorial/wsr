@@ -1,0 +1,16 @@
+[package]
+name        = "wsr-git"
+description = "Git hook management, shim installation, and stateless hook reconciliation for wsr"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+wsr-fs.workspace    = true
+wsr-types.workspace = true

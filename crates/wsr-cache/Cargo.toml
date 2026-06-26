@@ -1,0 +1,16 @@
+[package]
+name        = "wsr-cache"
+description = "Content-addressed Wasm module cache keyed by SHA-256 digest"
+version.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+authors.workspace    = true
+homepage.workspace   = true
+keywords.workspace   = true
+categories.workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+wsr-fs.workspace    = true
+wsr-types.workspace = true
