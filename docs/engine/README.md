@@ -1,41 +1,23 @@
-# engine
+# Planning and execution engine
 
-Workflow execution engine. Orchestrates job scheduling, expression evaluation, step dispatch, and result propagation.
+## Current scaffold
 
-## responsibilities
+[wsr-engine](../../crates/wsr-engine/src/lib.rs) and
+[wsr-expr](../../crates/wsr-expr/src/lib.rs) contain documentation only.
+Scheduling, expression evaluation, matrix expansion, and workflow execution are not implemented.
 
-- Build the job DAG from `needs:` declarations
-- Expand matrix strategies into concrete job instances
-- Evaluate `${{ }}` expressions via the expression engine
-- Dispatch each step to the sandbox
-- Propagate `outputs:` between jobs
-- Collect exit codes and surface failures to git
+## Accepted responsibilities — planned
 
-## expression engine
+The provider-neutral core consumes compiled workflows and explicit inputs. It validates the plan,
+evaluates canonical expressions at appropriate phases, manages dependencies/conditions/outputs,
+and supervises jobs and steps. Dynamic outputs cannot all be evaluated before execution.
 
-Evaluates GitHub Actions expression syntax: `${{ <expr> }}`.
+The job supervisor owns workspace, tool, service, output, cancellation, and timeout lifetimes.
+Step environments receive separate grants and export allowed state through controlled channels.
+A system step does not automatically widen other steps' permissions. Shared state can carry risk.
+Backend selection happens before a side-effecting step; partial execution is not automatically
+replayed in a more permissive backend.
 
-**supported contexts**
-
-| context | fields |
-| --- | --- |
-| `github.*` | `event_name`, `ref`, `sha`, `actor`, `repository` |
-| `env.*` | job and step level env vars |
-| `runner.*` | `os`, `arch`, `temp`, `tool_cache` |
-| `secrets.*` | injected from `secrets_from` file |
-
-**supported functions**
-
-| type | functions |
-| --- | --- |
-| string | `contains`, `startsWith`, `endsWith`, `format` |
-| JSON | `fromJSON`, `toJSON` |
-| status | `success()`, `failure()`, `always()`, `cancelled()` |
-
-## job dag
-
-Jobs are sorted topologically by their `needs:` graph. Independent jobs run in parallel; dependent jobs wait for their predecessors to complete and expose their `outputs:`.
-
-## source
-
-- [`src/engine/mod.rs`](../../src/engine/mod.rs)
+Precise matrix/failure/retry/state semantics and the first supported subset still need specification
+and fixtures. The same engine later runs inside Actions; wrapper scheduling/credential/reporting
+ownership remains open. See [ARCHITECTURE.md](../../ARCHITECTURE.md) and [PLAN.md](../../PLAN.md).

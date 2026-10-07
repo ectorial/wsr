@@ -1,5 +1,9 @@
 //! Command-line interface definitions for wsr.
 //!
+//! Current status: arguments are defined, but all corresponding command handlers are stubs.
+//! Command descriptions express interface intent, not implemented execution behavior.
+//!
+//!
 //! This crate owns all clap-specific code: the top-level [`Cli`] struct, every
 //! subcommand enum, and all argument types. It is a library — it contains no
 //! `main` function and no side effects.

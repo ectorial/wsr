@@ -1,26 +1,19 @@
-//! Shared types, traits, and error definitions used across all wsr crates.
+//! Early shared types, traits, and errors for the current CLI/workspace scaffold.
 //!
-//! `wsr-types` is the dependency-free foundation of the workspace. Every other crate
-//! depends on this one; it must not depend on any sibling crates.
-//!
-//! # Contents
-//!
-//! - [`WorkflowProvider`] — the trait every CI provider adapter must implement
-//! - [`WorkflowIR`] — normalized internal representation that all providers compile to
-//! - [`TriggerEvent`] — provider-agnostic event passed to the engine
-//! - [`GitHook`] — the set of git hooks wsr can manage
-//! - [`ExecutionTier`] — Tier 1 (Wasmtime/WASI 3) vs Tier 2 (Wasmer/WASIX)
-//! - [`WsrError`] — top-level error type
+//! These declarations predate the accepted design in the repository PLAN.md.
+//! No provider compiler, execution engine, or runtime is implemented by these types.
+//! The legacy tier enum does not select production runtimes, and the model is not
+//! a complete or stable GitHub Actions compatibility/serialization contract.
 
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// The normalized internal representation every provider compiles its workflow into.
+/// Early serializable workflow model in the scaffold.
 ///
-/// This is the interchange format between the provider layer and the engine. It is
-/// designed to serialize to JSON without loss of information.
+/// No provider compiler is implemented, and this model does not cover all source semantics.
+/// The accepted canonical model and its stability boundary still require specification.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowIR {
     pub name: String,
@@ -115,9 +108,9 @@ pub struct TriggerEvent {
 /// Which execution sandbox to use for a given job or step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ExecutionTier {
-    /// Wasmtime + WASI Preview 3. Default for all jobs. ~1–3 ms cold start.
+    /// Legacy component-tier identifier; no runtime implementation or startup measurement.
     Vault,
-    /// Wasmer + WASIX. POSIX-compatible. Used for toolchains that require it. Transitional.
+    /// Legacy compatibility-tier identifier; no WASIX or system backend is implemented.
     Workshop,
 }
 

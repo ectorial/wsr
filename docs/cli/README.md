@@ -1,27 +1,24 @@
-# cli
+# CLI
 
-Entry point for all user-facing commands. Parses arguments and dispatches to the appropriate
-subsystem.
+## Current scaffold
 
-Implemented with [`clap`](https://docs.rs/clap) using the derive API.
+[Argument definitions](../../crates/wsr-cli/src/lib.rs) use clap;
+[dispatch](../../crates/wsr/src/commands/mod.rs) selects eight handlers: `init`, `run`, `daemon`,
+`list`, `inspect`, `cache`, `hook`, and `status`. Every handler returns “not yet implemented.”
 
-## commands
+`run` defines an optional file and `--event`, `--dry-run`, `--verbose`, `--yes`, and `--format`.
+These are parsed arguments, not implemented execution/planning/reporting behavior. Help text can
+be inspected with `cargo run -p wsr -- --help`.
 
-### `wsr init`
+## Accepted design and open interface
 
-Scans `.github/workflows/`, generates `wsr.json`, and installs git hook shims into `.git/hooks/`.
+Local inspection, execution, and debugging come first; GitHub Actions engine reuse follows.
+Final command structure, selection, event binding, and output formats are not settled.
+A planning-only path must not execute repository commands. Effective permissions and unsupported
+requirements must be visible before execution.
 
-### `wsr run [file]`
+`plan` exists in preserved prototype work, not the current command enum. `--allow '*'` is proposed
+syntax for an explicit broad-access profile, not an implemented option. There is no `actions`
+subcommand. Hooks/daemon behavior is not the primary product commitment.
 
-Executes workflows locally. Without `[file]`, runs all workflows matching the active trigger.
-
-| flag          | description                                                  |
-| ------------- | ------------------------------------------------------------ |
-| `--event <n>` | Force a specific event type (e.g. `push`, `pull_request`)    |
-| `--dry-run`   | Print the execution plan without running anything            |
-| `--verbose`   | Show expression evaluation, sandbox grants, and context dump |
-| `--yes`       | Skip interactive prompts (for scripted use)                  |
-
-## source
-
-- [`src/cli/mod.rs`](../../src/cli/mod.rs)
+See [PLAN.md](../../PLAN.md) and [the security model](../SECURITY-MODEL.md).

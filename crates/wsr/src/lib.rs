@@ -1,5 +1,8 @@
 //! Binary library root for wsr.
 //!
+//! Current status: dispatch and stub handlers only; workflow execution is not implemented.
+//!
+//!
 //! `crates/wsr` is the entry point to the wsr command-line interface.
 //! The Rust API exposed here is not considered public — it exists solely to
 //! support the binary targets in `src/bin/` and the integration tests in

@@ -1,46 +1,21 @@
-# sync
+# Integrations and deferred hook synchronization
 
-Keeps git hook shims in sync with the current branch's workflow files. Runs automatically on branch switches, pulls, and rebases.
+## Current scaffold
 
-## hooks installed
+[wsr-git](../../crates/wsr-git/src/lib.rs) contains documentation only. `hook`, `daemon`, and
+`status` handlers are stubs. No hook shims are installed or reconciled by the current implementation.
+Legacy `wsr run --hook` examples are not a supported CLI contract.
 
-| git hook | trigger |
-| --- | --- |
-| `post-checkout` | branch switch |
-| `post-merge` | `git pull` / `git merge` |
-| `post-rewrite` | `git rebase` / `git commit --amend` |
+## Accepted delivery order — planned
 
-## reconcile model
+Run/debug CI locally first, then invoke the same engine inside GitHub Actions. Define the wrapper's
+job/pipeline selection, inputs, scheduling, cancellation, credentials, reporting, and recursion
+prevention before implementation. Identical engine code does not imply identical environments.
 
-Sync is stateless. On each invocation:
+Independent CI using a GitHub App, webhooks, durable scheduling, and Checks projection is a later
+possibility. The organization's profile generator is unrelated to that integration. Its lifecycle
+requires a separate maintenance decision.
 
-1. Scan `.github/workflows/` for YAML files
-2. Map triggers to hook names via the provider adapter
-3. Diff desired state against installed shims (read from embedded manifest comment)
-4. Atomically write changed shims: `write tmpfile → rename()`
-
-No lock file. The desired state is embedded as a comment inside each shim script itself.
-
-## shim format
-
-Each installed shim contains a machine-readable manifest comment at the top:
-
-```sh
-#!/bin/sh
-# wsr-manifest: {"workflows":["ci.yml"],"provider":"github"}
-exec wsr run --event push
-```
-
-On the next sync, `wsr` reads this comment to determine what was previously installed, diffs it against the current workflow set, and rewrites only what changed.
-
-## warnings
-
-If a workflow file is deleted on the current branch, `wsr` emits a named warning and removes the corresponding hook shim:
-
-```
-[wsr] removed pre-push hook (lint.yml deleted on this branch)
-```
-
-## source
-
-- [`src/sync/mod.rs`](../../src/sync/mod.rs)
+Hooks and daemon synchronization are secondary possibilities, not the primary product experience.
+Do not infer a concurrency-safe implementation from legacy comments about Git filesystem locks.
+See [PLAN.md](../../PLAN.md) and [ROADMAP.md](../../ROADMAP.md).

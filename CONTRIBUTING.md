@@ -47,3 +47,15 @@ git cliff
 ## Questions?
 
 Open an issue or reach out at eduferreyraok@gmail.com.
+
+## Documentation and design changes
+
+Use [PLAN.md](PLAN.md) for accepted decisions and open proposals, [CHECKLIST.md](CHECKLIST.md)
+for implementation accounting, and [ROADMAP.md](ROADMAP.md) for delivery gates. The architecture
+interview is not implementation-ready; documentation reconciliation does not resolve open choices.
+
+Distinguish current scaffold, preserved prototype, accepted design, and open proposals. Do not mark
+an execution feature complete because a type, flag, or documentation-only crate exists. When a change
+affects the product story, update the relevant WSR guides and organization summaries together.
+Keep the organization's profile/template identical and verify active relative links. Preserve
+historical release notes and unpublished recovery material as history, not current support claims.

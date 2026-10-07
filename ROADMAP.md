@@ -1,260 +1,69 @@
-# wsr roadmap
+# wsr delivery roadmap
 
-Status legend: `done` · `in progress` · `planned` · `future`
+This is a staged direction, not a release/version schedule. [PLAN.md](PLAN.md) owns decisions;
+[CHECKLIST.md](CHECKLIST.md) owns implementation status. Creating a crate or writing a design does
+not complete a runtime milestone. All execution milestones below remain planned.
 
-Layers build sequentially because adding actions before the runtime can reliably execute them
-wastes everyone's time. Each milestone gates the next.
+## 0. Reconcile evidence and decisions
 
----
+Preserve and inspect the July 29 prototype in an isolated recovery checkout. Record what compiles,
+which tests run, what can be retained, and which assumptions conflict with the accepted design.
+Resolve the first compatibility subset, security backend, wildcard scope, platform architectures,
+and component host contract before calling a slice implementation-ready.
 
-## v0.1 — execution core `in progress`
+**Gate:** one coherent specification and recovery report; original stash retained. Documentation
+can be synchronized before every design choice is resolved, provided open choices stay explicit.
 
-Prove the runtime works end-to-end. The core loop: init, parse a workflow, execute a step in the
-sandbox, block the push on failure. GitHub Actions as the reference provider.
+## 1. Explain a workflow without executing it
 
-**workspace skeleton**
+Connect provider discovery/pinning and the compilation boundary to deterministic inspection,
+source diagnostics, a minimal canonical model, and plan validation. Classify unknown or unsupported
+behavior instead of silently discarding it. Define evaluation phases for dynamic expressions.
 
-- [x] cargo workspace with `wsr-*` crates
-- [x] `wsr-types` — `WorkflowProvider` trait, `WorkflowIR`, `TriggerEvent`, `GitHook`, `ExecutionTier`
-- [x] `wsr-cli` — clap v4 skeleton with all planned subcommands
+**Gate:** representative fixtures produce expected diagnostics and plans; invalid plans are rejected;
+inspection executes no repository-controlled commands. The current `inspect` handler is still a stub.
 
-**CLI**
+## 2. Prove component security
 
-- [ ] `wsr init` — scan workflows, generate `wsr.json`, install git hook shims
-- [ ] `wsr run` — execute workflows matching `workflow_dispatch`
-- [ ] `wsr run <file>` — run specific workflow, prompt if no dispatch trigger
-- [ ] `wsr run --event <n>` — force a specific trigger event
-- [ ] `wsr run --dry-run` — print execution plan, run nothing
-- [ ] `wsr run --verbose` — expose expression eval, sandbox grants, context dump
-- [ ] `wsr run --yes` — skip interactive prompts (for scripted use)
+Choose a runtime/WASI baseline and a minimal versioned WIT contract. Execute one useful component
+with explicit grants, input identity, bounded resources, and structured results.
 
-**configuration (`wsr-types`)**
+**Gate:** permitted behavior works and adversarial attempts at ungranted access fail. Runtime and
+host assumptions are documented; signatures are not treated as proof of safe behavior.
 
-- [ ] `wsr.json` generation on `wsr init` with `$schema`, provider, sandbox defaults
-- [ ] `serde_json` parsing — no extra crates
-- [ ] JSON Schema published at `https://wsr.dev/schema/wsr.json`
-- [ ] VS Code IntelliSense via `$schema` field
+## 3. Prove isolated Linux system execution
 
-**provider adapter — github actions (`wsr-gha`)**
+Select a backend for Linux jobs from macOS and Linux machines. Specify workspace/tool/service state,
+filesystem/network/process restrictions, secrets, resource limits, and cleanup. Implement default
+policy and the explicitly authorized broad-access exception within its eventual approved scope.
 
-- [ ] `WorkflowProvider` impl — `parse()`, `context()`, `trigger_map()`
-- [ ] GitHub Actions YAML parser — `serde-yaml`
-- [ ] `on:` trigger → git hook mapping
-- [ ] `github.*` context builder — `event_name`, `ref`, `sha`, `actor`, `repository`
-- [ ] `env.*`, `runner.*`, `secrets.*` contexts
+**Gate:** adversarial probes and timeout/cancellation cleanup pass; unavailable enforcement blocks
+execution; workflow edits cannot grant permissions to themselves. Native macOS/Windows jobs are rejected.
 
-**GHA compat — `run:` steps**
+## 4. Deliver useful local CI
 
-- [ ] `run:` with `bash` / `sh`
-- [ ] `run:` with `pwsh`
-- [ ] `env:` at step and job level
-- [ ] `if:` conditions on steps and jobs
-- [ ] `continue-on-error:`
-- [ ] `working-directory:`
+Combine compilation, planning, both execution paths, job supervision, and results for a small tested
+workflow. Expand dependencies, expressions, outputs, matrices, and actions only through named fixtures.
+Keep immutable content separate from secrets, mutable run state, and unredacted logs.
 
-**GHA compat — expression engine (`wsr-expr`)**
+**Gate:** users can inspect, run, and diagnose the supported subset; failure/skip/cancellation semantics
+are tested; effective grants and environment identity are visible. No full compatibility claim.
 
-- [ ] `${{ }}` evaluation — lexer + parser + evaluator
-- [ ] `fromJSON` / `toJSON`
-- [ ] string functions — `contains`, `startsWith`, `endsWith`, `format`
-- [ ] status functions — `success()`, `failure()`, `always()`, `cancelled()`
+## 5. Reuse the engine inside GitHub Actions
 
-**GHA compat — jobs**
+Define a wrapper contract for job/pipeline selection, outer scheduling, inputs, cancellation,
+credentials, reporting, and recursion prevention. Qualify the available execution boundary without
+assuming nested virtualization works everywhere.
 
-- [ ] single job execution
-- [ ] `needs:` DAG — sequential and parallel
-- [ ] matrix expansion — basic axes
-- [ ] `outputs:` between jobs
+**Gate:** the same engine executes the supported subset locally and in Actions; environment differences
+and security exceptions are reported; broad access does not expand GitHub token permissions.
 
-**Tier 1 sandbox (`wsr-sandbox`)**
+## Later possibilities
 
-- [ ] Wasmtime engine with Cranelift JIT
-- [ ] WASI Preview 3 — native async layer
-- [ ] one instance per step, killed after completion
-- [ ] WASI capability grants — preopened dirs, env vars
-- [ ] `allowed_hosts` network enforcement
-- [ ] secret injection — zeroize on drop, never written to disk
-- [ ] AOT module cache — `wasmtime::Module::serialize` + SHA-256 pin (`wsr-cache`)
+Independent CI with a GitHub App, durable scheduling, workers, and Checks reporting comes after
+the local/Actions path. Remote/team cache, catalogs, more providers, native macOS/Windows jobs,
+and deployment workflows require separate evidence and decisions. No repositories or version
+numbers are reserved for them by this roadmap.
 
-**action resolver (`wsr-resolver`)**
-
-- [ ] JS/TS action fetch from GitHub (tags, SHAs)
-- [ ] SHA pinning — resolve mutable refs to immutable SHAs before download
-- [ ] Javy compile JS/TS → Wasm
-- [ ] cache compiled `.wasm` by content hash (`wsr-cache`)
-- [ ] `actions/checkout@v4`
-- [ ] `actions/setup-node@v4`
-- [ ] `actions/cache@v4`
-
-**git hook management (`wsr-git`)**
-
-- [ ] `post-checkout` — resync on branch switch
-- [ ] `post-merge` — resync after pull
-- [ ] `post-rewrite` — resync after rebase/amend
-- [ ] atomic shim writes — `write tmpfile → rename()`
-- [ ] manifest comment in shim — no lock file
-- [ ] named warning on workflow deletion
-
-**observability (`wsr-tracing`)**
-
-- [ ] structured step logs via `tracing`
-- [ ] per-step timing
-- [ ] sandbox violation events
-- [ ] exit code propagation to git hook
-- [ ] GitHub Annotations format output (`--format=gha`)
-
----
-
-## v0.2 — compatibility depth `planned`
-
-Close the remaining GitHub Actions surface area.
-
-**GHA compat**
-
-- [ ] composite actions — inline step expansion
-- [ ] reusable workflows — `uses: ./.github/workflows/shared.yml`
-- [ ] `workflow_call` trigger
-- [ ] matrix `include` / `exclude`
-- [ ] `strategy.fail-fast`
-- [ ] `concurrency` groups — cancel-in-progress
-- [ ] `services:` containers — Tier 2 (WASIX) shim with warning
-- [ ] Docker-based actions — capability-wrapped Tier 2 shim
-- [ ] `secrets: inherit`
-- [ ] `permissions:` blocks — respected as capability hints
-- [ ] `timeout-minutes:` per step and job
-
-**action resolver**
-
-- [ ] `actions/upload-artifact@v4` / `download-artifact`
-- [ ] `actions/setup-python`, `setup-go`, `setup-java`
-- [ ] local actions — `uses: ./actions/my-action`
-- [ ] private repo actions (with token)
-
-**Tier 1 sandbox**
-
-- [ ] per-step memory limits
-- [ ] per-step CPU time limits (Cranelift fuel)
-- [ ] network proxy — DNS allowlist + TLS inspection
-- [ ] async step execution via WASI 3 — concurrent I/O within a step
-
-**CLI**
-
-- [ ] `wsr list` — show all workflows and hook mappings
-- [ ] `wsr inspect <file>` — parse and pretty-print, validate expressions
-- [ ] `wsr cache list / verify / purge`
-- [ ] `wsr hook install / remove`
-
----
-
-## v0.3 — Tier 2 WASIX + heavy toolchains `planned`
-
-First real Tier 2 workloads. Validates the WASIX sandbox against `rustc`, LLVM, and Go.
-
-**Tier 2 sandbox (`wsr-wasix`)**
-
-- [ ] Wasmer + WASIX integration
-- [ ] `fork`/`exec` virtualisation inside the sandbox
-- [ ] threading support
-- [ ] socket virtualisation — no host kernel forwarding
-- [ ] `wasm32-wasix` toolchain resolution
-- [ ] Tier promotion rule — job upgrades to Tier 2 if any step requires it
-- [ ] transparent cross-tier `outputs:` propagation
-
-**action catalog**
-
-- [ ] `ectorial/setup-rust` (Tier 2 — `rustc` + `cargo`)
-- [ ] `ectorial/setup-go` (Tier 2 — Go toolchain)
-- [ ] `ectorial/setup-python` (Tier 2 — CPython WASIX build)
-
----
-
-## v0.4 — daemon and DX `planned`
-
-The authoring experience. Fast feedback while writing workflows.
-
-- [ ] `wsr daemon` — persistent file watcher via `notify` crate
-- [ ] auto-resync hooks on workflow file edits
-- [ ] debounce — 300 ms, coalesce rapid saves
-- [ ] IPC socket for `wsr status` to query daemon state
-- [ ] `wsr daemon install` — register as launchd / systemd service
-- [ ] `wsr status` — active hook map, daemon state, last sync
-- [ ] hot reload — recompile changed Wasm modules without restarting
-
----
-
-## v0.5 — gitlab ci adapter `planned`
-
-First non-GitHub provider. Validates the adapter pattern against a real alternative syntax.
-
-- [ ] `WorkflowProvider` impl for GitLab CI (`wsr-gitlab`)
-- [ ] `.gitlab-ci.yml` parser
-- [ ] GitLab CI trigger → git hook mapping (`push`, `merge_request`)
-- [ ] `CI_*` variable context normalization → `WorkflowIR`
-- [ ] `stage:` and `needs:` DAG execution
-- [ ] GitLab-specific `rules:` evaluation
-- [ ] `wsr.json` — `"provider": "gitlab"`
-
----
-
-## v0.6 — bitbucket pipelines adapter `planned`
-
-- [ ] `WorkflowProvider` impl for Bitbucket Pipelines (`wsr-bitbucket`)
-- [ ] `bitbucket-pipelines.yml` parser
-- [ ] Bitbucket trigger → git hook mapping
-- [ ] `BITBUCKET_*` variable context normalization → `WorkflowIR`
-- [ ] `step:` execution model
-- [ ] `wsr.json` — `"provider": "bitbucket"`
-
----
-
-## v0.7 — component registry + signing `planned`
-
-Production-grade supply chain. Matches the `ectorial/wit` and `ectorial/actions` ecosystem.
-
-- [ ] Component registry client — fetch, verify, and cache signed Wasm components
-- [ ] SHA pinning for registry components (content-addressed, not tag-based)
-- [ ] Signature verification before execution — unsigned components rejected in Tier 1
-- [ ] `wsr publish` — build and publish a Wasm component to the registry
-- [ ] `ectorial/wit` WIT interface enforcement at resolution time
-- [ ] Coverage: 80% of top-100 GHA Marketplace steps without Docker
-
----
-
-## v1.0 — production ready `future`
-
-Stable APIs, infrastructure-agnostic runner deployment, full cross-provider coverage.
-
-- [ ] Stable `WorkflowProvider` trait API (semver-stable)
-- [ ] Stable `wsr.json` schema (published, versioned)
-- [ ] All `wsr-*` crates at `1.0` with documented stability guarantees
-- [ ] `wsr run --watch` — re-run on file save (TDD-style workflow authoring)
-- [ ] Remote cache — share compiled `.wasm` artifacts across a team via S3/R2
-- [ ] VS Code extension — inline step results, expression hover evaluation
-- [ ] Native Rust actions — compile Rust-based actions directly, skip Javy
-
----
-
-## performance `future`
-
-Once compatibility is proven across providers, optimize the hot path.
-
-- [ ] AOT compilation on `wsr init` — pre-compile all action Wasm at install time
-- [ ] Shared Wasmtime `Engine` across steps — amortize JIT cost
-- [ ] Parallel step execution where DAG allows
-- [ ] Incremental expression caching — memoize pure `${{ }}` eval results
-- [ ] Cranelift optimization flags for release builds
-- [ ] Benchmark suite (`wsr-bench`) — compare step startup time vs `act` + Docker
-
----
-
-## non-goals
-
-Things `wsr` will deliberately not do:
-
-- replace remote CI — `wsr` is a local pre-flight, not a CI server
-- run Docker-based actions natively — the security boundary is the point
-- support `act`'s `--platform` flag — no container runtime dependency, ever
-- auto-update workflows — `wsr` reads workflows, never writes them
-- lock developers to a single CI provider — the adapter pattern is a first-class design goal
-- Windows/macOS Tier 2 — deferred beyond v1.0
-- GUIs or managed hardware
+Performance comparisons follow working execution and a reproducible workload/environment definition.
+A content digest identifies an input; it does not make external dependencies deterministic.

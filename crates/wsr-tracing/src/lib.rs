@@ -1,11 +1,5 @@
-//! Structured logging and output formatting for wsr.
+//! Logging/reporting placeholder.
 //!
-//! Provides two output formats:
-//!
-//! - **human** (default) — compact, coloured, git-hook-friendly terminal output
-//! - **gha** (`--format=gha`) — GitHub Annotations format for steps consumed by
-//!   GitHub Actions (`::error::`, `::notice::`, `::group::`, etc.)
-//!
-//! All wsr crates emit spans and events via the [`tracing`] crate. This crate
-//! owns subscriber initialization and format selection. No other crate should
-//! configure a global subscriber.
+//! Current status: documentation-only scaffold; no implementation in this crate.
+//! Accepted design and open choices are recorded in the repository PLAN.md.
+//! This placeholder does not establish runtime support or security/compatibility guarantees.

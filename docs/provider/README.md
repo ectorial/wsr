@@ -1,47 +1,23 @@
-# provider
+# Workflow providers
 
-Workflow provider adapters. Each provider knows how to parse a CI workflow format, build execution
-context, and map triggers to git hooks.
+## Current scaffold
 
-## adapter pattern
+[wsr-gha](../../crates/wsr-gha/src/lib.rs) is documentation-only. The existing
+[WorkflowProvider trait](../../crates/wsr-types/src/lib.rs) is a legacy scaffold interface;
+there is no functional GHA frontend in this checkout. Prototype parsing/inspection is preserved locally.
 
-All providers implement the `WorkflowProvider` trait:
+## Accepted compilation boundary — planned
 
-```rust
-trait WorkflowProvider {
-    fn parse(&self, path: &Path) -> Result<Workflow>;
-    fn context(&self, event: &str) -> Result<Context>;
-    fn trigger_map(&self) -> TriggerMap;
-}
-```
+A host-side Rust abstraction delegates to signed WebAssembly Component provider plugins through
+versioned WIT. Plugins receive explicit inputs, parse provider defaults and expressions, preserve
+source traceability, classify compatibility, and lower to a provider-neutral canonical model.
+They terminate at compilation; planning/execution does not call back into opaque provider expressions.
 
-Switching providers in `wsr.json` changes the parser and context builder — the sandbox and execution
-engine are unchanged.
+One source workflow maps to one canonical workflow; individual constructs can lower to several
+nodes. Compatibility categories are native, faithfully emulated, fallback-required, unsupported,
+and unknown. Core/extension admission and serialized IR stability remain open. No universal or
+lossless-source-mapping claim is made.
 
-## github actions (reference implementation)
-
-The reference provider. Targets 100% GitHub Actions syntax compatibility.
-
-**parser** — deserializes `.github/workflows/*.yml` using `serde-yaml`.
-
-**context builder** — populates `github.*`, `env.*`, `runner.*`, `secrets.*`.
-
-**trigger map**
-
-| workflow trigger            | git hook           |
-| --------------------------- | ------------------ |
-| `on: push`                  | `pre-push`         |
-| `on: pull_request`          | `pre-push`         |
-| `on: workflow_dispatch`     | manual (`wsr run`) |
-| `on: push` with tag pattern | `pre-push`         |
-
-## planned providers
-
-| provider            | version |
-| ------------------- | ------- |
-| GitLab CI           | v0.4    |
-| Bitbucket Pipelines | v0.5    |
-
-## source
-
-- [`src/provider/mod.rs`](../../src/provider/mod.rs)
+GitHub Actions is first. Other provider frontends are a design extension path with no approved
+release schedule. Cross-provider source translation is outside scope. Broader grants do not
+implement absent semantics or APIs. See [PLAN.md](../../PLAN.md) and [ROADMAP.md](../../ROADMAP.md).

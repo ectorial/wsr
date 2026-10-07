@@ -1,130 +1,39 @@
-# wsr v0.1 implementation checklist
+# wsr implementation status
 
-## 1. Project structure
+Status checked against the current workspace on October 7, 2026. This file counts implemented
+behavior, not design approval. See [PLAN.md](PLAN.md) for decisions and [ROADMAP.md](ROADMAP.md)
+for delivery gates.
 
-- [x] Create `src/lib.rs` and declare all top-level modules
-- [x] Create `src/cli/mod.rs`
-- [x] Create `src/config/mod.rs`
-- [x] Create `src/provider/mod.rs`
-- [x] Create `src/sandbox/mod.rs`
-- [x] Create `src/sync/mod.rs`
-- [x] Create `src/engine/mod.rs`
+## Present in the current checkout
 
-## 2. CLI skeleton
+- [x] Sixteen-crate Cargo workspace and binary entry point.
+- [x] CLI argument definitions and command dispatch.
+- [x] Early serializable types, legacy provider trait, and errors.
+- [x] CI/release workflow definitions (their existence is not runtime feature coverage).
+- [x] Documentation distinguishes current scaffold, preserved prototype, accepted design, and proposals.
 
-- [x] Add `clap` dependency with `derive` feature
-- [x] `wsr init` subcommand
-- [x] `wsr run` subcommand
-  - [x] `--event <n>` flag
-  - [x] `--dry-run` flag
-  - [x] `--verbose` flag
-  - [x] `--yes` flag
-  - [x] optional `<file>` positional argument
-- [x] Wire subcommands into `main.rs`
+## Not implemented in the current checkout
 
-## 3. wsr.json config
+- [ ] Workflow parsing and functional `inspect`/planning commands.
+- [ ] Repository setup, configuration loading/generation, and provider bootstrap/pinning.
+- [ ] Signed Component Model provider execution and canonical expression lowering.
+- [ ] Workflow scheduling, expressions, matrices, outputs, and action resolution/execution.
+- [ ] Component host, capability enforcement, and runtime/resource limits.
+- [ ] Isolated Linux system execution on macOS and Linux hosts.
+- [ ] Default permission policy and owner-authorized broad-access profile.
+- [ ] Source snapshots, shared content store, artifacts, and structured execution evidence.
+- [ ] Job/step state management, cancellation, timeout cleanup, and failure semantics.
+- [ ] Engine reuse inside GitHub Actions.
+- [ ] Git hook management or daemon synchronization.
+- [ ] Independent CI service, GitHub App deployment, remote workers, and Checks writes.
+- [ ] Security/compatibility conformance suites or measured performance claims.
 
-- [x] Add `serde`, `serde_json` dependencies
-- [x] `Config` struct with `provider`, `sandbox` fields
-- [x] `SandboxConfig` struct with `allowed_hosts`, `secrets_from` fields
-- [x] `Config::load()` — read and parse `wsr.json` from repo root
-- [x] `Config::generate()` — write default `wsr.json` with `$schema`
-- [x] JSON Schema URL hardcoded as `https://wsr.dev/schema/wsr.json`
+All eight current command handlers return “not yet implemented.” Help and argument parsing do not
+establish command functionality. Green scaffold CI is not proof of workflow execution or containment.
 
-## 4. GitHub Actions YAML parser
+## Preserved prototype — not current completion
 
-- [x] Add `serde-yaml`, `schemars` dependencies
-- [x] `Workflow` struct — `name`, `on`, `jobs`
-- [x] `Trigger` enum — `push`, `pull_request`, `workflow_dispatch`, tag patterns
-- [x] `Job` struct — `runs-on`, `needs`, `steps`, `outputs`, `env`, `if`, `strategy`
-- [x] `Step` struct — `name`, `run`, `uses`, `with`, `env`, `if`, `continue-on-error`,
-      `working-directory`
-- [x] `Matrix` struct — basic `include`/`exclude`
-- [x] `WorkflowParser::parse(path)` — deserialize a workflow file
-
-## 5. Expression engine
-
-- [ ] `${{ }}` tokenizer and parser
-- [ ] `github.*` context — `event_name`, `ref`, `sha`, `actor`, `repository`
-- [ ] `env.*` context
-- [ ] `runner.*`, `secrets.*` contexts
-- [ ] `fromJSON` / `toJSON`
-- [ ] String functions — `contains`, `startsWith`, `endsWith`, `format`
-- [ ] Status functions — `success()`, `failure()`, `always()`, `cancelled()`
-- [ ] `ExpressionEngine::eval(expr, context)` entry point
-
-## 6. Trigger → git hook mapping
-
-- [ ] `TriggerMap` — maps `on:` triggers to git hook names
-- [ ] `push` / `pull_request` → `pre-push`
-- [ ] `workflow_dispatch` → manual (`wsr run`)
-- [ ] Tag pattern triggers → `pre-push`
-- [ ] `HookShim::write(hook_name, workflows)` — write shim script to `.git/hooks/`
-- [ ] Shim includes embedded manifest comment for stateless reconcile
-
-## 7. `wsr init`
-
-- [ ] Scan `.github/workflows/` for YAML files
-- [ ] Parse each workflow with #4
-- [ ] Generate `wsr.json` via #3
-- [ ] Map triggers via #6
-- [ ] Install hook shims into `.git/hooks/`
-- [ ] Make shims executable (`chmod +x`)
-- [ ] Print summary of installed hooks
-
-## 8. Wasm sandbox
-
-- [ ] Add `wasmtime`, `wasi-common` dependencies
-- [ ] `Sandbox::new()` — create Wasmtime engine with Cranelift JIT
-- [ ] One `Store` + `Instance` per step, dropped after completion
-- [ ] WASI capability grants — preopened dirs, env vars
-- [ ] `allowed_hosts` network enforcement via hyper proxy
-- [ ] Secret injection via env — `zeroize` on drop, never written to disk
-- [ ] AOT module cache — `wasmtime::Module::serialize` + SHA-256 pin
-
-## 9. `run:` step execution
-
-- [ ] `StepRunner::run(step, context, sandbox)` entry point
-- [ ] `bash` / `sh` shell execution inside sandbox
-- [ ] `pwsh` shell execution inside sandbox
-- [ ] `env:` resolution at step and job level
-- [ ] `if:` condition evaluation via expression engine
-- [ ] `continue-on-error:` handling
-- [ ] `working-directory:` support
-
-## 10. Job DAG + matrix
-
-- [ ] `Dag::build(jobs)` — resolve `needs:` into execution order
-- [ ] Sequential job execution
-- [ ] Parallel job execution where DAG allows
-- [ ] `outputs:` propagation between jobs
-- [ ] Basic matrix expansion — cartesian product of matrix values
-- [ ] `strategy.fail-fast` handling
-
-## 11. Action resolver (Javy)
-
-- [ ] Fetch action metadata from GitHub (tags, SHAs)
-- [ ] Download action source
-- [ ] Compile JS/TS → Wasm via Javy CLI
-- [ ] Cache compiled `.wasm` with content hash
-- [ ] `actions/checkout@v4` support
-- [ ] `actions/setup-node@v4` support
-- [ ] `actions/cache@v4` support
-
-## 12. Sync hooks
-
-- [ ] `post-checkout` hook — resync on branch switch
-- [ ] `post-merge` hook — resync after pull
-- [ ] `post-rewrite` hook — resync after rebase/amend
-- [ ] Atomic shim writes — write tmpfile → `rename()`
-- [ ] Manifest comment in shim — embedded desired state, no lock file
-- [ ] Named warning on workflow deletion
-
-## 13. Observability
-
-- [ ] Add `tracing`, `tracing-subscriber` dependencies
-- [ ] Structured step logs via `tracing`
-- [ ] Per-step timing
-- [ ] Sandbox violation events
-- [ ] Exit code propagation to git
-- [ ] `--format=gha` — GitHub Annotations output format
+The local July 29 stash contains inspection/planning, snapshots/evidence, a development command
+backend, and GitHub adapter work. The audit counted 29 test bodies but did not run them. These
+features stay unchecked above until recovered, reconciled, tested, and present in the working implementation.
+The original stash identity and recovery rules are recorded in [ARCHITECTURE.md](ARCHITECTURE.md).
