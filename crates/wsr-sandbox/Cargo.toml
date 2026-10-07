@@ -3,6 +3,7 @@ name        = "wsr-sandbox"
 description = "Tier 1 sandbox: Wasmtime + WASI Preview 3, one isolated instance per step"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

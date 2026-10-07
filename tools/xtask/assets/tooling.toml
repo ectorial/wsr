@@ -1,0 +1,17 @@
+# Stable release pins shared by workflow rendering and local tool installation.
+# Template maintainers refresh with: python3 scripts/update-tooling.py --latest
+[actions]
+checkout = "actions/checkout@v7.0.1"
+setup-rust = "moonrepo/setup-rust@v1.3.0"
+install = "taiki-e/install-action@v2.87.24"
+audit = "rustsec/audit-check@v2.0.0"
+
+[tools]
+cargo-generate = { version = "0.25.0", repository = "cargo-generate/cargo-generate" }
+cargo-nextest = { version = "0.9.146", repository = "nextest-rs/nextest" }
+cargo-llvm-cov = { version = "0.9.1", repository = "taiki-e/cargo-llvm-cov" }
+cargo-deny = { version = "0.20.2", repository = "EmbarkStudios/cargo-deny" }
+typos-cli = { version = "1.50.3", repository = "crate-ci/typos" }
+cargo-dist = { version = "0.30.3", repository = "axodotdev/cargo-dist" }
+cargo-release = { version = "1.1.6", repository = "crate-ci/cargo-release" }
+git-cliff = { version = "2.14.2", repository = "orhun/git-cliff" }

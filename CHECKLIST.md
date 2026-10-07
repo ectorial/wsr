@@ -6,7 +6,7 @@ for delivery gates.
 
 ## Present in the current checkout
 
-- [x] Sixteen-crate Cargo workspace and binary entry point.
+- [x] Sixteen-product-crate Cargo workspace and binary entry point, with private template-based xtask tooling.
 - [x] CLI argument definitions and command dispatch.
 - [x] Early serializable types, legacy provider trait, and errors.
 - [x] CI/release workflow definitions (their existence is not runtime feature coverage).

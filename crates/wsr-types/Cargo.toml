@@ -3,6 +3,7 @@ name        = "wsr-types"
 description = "Shared types, traits, and error definitions for wsr"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

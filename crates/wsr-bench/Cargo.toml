@@ -3,6 +3,7 @@ name        = "wsr-bench"
 description = "Benchmark suite for wsr: step startup time, expression evaluation, cache hit rates"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

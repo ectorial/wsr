@@ -3,7 +3,8 @@ name: "check-docs"
 on:
   workflow_call:
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   docs:
@@ -13,9 +14,13 @@ jobs:
     env:
       RUSTDOCFLAGS: "-D warnings"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
+      - name: "Install Rust toolchain"
+        uses: moonrepo/setup-rust@v1.3.0
+        with:
+          inherit-toolchain: true
       - uses: Swatinem/rust-cache@v2
       - name: "Docs"
-        run: cargo doc --no-deps --workspace
+        run: cargo doc --no-deps --workspace --locked

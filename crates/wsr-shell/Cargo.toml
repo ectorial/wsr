@@ -3,6 +3,7 @@ name        = "wsr-shell"
 description = "Shell step executor for run: directives (bash, sh, pwsh) within the wsr sandbox"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

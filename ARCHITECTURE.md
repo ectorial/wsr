@@ -8,7 +8,7 @@ The implementation checklist is [CHECKLIST.md](CHECKLIST.md).
 
 ## Current scaffold
 
-- [Cargo.toml](Cargo.toml) defines sixteen workspace crates.
+- [Cargo.toml](Cargo.toml) defines sixteen product crates plus private `tools/xtask` repository automation.
 - [wsr-cli](crates/wsr-cli/src/lib.rs) parses arguments.
 - [The binary](crates/wsr/src/bin/wsr.rs) passes parsed arguments to
   [command dispatch](crates/wsr/src/commands/mod.rs).

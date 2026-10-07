@@ -34,8 +34,9 @@ Common prefixes:
 ```bash
 git clone https://github.com/<your-fork>/wsr.git
 cd wsr
-cargo build
-cargo test
+cargo xtask check
+cargo xtask test
+cargo xtask build
 ```
 
 ## Preview the changelog before releasing
@@ -59,3 +60,12 @@ an execution feature complete because a type, flag, or documentation-only crate 
 affects the product story, update the relevant WSR guides and organization summaries together.
 Keep the organization's profile/template identical and verify active relative links. Preserve
 historical release notes and unpublished recovery material as history, not current support claims.
+
+## Repository tooling
+
+The private `tools/xtask` package is imported from rust-template. `cargo xtask ci` runs the
+local equivalents of format, locked all-feature lint, tests, and warnings-denied documentation.
+Optional tools are installed explicitly with `cargo xtask tools sync <group>` under `.xtask/tools`.
+Existing CI and documentation files are user-owned; merge updates rather than rerunning their
+scaffolds over them. See [the migration record](docs/TEMPLATE-MIGRATION.md) for provenance,
+release exceptions, and future update rules.

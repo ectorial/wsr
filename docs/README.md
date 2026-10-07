@@ -16,6 +16,7 @@ from accepted design; none is a workflow-execution tutorial.
 | [Engine](engine/README.md) | Planning, evaluation, job/step state, and results |
 | [Sandbox](sandbox/README.md) | Component/system execution and open backends |
 | [Sync](sync/README.md) | Integration boundaries and deferred hooks |
+| [Template migration](TEMPLATE-MIGRATION.md) | Development tooling provenance and update/recovery rules |
 | [Crates](../crates/README.md) | Existing workspace inventory |
 
 ## Keeping repositories consistent

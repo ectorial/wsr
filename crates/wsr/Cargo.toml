@@ -3,6 +3,7 @@ name        = "wsr"
 description = "A local, Wasm-sandboxed CI runner. Run your workflows on every git hook — before you push, not after."
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

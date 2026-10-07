@@ -3,6 +3,7 @@ name        = "wsr-cli"
 description = "Command-line interface types and argument definitions for wsr (clap v4)"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

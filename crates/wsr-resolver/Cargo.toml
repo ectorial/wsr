@@ -3,6 +3,7 @@ name        = "wsr-resolver"
 description = "Action reference resolver: maps uses: refs to Wasm components and assigns execution tier"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

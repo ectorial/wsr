@@ -38,10 +38,14 @@ There is no supported workflow-execution quick start yet. To inspect the scaffol
 
 ```sh
 cargo run -p wsr -- --help
+cargo xtask check
+cargo xtask test
+cargo xtask ci
 ```
 
-The workspace uses Rust edition 2024, which requires at least Rust 1.85. The exact dependency MSRV
-and future component-runtime toolchain policy have not been established. No installer or schema
+The workspace uses the [rust-template tooling snapshot](docs/TEMPLATE-MIGRATION.md), with sixteen
+product crates and private `tools/xtask` automation. Product crates declare Rust 1.85 as their minimum
+version and the development toolchain tracks stable. Future runtime/toolchain choices remain open. No installer or schema
 URL is advertised as a working onboarding path.
 
 ## Documentation
@@ -54,6 +58,7 @@ URL is advertised as a working onboarding path.
 | [CHECKLIST.md](CHECKLIST.md) | Evidence-based implementation accounting |
 | [Security model](docs/SECURITY-MODEL.md) | Planned security contract and its limits |
 | [Documentation index](docs/README.md) | Subsystem guides and documentation maintenance rules |
+| [Template migration](docs/TEMPLATE-MIGRATION.md) | Tooling provenance, local commands, and update/recovery rules |
 | [Crate inventory](crates/README.md) | Existing workspace contents, not a required future layout |
 
 The [organization repository](https://github.com/ectorial/.github) owns the profile and governance.

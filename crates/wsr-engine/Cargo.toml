@@ -3,6 +3,7 @@ name        = "wsr-engine"
 description = "Job DAG scheduler, step orchestrator, matrix expansion, and outputs propagation"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

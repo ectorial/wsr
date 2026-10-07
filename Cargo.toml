@@ -1,51 +1,26 @@
 [workspace]
-resolver = "2"
-members  = [
-    "crates/wsr",
-    "crates/wsr-bench",
-    "crates/wsr-cache",
-    "crates/wsr-cli",
-    "crates/wsr-client",
-    "crates/wsr-engine",
-    "crates/wsr-expr",
-    "crates/wsr-fs",
-    "crates/wsr-gha",
-    "crates/wsr-git",
-    "crates/wsr-resolver",
-    "crates/wsr-sandbox",
-    "crates/wsr-shell",
-    "crates/wsr-tracing",
-    "crates/wsr-types",
-    "crates/wsr-wasix",
-]
-
-[workspace.package]
-version     = "0.0.2"
-edition     = "2024"
-license     = "MIT"
-repository  = "https://github.com/ectorial/wsr"
-authors     = ["Carlos Eduardo Ferreyra <eduferreyraok@gmail.com>"]
-homepage    = "https://github.com/ectorial/wsr"
-keywords    = ["ci", "wasm", "git-hooks", "github-actions", "sandbox"]
-categories  = ["development-tools", "command-line-utilities"]
+members  = ["crates/*", "tools/xtask"]
+default-members = ["crates/*"]
+resolver = "3"
 
 [workspace.dependencies]
 # Internal crates
-wsr-bench    = { path = "crates/wsr-bench" }
-wsr-cache    = { path = "crates/wsr-cache" }
-wsr-cli      = { path = "crates/wsr-cli" }
-wsr-client   = { path = "crates/wsr-client" }
-wsr-engine   = { path = "crates/wsr-engine" }
-wsr-expr     = { path = "crates/wsr-expr" }
-wsr-fs       = { path = "crates/wsr-fs" }
-wsr-gha      = { path = "crates/wsr-gha" }
-wsr-git      = { path = "crates/wsr-git" }
-wsr-resolver = { path = "crates/wsr-resolver" }
-wsr-sandbox  = { path = "crates/wsr-sandbox" }
-wsr-shell    = { path = "crates/wsr-shell" }
-wsr-tracing  = { path = "crates/wsr-tracing" }
-wsr-types    = { path = "crates/wsr-types" }
-wsr-wasix    = { path = "crates/wsr-wasix" }
+wsr = { path = "crates/wsr", version = "0.0.2" }
+wsr-bench    = { path = "crates/wsr-bench", version = "0.0.2" }
+wsr-cache    = { path = "crates/wsr-cache", version = "0.0.2" }
+wsr-cli      = { path = "crates/wsr-cli", version = "0.0.2" }
+wsr-client   = { path = "crates/wsr-client", version = "0.0.2" }
+wsr-engine   = { path = "crates/wsr-engine", version = "0.0.2" }
+wsr-expr     = { path = "crates/wsr-expr", version = "0.0.2" }
+wsr-fs       = { path = "crates/wsr-fs", version = "0.0.2" }
+wsr-gha      = { path = "crates/wsr-gha", version = "0.0.2" }
+wsr-git      = { path = "crates/wsr-git", version = "0.0.2" }
+wsr-resolver = { path = "crates/wsr-resolver", version = "0.0.2" }
+wsr-sandbox  = { path = "crates/wsr-sandbox", version = "0.0.2" }
+wsr-shell    = { path = "crates/wsr-shell", version = "0.0.2" }
+wsr-tracing  = { path = "crates/wsr-tracing", version = "0.0.2" }
+wsr-types    = { path = "crates/wsr-types", version = "0.0.2" }
+wsr-wasix    = { path = "crates/wsr-wasix", version = "0.0.2" }
 
 # External crates
 anyhow             = "1"
@@ -56,6 +31,36 @@ serde_yaml         = "0.9"
 thiserror          = "2"
 tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[workspace.package]
+version      = "0.0.2"
+edition      = "2024"
+rust-version = "1.85"
+authors      = ["Carlos Eduardo Ferreyra <eduferreyraok@gmail.com>"]
+license      = "MIT"
+repository   = "https://github.com/ectorial/wsr"
+homepage     = "https://github.com/ectorial/wsr"
+description  = "A pre-alpha local CI runner scaffold"
+readme       = "README.md"
+keywords     = ["ci", "wasm", "git-hooks", "github-actions", "sandbox"]
+categories   = ["development-tools", "command-line-utilities"]
+
+[workspace.metadata.xtask]
+crate-prefix  = "wsr"
+primary-crate = "wsr"
+
+[workspace.lints.rust]
+unsafe_code     = "warn"
+unreachable_pub = "warn"
+missing_docs    = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -2 }
+missing_errors_doc      = "allow"
+missing_panics_doc      = "allow"
+module_name_repetitions = "allow"
+must_use_candidate      = "allow"
+too_many_lines          = "allow"
 
 # The profile that 'dist' will build with
 [profile.dist]

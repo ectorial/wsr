@@ -3,6 +3,7 @@ name        = "wsr-cache"
 description = "Content-addressed Wasm module cache keyed by SHA-256 digest"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

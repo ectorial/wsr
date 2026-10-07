@@ -3,6 +3,7 @@ name        = "wsr-git"
 description = "Git hook management, shim installation, and stateless hook reconciliation for wsr"
 version.workspace    = true
 edition.workspace    = true
+rust-version.workspace = true
 license.workspace    = true
 repository.workspace = true
 authors.workspace    = true

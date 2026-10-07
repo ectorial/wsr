@@ -30,3 +30,6 @@ The target design uses signed Component Model provider plugins through WIT, a pr
 execution core, job supervision, and component/system backends. Future crate boundaries follow
 validated ownership and dependencies. Do not add a crate/provider by following obsolete registry
 instructions or assuming that the current trait is the accepted plugin ABI.
+
+Repository automation lives outside this product inventory in private `tools/xtask`. It is not
+a runtime subsystem. See [the template migration record](../docs/TEMPLATE-MIGRATION.md).
