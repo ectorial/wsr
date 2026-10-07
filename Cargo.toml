@@ -5,22 +5,22 @@ resolver = "3"
 
 [workspace.dependencies]
 # Internal crates
-wsr = { path = "crates/wsr", version = "0.0.2" }
-wsr-bench    = { path = "crates/wsr-bench", version = "0.0.2" }
-wsr-cache    = { path = "crates/wsr-cache", version = "0.0.2" }
-wsr-cli      = { path = "crates/wsr-cli", version = "0.0.2" }
-wsr-client   = { path = "crates/wsr-client", version = "0.0.2" }
-wsr-engine   = { path = "crates/wsr-engine", version = "0.0.2" }
-wsr-expr     = { path = "crates/wsr-expr", version = "0.0.2" }
-wsr-fs       = { path = "crates/wsr-fs", version = "0.0.2" }
-wsr-gha      = { path = "crates/wsr-gha", version = "0.0.2" }
-wsr-git      = { path = "crates/wsr-git", version = "0.0.2" }
-wsr-resolver = { path = "crates/wsr-resolver", version = "0.0.2" }
-wsr-sandbox  = { path = "crates/wsr-sandbox", version = "0.0.2" }
-wsr-shell    = { path = "crates/wsr-shell", version = "0.0.2" }
-wsr-tracing  = { path = "crates/wsr-tracing", version = "0.0.2" }
-wsr-types    = { path = "crates/wsr-types", version = "0.0.2" }
-wsr-wasix    = { path = "crates/wsr-wasix", version = "0.0.2" }
+wsr = { path = "crates/wsr", version = "0.0.3" }
+wsr-bench    = { path = "crates/wsr-bench", version = "0.0.3" }
+wsr-cache    = { path = "crates/wsr-cache", version = "0.0.3" }
+wsr-cli      = { path = "crates/wsr-cli", version = "0.0.3" }
+wsr-client   = { path = "crates/wsr-client", version = "0.0.3" }
+wsr-engine   = { path = "crates/wsr-engine", version = "0.0.3" }
+wsr-expr     = { path = "crates/wsr-expr", version = "0.0.3" }
+wsr-fs       = { path = "crates/wsr-fs", version = "0.0.3" }
+wsr-gha      = { path = "crates/wsr-gha", version = "0.0.3" }
+wsr-git      = { path = "crates/wsr-git", version = "0.0.3" }
+wsr-resolver = { path = "crates/wsr-resolver", version = "0.0.3" }
+wsr-sandbox  = { path = "crates/wsr-sandbox", version = "0.0.3" }
+wsr-shell    = { path = "crates/wsr-shell", version = "0.0.3" }
+wsr-tracing  = { path = "crates/wsr-tracing", version = "0.0.3" }
+wsr-types    = { path = "crates/wsr-types", version = "0.0.3" }
+wsr-wasix    = { path = "crates/wsr-wasix", version = "0.0.3" }
 
 # External crates
 anyhow             = "1"
@@ -33,7 +33,7 @@ tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [workspace.package]
-version      = "0.0.2"
+version      = "0.0.3"
 edition      = "2024"
 rust-version = "1.85"
 authors      = ["Carlos Eduardo Ferreyra <eduferreyraok@gmail.com>"]

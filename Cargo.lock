@@ -548,7 +548,7 @@ dependencies = [
 
 [[package]]
 name = "wsr"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -561,7 +561,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-bench"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "wsr-engine",
  "wsr-types",
@@ -569,7 +569,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-cache"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-fs",
@@ -578,7 +578,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-cli"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-client"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-types",
@@ -596,7 +596,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-engine"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-expr",
@@ -609,7 +609,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-expr"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-types",
@@ -617,7 +617,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-fs"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-types",
@@ -625,7 +625,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-gha"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "serde",
@@ -636,7 +636,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-git"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-fs",
@@ -645,7 +645,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-resolver"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-cache",
@@ -656,7 +656,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-sandbox"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-cache",
@@ -665,7 +665,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-shell"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-types",
@@ -673,7 +673,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-tracing"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "tracing",
  "tracing-subscriber",
@@ -681,7 +681,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-types"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "serde",
@@ -691,7 +691,7 @@ dependencies = [
 
 [[package]]
 name = "wsr-wasix"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "wsr-cache",
@@ -700,7 +700,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "cargo_metadata",
  "clap",
