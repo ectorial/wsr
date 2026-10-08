@@ -9,6 +9,10 @@ pub mod list;
 pub mod run;
 pub mod status;
 
+fn not_implemented(command: &str) -> anyhow::Result<()> {
+    anyhow::bail!("wsr {command}: not implemented yet")
+}
+
 pub fn run(cli: Cli) -> anyhow::Result<()> {
     match cli.command {
         Cmd::Init => init::run(),

@@ -15,10 +15,12 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
+      - name: "Update Rustup"
+        run: rustup self update
       - name: "Install Rust toolchain"
         uses: moonrepo/setup-rust@v1.3.0
         with:
           inherit-toolchain: true
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.2
       - name: "Test"
         run: cargo xtask test

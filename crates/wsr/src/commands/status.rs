@@ -1,3 +1,3 @@
 pub fn run() -> anyhow::Result<()> {
-    anyhow::bail!("wsr status — not yet implemented")
+    super::not_implemented("status")
 }

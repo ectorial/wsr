@@ -1,3 +1,3 @@
 pub fn run() -> anyhow::Result<()> {
-    anyhow::bail!("wsr init — not yet implemented")
+    super::not_implemented("init")
 }

@@ -30,7 +30,7 @@ pub(crate) enum Command {
     },
     /// Report the availability of optional development tools.
     Doctor,
-    /// Manage pinned, project-local development tools.
+    /// Sync latest stable tools locally and update Rust's stable toolchain.
     Tools {
         #[command(subcommand)]
         command: ToolsCommand,
@@ -144,6 +144,12 @@ pub(crate) enum ReleaseCommand {
         #[arg(value_enum, default_value_t)]
         level: ReleaseLevel,
         /// Apply changes. The default is cargo-release's dry run.
+        #[arg(long)]
+        execute: bool,
+    },
+    /// Publish unpublished workspace versions in dependency order without pushing.
+    Publish {
+        /// Upload packages. The default is cargo-release's dry run.
         #[arg(long)]
         execute: bool,
     },

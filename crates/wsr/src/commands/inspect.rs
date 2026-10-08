@@ -1,4 +1,5 @@
-pub fn run(file: &str) -> anyhow::Result<()> {
-    let _ = file;
-    anyhow::bail!("wsr inspect — not yet implemented")
+use std::path::Path;
+
+pub fn run(_file: &Path) -> anyhow::Result<()> {
+    super::not_implemented("inspect")
 }

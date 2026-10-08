@@ -1,5 +1,6 @@
 [package]
 name        = "wsr-bench"
+publish     = false
 description = "Benchmark suite for wsr: step startup time, expression evaluation, cache hit rates"
 version.workspace    = true
 edition.workspace    = true

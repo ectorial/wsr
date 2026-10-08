@@ -1,6 +1,6 @@
 [package]
 name        = "wsr"
-description = "A local, Wasm-sandboxed CI runner. Run your workflows on every git hook — before you push, not after."
+description = "A pre-alpha local CI CLI scaffold; workflow execution is not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true
@@ -19,7 +19,6 @@ path = "src/bin/wsr.rs"
 anyhow.workspace      = true
 clap.workspace        = true
 wsr-cli.workspace     = true
-wsr-engine.workspace  = true
-wsr-git.workspace     = true
-wsr-tracing.workspace = true
-wsr-types.workspace   = true
+
+[dev-dependencies]
+tempfile.workspace = true

@@ -1,6 +1,6 @@
 [package]
 name    = "xtask"
-version = "0.0.1"
+version.workspace = true
 edition = "2024"
 license = "MIT"
 publish = false
@@ -13,6 +13,6 @@ name = "xtask"
 path = "src/main.rs"
 
 [dependencies]
-cargo_metadata = "0.19"
-clap           = { version = "4", features = ["derive"] }
-toml_edit      = "0.22"
+cargo_metadata.workspace = true
+clap.workspace = true
+toml_edit.workspace = true

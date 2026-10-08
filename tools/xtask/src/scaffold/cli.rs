@@ -26,11 +26,6 @@ pub(crate) fn add(workspace: &Workspace, entrypoint: CliEntrypoint, dry_run: boo
         )?;
     }
     workspace.align_workspace_dependency_version(&mut workspace_manifest, primary)?;
-    Workspace::add_workspace_external_dependency(
-        &mut workspace_manifest,
-        "clap",
-        version_with_features("4", &["derive"]),
-    )?;
 
     let mut plan = Plan::new(workspace);
     plan.replace("Cargo.toml", workspace_manifest.to_string());
@@ -159,15 +154,6 @@ fn values_match(left: &Value, right: &Value) -> bool {
 fn workspace_reference() -> InlineTable {
     let mut dependency = InlineTable::new();
     dependency.insert("workspace", Value::from(true));
-    dependency
-}
-
-fn version_with_features(version: &str, features: &[&str]) -> InlineTable {
-    let mut dependency = InlineTable::new();
-    dependency.insert("version", Value::from(version));
-    let mut values = toml_edit::Array::new();
-    values.extend(features.iter().copied());
-    dependency.insert("features", Value::Array(values));
     dependency
 }
 

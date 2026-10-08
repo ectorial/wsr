@@ -1,7 +1,5 @@
-use clap::Parser;
-use wsr_cli::Cli;
+use std::process::ExitCode;
 
-fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
-    wsr::commands::run(cli)
+fn main() -> ExitCode {
+    wsr::main(std::env::args_os())
 }

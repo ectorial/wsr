@@ -6,8 +6,9 @@ planned deny-by-default security model; existing tools use a separately isolated
 
 ## Current status
 
-The checked-out implementation is a Rust workspace and CLI scaffold. Argument parsing and
-shared types exist, but all eight command handlers return “not yet implemented.” This checkout
+The checked-out implementation is a Rust workspace and CLI scaffold. Typed argument parsing,
+help/version, shared types, and CLI contract tests exist. All eleven operational command paths
+report “not implemented yet” on stderr and exit with code 1. This checkout
 does not parse or execute workflows, enforce permissions, install hooks, or run components.
 
 Substantial unpublished prototype code is preserved in a local July 29 stash. It includes

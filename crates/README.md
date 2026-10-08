@@ -6,10 +6,10 @@ do not establish working subsystems. See [architecture](../ARCHITECTURE.md) and 
 
 | Crate | Current contents |
 | --- | --- |
-| [wsr](wsr/src/lib.rs) | CLI binary/library and eight stub command handlers |
+| [wsr](wsr/src/lib.rs) | Thin executable, process entrypoint, eight stub handler modules, and executable contract tests |
 | [wsr-bench](wsr-bench/src/lib.rs) | benchmark placeholder; no measured results |
 | [wsr-cache](wsr-cache/src/lib.rs) | content-store placeholder |
-| [wsr-cli](wsr-cli/src/lib.rs) | clap argument definitions |
+| [wsr-cli](wsr-cli/src/lib.rs) | Typed clap argument definitions and parser contract tests |
 | [wsr-client](wsr-client/src/lib.rs) | artifact-fetching placeholder |
 | [wsr-engine](wsr-engine/src/lib.rs) | planning and execution engine placeholder |
 | [wsr-expr](wsr-expr/src/lib.rs) | expression evaluator placeholder |
@@ -23,7 +23,9 @@ do not establish working subsystems. See [architecture](../ARCHITECTURE.md) and 
 | [wsr-types](wsr-types/src/lib.rs) | early serializable types, legacy provider trait, and errors |
 | [wsr-wasix](wsr-wasix/src/lib.rs) | legacy compatibility-backend placeholder; WASIX is not selected |
 
-The binary delegates argument parsing to `wsr-cli` and dispatches to eight unimplemented handlers.
+The binary forwards OS-string arguments to `wsr::main`, which parses the `wsr-cli` schema and
+dispatches to eight unimplemented handler modules covering eleven operational leaf paths.
+Each leaf writes `error: wsr <command>: not implemented yet` to stderr and exits with code 1.
 `wsr-types` exposes early/legacy models, not a complete stable workflow or plugin contract.
 
 The target design uses signed Component Model provider plugins through WIT, a provider-neutral

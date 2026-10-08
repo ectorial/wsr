@@ -113,14 +113,6 @@ impl Workspace {
         )
     }
 
-    pub(crate) fn add_workspace_external_dependency(
-        document: &mut DocumentMut,
-        name: &str,
-        dependency: InlineTable,
-    ) -> Result {
-        insert_inline_dependency(&mut document["workspace"]["dependencies"], name, dependency)
-    }
-
     pub(crate) fn align_workspace_dependency_version(
         &self,
         document: &mut DocumentMut,

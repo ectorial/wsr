@@ -45,6 +45,21 @@ pub(crate) fn run(workspace: &Workspace, command: ReleaseCommand) -> Result {
             }
             tools::execute(workspace, Tool::Release, args)
         }
+        ReleaseCommand::Publish { execute } => {
+            tools::ensure(workspace, Tool::Release)?;
+            let mut args = vec![
+                "publish",
+                "--workspace",
+                "--exclude",
+                "xtask",
+                "--exclude",
+                "wsr-bench",
+            ];
+            if execute {
+                args.push("--execute");
+            }
+            tools::execute(workspace, Tool::Release, args)
+        }
         ReleaseCommand::Changelog { tag } => {
             if std::env::var("DRY_RUN").as_deref() == Ok("true") {
                 println!("changelog generation skipped during cargo-release dry run");

@@ -23,5 +23,5 @@ jobs:
           inherit-toolchain: true
       - uses: @install@
         with:
-          tool: cargo-deny@@cargo-deny@,typos-cli@@typos-cli@
+          tool: cargo-deny,typos-cli
       - run: cargo xtask ci --full

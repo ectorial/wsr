@@ -66,6 +66,35 @@ historical release notes and unpublished recovery material as history, not curre
 The private `tools/xtask` package is imported from rust-template. `cargo xtask ci` runs the
 local equivalents of format, locked all-feature lint, tests, and warnings-denied documentation.
 Optional tools are installed explicitly with `cargo xtask tools sync <group>` under `.xtask/tools`.
+Each sync updates stable Rust, adds rustfmt/Clippy, and uses `cargo +stable install --locked` to
+resolve current stable tool releases from crates.io. Working local tools take priority over
+working tools on `PATH`; their versions are not enforced between syncs. Cargo-dist installs from
+the upstream Git tag matching `dist-workspace.toml`, keeping release generation compatible.
+Sync does not rewrite dependency requirements or the product MSRV. Refresh Rustup itself with
+`rustup self update`.
 Existing CI and documentation files are user-owned; merge updates rather than rerunning their
 scaffolds over them. See [the migration record](docs/TEMPLATE-MIGRATION.md) for provenance,
 release exceptions, and future update rules.
+
+## Publish a workspace release
+
+Run `cargo xtask ci` before preparing a release from a clean checkout:
+
+```sh
+cargo xtask release prepare patch --execute
+cargo xtask release publish
+cargo xtask release publish --execute
+git push origin main --follow-tags
+```
+
+Preparation synchronizes product versions, generates changelogs, and creates a local commit
+and package tags. It does not publish or push. `publish` defaults to a registry dry run;
+`--execute` uploads unpublished versions in dependency order, with cargo-release's confirmation
+prompt. The private `xtask` and `wsr-bench` packages are not uploaded.
+
+If crates.io rejects an upload, the command exits with the registry error and retry time.
+After that time, rerun `cargo xtask release publish --execute`: already-published versions
+are skipped. Do not rerun `prepare` to resume an upload, since it would bump versions again.
+When every selected version is already published, cargo-release reports `no packages selected`
+and exits nonzero; after checking the preceding skipped-version messages, no upload remains.
+The publisher does not push commits or tags; run the explicit Git command after publication.

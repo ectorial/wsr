@@ -9,10 +9,14 @@ The implementation checklist is [CHECKLIST.md](CHECKLIST.md).
 ## Current scaffold
 
 - [Cargo.toml](Cargo.toml) defines sixteen product crates plus private `tools/xtask` repository automation.
-- [wsr-cli](crates/wsr-cli/src/lib.rs) parses arguments.
-- [The binary](crates/wsr/src/bin/wsr.rs) passes parsed arguments to
-  [command dispatch](crates/wsr/src/commands/mod.rs).
-- All eight command handlers immediately report “not yet implemented.”
+- [wsr-cli](crates/wsr-cli/src/lib.rs) defines typed arguments and help.
+- [The binary](crates/wsr/src/bin/wsr.rs) forwards OS-string arguments to
+  [the application entrypoint](crates/wsr/src/lib.rs), which owns parsing, diagnostics,
+  exit codes, and [command dispatch](crates/wsr/src/commands/mod.rs).
+- Eight handler modules cover eleven operational leaf paths. Each immediately reports
+  `error: wsr <command>: not implemented yet` on stderr and exits with code 1.
+- Parser/executable contract tests cover help/version, arguments, placeholders, and unchanged
+  repository sentinels. They do not establish workflow execution or isolation.
 - [wsr-types](crates/wsr-types/src/lib.rs) contains early serializable types, a provider trait,
   and errors. These do not establish a complete workflow compatibility model or stable protocol.
 - The remaining thirteen library entry files contain documentation only. There is no component
