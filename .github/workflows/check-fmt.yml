@@ -22,4 +22,4 @@ jobs:
         with:
           inherit-toolchain: true
       - name: "Format"
-        run: cargo fmt --all --check
+        run: cargo xtask ci --job format

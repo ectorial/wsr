@@ -101,7 +101,7 @@ where
 {
     let program = resolve_optional(workspace, tool).ok_or_else(|| {
         format!(
-            "{} is missing; run `cargo xtask tools sync {}`",
+            "{} is missing or incompatible; run `cargo xtask tools sync {}`",
             tool.package(),
             group_for(tool)
         )
@@ -122,7 +122,7 @@ pub(crate) fn ensure(workspace: &Workspace, tool: Tool) -> Result {
     resolve_optional(workspace, tool).map_or_else(
         || {
             Err(format!(
-                "{} is missing; run `cargo xtask tools sync {}`",
+                "{} is missing or incompatible; run `cargo xtask tools sync {}`",
                 tool.package(),
                 group_for(tool)
             ))
@@ -171,15 +171,12 @@ fn sync(workspace: &Workspace, group: ToolGroup) -> Result {
             OsString::from("--locked"),
         ];
         // WSR's generated release workflow requires its configured dist version.
-        let dist_config = workspace.path("dist-workspace.toml");
-        if matches!(tool, Tool::Dist) && dist_config.is_file() {
-            let config = std::fs::read_to_string(&dist_config)
-                .map_err(|error| format!("failed to read dist configuration: {error}"))?
-                .parse::<toml_edit::DocumentMut>()
-                .map_err(|error| format!("invalid dist configuration: {error}"))?;
-            let version = config["dist"]["cargo-dist-version"]
-                .as_str()
-                .ok_or("dist.cargo-dist-version must be set")?;
+        let version = if matches!(tool, Tool::Dist) {
+            dist_version(workspace)?
+        } else {
+            None
+        };
+        if let Some(version) = version {
             args.extend([
                 OsString::from("--git"),
                 OsString::from("https://github.com/axodotdev/cargo-dist"),
@@ -195,12 +192,46 @@ fn sync(workspace: &Workspace, group: ToolGroup) -> Result {
 }
 
 fn resolve_optional(workspace: &Workspace, tool: Tool) -> Option<PathBuf> {
+    let version = if matches!(tool, Tool::Dist) {
+        dist_version(workspace).ok()?
+    } else {
+        None
+    };
+    let available = |program: &std::ffi::OsStr| {
+        version.as_ref().map_or_else(
+            || process::available(program, tool.prefix()),
+            |version| process::available_version(program, tool.prefix(), version),
+        )
+    };
     let local = local_bin(workspace).join(executable_name(tool.executable()));
-    if local.is_file() && process::available(local.as_os_str(), tool.prefix()) {
+    if local.is_file() && available(local.as_os_str()) {
         return Some(local);
     }
-    let global = PathBuf::from(tool.executable());
-    process::available(global.as_os_str(), tool.prefix()).then_some(global)
+    let current = std::env::current_dir().ok()?;
+    std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
+        .map(|directory| {
+            current
+                .join(directory)
+                .join(executable_name(tool.executable()))
+        })
+        .find(|path| path.is_file() && available(path.as_os_str()))
+}
+
+fn dist_version(workspace: &Workspace) -> Result<Option<String>> {
+    let path = workspace.path("dist-workspace.toml");
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let config = std::fs::read_to_string(path)
+        .map_err(|error| format!("failed to read dist configuration: {error}"))?
+        .parse::<toml_edit::DocumentMut>()
+        .map_err(|error| format!("invalid dist configuration: {error}"))?;
+    config
+        .get("dist")
+        .and_then(|dist| dist.get("cargo-dist-version"))
+        .and_then(toml_edit::Item::as_str)
+        .map(|version| Some(version.to_owned()))
+        .ok_or_else(|| "dist.cargo-dist-version must be set".to_owned())
 }
 
 fn tools(group: ToolGroup) -> &'static [Tool] {

@@ -36,7 +36,7 @@ and runs its operations from the workspace root. It is a development helper, not
 - Private xtask also inherits the workspace version. Its Cargo metadata, Clap, and TOML editing
   dependencies inherit concrete requirements from `[workspace.dependencies]`.
 - The development toolchain tracks stable with rustfmt and Clippy. Product MSRV is declared in
-  the root manifest; currently Rust 1.85 with edition 2024.
+  the root manifest; currently Rust 1.85 with edition 2024. Private xtask requires Rust 1.86.
 - Default Cargo members are `crates/*`; xtask's explicit `--workspace` checks also include
   private `tools/xtask`. `wsr-bench` is also private and remains in workspace checks.
 - Publishable internal dependencies need both workspace paths and registry version requirements.
@@ -57,8 +57,9 @@ Use `cargo xtask --help`, `cargo xtask help <command>`, or a command's `--help` 
 | `cargo xtask build` | Runs the unfiltered standard `test` sequence, then `cargo build --workspace --release --locked`. |
 | `cargo xtask ci` | Runs the unfiltered standard `test` sequence, then `cargo doc --workspace --no-deps --locked`. Appends `-D warnings` to existing `RUSTDOCFLAGS`. |
 | `cargo xtask ci --full` | Runs `ci`, then available `cargo deny check` and `typos .`. Rustdoc already runs in ordinary `ci`. |
+| `cargo xtask ci --job format\|lint\|docs\|test` | Runs only that hosted CI job: formatting; locked all-target/all-feature compilation and Clippy; strict locked docs; or locked tests. Cannot combine with `--full`. |
 | `cargo xtask coverage` | Delegates to available `cargo llvm-cov --workspace --html`. It does not first run `check`, and the wrapper does not add `--locked`. |
-| `cargo xtask doctor` | Reports built-in rustfmt/Clippy availability and optional tool availability/locations. It checks whether executables work, without enforcing exact tool versions. It does not install tools or fail merely because an optional tool is missing. |
+| `cargo xtask doctor` | Reports built-in rustfmt/Clippy availability and optional tool availability/locations. It accepts working executables, except dist must match `dist-workspace.toml`. It does not install tools or fail merely because an optional tool is missing. |
 | `cargo xtask tools sync [GROUP]` | Updates stable Rust, adds its rustfmt/Clippy components, and installs current stable crates.io releases under `.xtask/tools`; WSR's configured cargo-dist version is the exception. The default group is `all`. |
 | `cargo xtask scaffold <COMMAND> [OPTIONS]` | Plans and, unless `--dry-run` is supplied, writes the requested scaffold after validation. See below. |
 | `cargo xtask release <COMMAND> [OPTIONS]` | Runs the selected release operation. See below; preparation, publishing, and Git pushing are distinct steps. |
@@ -92,8 +93,9 @@ installation guidance when they are missing. They do not install tools automatic
 Install only the group needed for the task. Each sync updates shared stable Rust and uses
 `cargo +stable install --locked` to select current stable crates.io releases. `--locked` retains
 each tool release's dependency lockfile; it does not pin the tool version. Existing working
-versions remain accepted between syncs. Sync does not change workspace dependency requirements
-or the product MSRV. Cargo-dist uses the upstream Git tag matching `dist.cargo-dist-version` in
+versions remain accepted between syncs, except cargo-dist must match the distribution configuration.
+Sync does not change workspace dependency requirements or the product MSRV. Cargo-dist uses the
+upstream Git tag matching `dist.cargo-dist-version` in
 [dist-workspace.toml](dist-workspace.toml), preserving local/generated release compatibility.
 Without that file, cargo-dist also resolves through crates.io. `.xtask/tools` is ignored
 development state. cargo-generate is a separate generation tool, not installed by any group.
@@ -147,11 +149,9 @@ user's authorized scope. Keep private development packages private and preserve 
 | `cargo xtask release publish --execute` | Uploads the selected unpublished versions after cargo-release's confirmation. Neither bumps versions nor pushes Git refs. |
 | `cargo xtask release changelog --tag TAG` | Hidden hook helper: generates root `CHANGELOG.md` with git-cliff; skips generation when `DRY_RUN=true`. It does not stage the file. |
 
-Preparation defaults to cargo-release's dry-run, but **the current root `release.toml` hook runs
-`git cliff` and `git add` without checking `DRY_RUN`**. It does not use the guarded hidden helper.
-Consequently a preparation dry-run can create and stage package changelogs. Use a clean isolated
-checkout for previewing it, inspect status afterward, and clean up only artifacts you created.
-Do not claim that preparation previews leave the working tree untouched.
+Preparation defaults to cargo-release's dry-run. The root `release.toml` hook runs changelog
+generation and staging only when `DRY_RUN=false`; previews preserve both file contents and the
+index. Use a clean isolated checkout for previewing preparation and inspect status afterward.
 
 For an authorized release from a clean checkout:
 
@@ -160,8 +160,14 @@ cargo xtask ci
 cargo xtask release prepare patch --execute
 cargo xtask release publish
 cargo xtask release publish --execute
-git push origin main --follow-tags
+git push origin main
+# Replace VERSION with the prepared product version; push the binary tag separately.
+git push origin wsr-vVERSION
 ```
+
+Push other intended package tags individually after reviewing them. GitHub suppresses tag push
+events for batches larger than three tags, so do not rely on `--follow-tags` to trigger binary
+distribution. Existing tags must not be deleted/recreated to retrigger CI.
 
 Inspect the generated commit and tags before uploading. The wrapper has no `--no-confirm` option;
 execute mode retains cargo-release's interactive prompt. No release subcommand wraps Git pushing.

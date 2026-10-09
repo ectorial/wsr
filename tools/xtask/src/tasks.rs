@@ -1,11 +1,19 @@
 use crate::Result;
-use crate::cli::TestArgs;
+use crate::cli::{CiArgs, CiJob, TestArgs};
 use crate::process;
 use crate::tools::{self, Tool};
 use crate::workspace::Workspace;
 
 pub(crate) fn check(workspace: &Workspace) -> Result {
-    cargo(workspace, ["fmt", "--all", "--check"])?;
+    format(workspace)?;
+    lint(workspace)
+}
+
+fn format(workspace: &Workspace) -> Result {
+    cargo(workspace, ["fmt", "--all", "--check"])
+}
+
+fn lint(workspace: &Workspace) -> Result {
     cargo(
         workspace,
         [
@@ -33,6 +41,10 @@ pub(crate) fn check(workspace: &Workspace) -> Result {
 
 pub(crate) fn test(workspace: &Workspace, args: &TestArgs) -> Result {
     check(workspace)?;
+    tests(workspace, args)
+}
+
+fn tests(workspace: &Workspace, args: &TestArgs) -> Result {
     if args.nextest {
         let mut nextest = vec!["run", "--workspace", "--locked"];
         if let Some(filter) = &args.filter {
@@ -60,7 +72,21 @@ pub(crate) fn build(workspace: &Workspace) -> Result {
     cargo(workspace, ["build", "--workspace", "--release", "--locked"])
 }
 
-pub(crate) fn ci(workspace: &Workspace, full: bool) -> Result {
+pub(crate) fn ci(workspace: &Workspace, args: &CiArgs) -> Result {
+    if let Some(job) = args.job {
+        return match job {
+            CiJob::Format => format(workspace),
+            CiJob::Lint => lint(workspace),
+            CiJob::Docs => process::rustdoc(workspace.root()),
+            CiJob::Test => tests(
+                workspace,
+                &TestArgs {
+                    filter: None,
+                    nextest: false,
+                },
+            ),
+        };
+    }
     test(
         workspace,
         &TestArgs {
@@ -69,7 +95,7 @@ pub(crate) fn ci(workspace: &Workspace, full: bool) -> Result {
         },
     )?;
     process::rustdoc(workspace.root())?;
-    if full {
+    if args.full {
         tools::execute(workspace, Tool::Deny, ["check"])?;
         tools::execute(workspace, Tool::Typos, ["."])?;
     }

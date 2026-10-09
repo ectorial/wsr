@@ -23,4 +23,4 @@ jobs:
           inherit-toolchain: true
       - uses: Swatinem/rust-cache@v2.9.2
       - name: "Clippy"
-        run: cargo xtask check
+        run: cargo xtask ci --job lint

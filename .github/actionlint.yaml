@@ -1,0 +1,9 @@
+# cargo-dist 0.33.0 owns release.yml; retain byte-for-byte regeneration checks.
+# Review these five upstream findings when changing the generator version.
+# SC2086: GITHUB_PATH, RUNNER_TEMP and the optional PRERELEASE_FLAG.
+# SC2129: repeated GitHub output redirects (style only).
+paths:
+  .github/workflows/release.yml:
+    ignore:
+      - '^shellcheck reported issue in this script: SC2086:info:(3:30|2:29|4:78): Double quote to prevent globbing and word splitting$'
+      - '^shellcheck reported issue in this script: SC2129:style:(2:1|5:1): Consider using \{ cmd1; cmd2; \} >> file instead of individual redirects$'

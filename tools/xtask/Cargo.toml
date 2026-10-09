@@ -2,6 +2,7 @@
 name    = "xtask"
 version.workspace = true
 edition = "2024"
+rust-version = "1.86"
 license = "MIT"
 publish = false
 

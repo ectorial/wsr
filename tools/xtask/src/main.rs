@@ -21,7 +21,7 @@ fn run(cli: Cli) -> Result {
         Command::Check => tasks::check(&workspace),
         Command::Test(args) => tasks::test(&workspace, &args),
         Command::Build => tasks::build(&workspace),
-        Command::Ci(args) => tasks::ci(&workspace, args.full),
+        Command::Ci(args) => tasks::ci(&workspace, &args),
         Command::Coverage => tasks::coverage(&workspace),
         Command::Scaffold { command, dry_run } => scaffold::run(&workspace, command, dry_run),
         Command::Doctor => {

@@ -53,9 +53,20 @@ pub(crate) struct TestArgs {
 
 #[derive(Debug, Args)]
 pub(crate) struct CiArgs {
-    /// Also run documentation, dependency-policy, and typo checks.
+    /// Also run dependency-policy and typo checks.
     #[arg(long)]
     pub(crate) full: bool,
+    /// Run one CI job without repeating the other checks.
+    #[arg(long, value_enum, conflicts_with = "full")]
+    pub(crate) job: Option<CiJob>,
+}
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub(crate) enum CiJob {
+    Format,
+    Lint,
+    Docs,
+    Test,
 }
 
 #[derive(Debug, Subcommand)]

@@ -25,4 +25,4 @@ jobs:
           inherit-toolchain: true
       - uses: Swatinem/rust-cache@v2.9.2
       - name: "Docs"
-        run: cargo doc --no-deps --workspace --locked
+        run: cargo xtask ci --job docs

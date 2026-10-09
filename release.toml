@@ -1,3 +1,3 @@
-pre-release-hook = ["sh", "-c", "git cliff --tag {{version}} --output CHANGELOG.md && git add CHANGELOG.md"]
+pre-release-hook = ["sh", "-c", "if [ \"$DRY_RUN\" = false ]; then git cliff --tag {{version}} --output CHANGELOG.md && git add CHANGELOG.md; fi"]
 pre-release-commit-message = "chore(release): prepare for v{{version}}"
 tag-message = "chore(release): v{{version}}"

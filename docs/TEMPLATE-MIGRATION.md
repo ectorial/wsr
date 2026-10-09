@@ -85,7 +85,19 @@ stash list was identical. Hosted CI has not run for the synchronization edits.
 The existing CI entrypoint, reusable workflows, check names, manual dispatch, credential handling,
 and release workflow are retained. Lint/tests invoke xtask. Checkout and Rust setup use the imported
 registry references. Local and hosted checks preserve locked dependencies, all-feature linting,
-and warnings-denied documentation. No scheduled audit or automatic dependency updater is added.
+and warnings-denied documentation. No scheduled audit was added during the initial migration.
+
+The October 9 follow-up adds weekly Cargo/GitHub Actions Dependabot updates and individual
+`cargo xtask ci --job format|lint|docs|test` operations. Hosted jobs reuse these operations without
+repeating formatting or linting; aggregate local commands keep their existing checks. Private
+xtask explicitly requires Rust 1.86 while product crates retain Rust 1.85. Dist discovery now rejects
+executables that differ from the configured 0.33.0 version, retaining the Git-tag installer.
+The release changelog hook skips both generation and staging during dry runs. The release guide
+pushes the distribution tag separately instead of batching workspace tags with `--follow-tags`.
+The generated release workflow remains unchanged; actionlint records five narrow cargo-dist 0.33.0
+ShellCheck exceptions, to be reviewed on generator upgrades. `scripts/test-tooling.py` exercises
+CI job isolation, configured dist selection/installation, and dry-run/execute hook behavior in
+temporary fixtures without installs or uploads.
 
 Optional tools are installed only on request:
 
