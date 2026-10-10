@@ -40,6 +40,12 @@ execution, isolation, or GitHub Actions compatibility.
 ## Accepted design and open interface
 
 Local inspection, execution, and debugging come first; GitHub Actions engine reuse follows.
+Planned `wsr init` creates root `wsr.toml` for parameters, providers, and invocation defaults,
+with GitHub Actions as the primary provider and local execution as the default path. Normal
+commands use repository defaults; explicit provider/target options in the CLI proposal override
+them. Multiple providers remain supported. See [configuration](../config/README.md) and D-023
+in [PLAN.md](../../PLAN.md). These settings and proposed flags are not implemented by the skeleton.
+
 Final command structure, selection, event binding, and output formats are not settled.
 A planning-only path must not execute repository commands. Effective permissions and unsupported
 requirements must be visible before execution.

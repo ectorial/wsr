@@ -11,7 +11,7 @@ from accepted design; none is a workflow-execution tutorial.
 | [Checklist](../CHECKLIST.md) | Implementation status |
 | [Security model](SECURITY-MODEL.md) | Planned grants, containment, and compatibility exception |
 | [CLI](cli/README.md) | Defined arguments versus implemented commands |
-| [Configuration](config/README.md) | Unsettled configuration and policy ownership |
+| [Configuration](config/README.md) | Planned root `wsr.toml`, provider/default resolution, and policy ownership |
 | [Providers](provider/README.md) | Compilation/plugin boundary and compatibility |
 | [Engine](engine/README.md) | Planning, evaluation, job/step state, and results |
 | [Sandbox](sandbox/README.md) | Component/system execution and open backends |

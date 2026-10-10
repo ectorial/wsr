@@ -123,8 +123,10 @@ separate stable plugin protocol.
 
 ### D-008 — Provider discovery and first-use plugin installation
 
-**Decision:** the stock `wsr` binary discovers provider configuration in a repository. During
-repository setup, it resolves and installs the corresponding official precompiled provider plugin
+**Decision:** the stock `wsr` binary reads repository configuration from root `wsr.toml` and
+discovers provider workflow files. `wsr init` creates this configuration with GitHub Actions as
+the primary provider (D-023). During repository setup, it resolves and installs the corresponding
+official precompiled provider plugin
 when it is not already available. For example, discovering `.github/workflows` selects the official
 GitHub Actions provider.
 
@@ -162,7 +164,7 @@ access. Required inputs are passed explicitly by the host.
 
 **Decision:** repository-aware commands bootstrap providers when necessary:
 
-1. find the repository root and read existing provider pins;
+1. find the repository root, read `wsr.toml` when present, and read existing provider pins;
 2. discover provider fingerprints using logic built into the host;
 3. resolve the official plugin compatible with the host protocol;
 4. download to staging, verify identity, digest, and signature, then install atomically;
@@ -180,9 +182,12 @@ specific remediation rather than selecting an unpinned version.
 
 ### D-011 — Multiple providers are supported without implicit selection
 
-**Decision:** one repository may install and pin multiple detected providers. When a command could
-target workflows from more than one provider, `wsr` requires an explicit selection or an
-unambiguous workflow path. It never guesses which provider the user intended.
+**Decision:** one repository may configure multiple providers in `wsr.toml` and install and pin
+those providers. The pin/lock schema and location remain open (D-023).
+An explicit provider selection or unambiguous workflow path selects the provider for an invocation;
+otherwise the configured primary provider supplies the repository default (D-023). If these inputs
+conflict or selection remains ambiguous, `wsr` reports the problem rather than guessing. A primary
+provider is a repository choice, not a restriction on installing or selecting other providers.
 
 ### D-012 — Provider plugins terminate at the compilation boundary
 
@@ -446,6 +451,33 @@ are reported. Compatibility tests remain separate from permission-grant tests.
 
 **Still unresolved:** wildcard scope, parameter/profile naming, activation granularity (step,
 job, or selected pipeline), and the outer isolation decision in Q-020.
+
+### D-023 — Root TOML configuration and repository defaults
+
+**Decision:** `wsr init` creates `wsr.toml` at the repository root. This is the repository-owned
+configuration for parameters, configured providers, the primary provider, workflow discovery,
+and sensible invocation defaults. GitHub Actions is the primary provider in a newly initialized
+configuration; other providers may be configured and explicitly selected. Local execution remains
+the default product path. Existing configuration and provider pins must be preserved on reinitialization.
+
+**Resolution rule:** explicit invocation options override applicable `wsr.toml` settings;
+repository settings override documented built-in defaults. Provider/target options in the CLI
+proposal are overrides, not arguments that users must repeat for each command. A workflow provider
+interprets source syntax; an execution destination selects local execution or a hosted integration.
+Selecting a provider does not by itself select a remote destination.
+
+**Trust boundary:** repository parameters, defaults, and capability requests do not authorize
+access. Trusted owner or CI-administrator policy remains authoritative, including approval of
+third-party providers and broad-access profiles. Raw secret values are not repository configuration.
+Effective settings and their sources should be explainable without revealing secrets.
+
+**Current status:** configuration loading/generation is not implemented; `init` still returns the
+standard placeholder diagnostic. The preserved prototype's `wsr.json` is historical work, not the
+selected configuration format. This decision does not authorize restoring that prototype.
+
+**Still unresolved:** exact TOML keys and schema versioning, parameter types and binding,
+provider pin/lock schema and location, environment-variable overrides, trusted policy location,
+credential provisioning, and the CLI structure for inspecting or changing configuration.
 
 ## 3. Superseded or unconfirmed prior claims
 

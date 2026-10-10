@@ -43,6 +43,12 @@ do not apply it blindly over the current workspace or infer current support from
 
 ## Target architecture — accepted design, not implemented
 
+Repository setup starts with `wsr init`, which creates root `wsr.toml` for parameters, configured
+providers, the primary provider, and invocation defaults. GitHub Actions is the initial primary
+provider; execution defaults to the local path. Explicit invocation options override applicable
+repository settings without widening trusted authorization. See D-023 in [PLAN.md](PLAN.md)
+and [configuration](docs/config/README.md). The configuration generator/loader is not implemented.
+
 | Boundary | Intended responsibility |
 | --- | --- |
 | CLI and integrations | Supply explicit inputs and present plans/results; local use needs no hosted controller |
