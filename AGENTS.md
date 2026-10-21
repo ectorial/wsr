@@ -49,6 +49,14 @@ Use `cargo xtask --help`, `cargo xtask help <command>`, or a command's `--help` 
 
 ## Development command reference
 
+The [validation corpus](tests/README.md) separates required native references and snapshot integrity
+from planned WSR behavior. `cargo xtask corpus` runs the offline foundation; `--list` inventories
+cases, `--case ID` explicitly selects one, and `--prepare fastapi|uv` fetches pinned bare sources
+without executing them. Ordinary Cargo tests require Python 3.11+ and include the foundation.
+For agent feature work, follow [the TDD handoff contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract):
+observe the intended red failure, implement one behavior, preserve assertions, then report green
+and regression evidence. Planned cases and source preparation are not product compatibility proof.
+
 | Command | Actual behavior |
 | --- | --- |
 | `cargo xtask check` | `cargo fmt --all --check`, then locked compilation and Clippy for the workspace, all targets and all features. Clippy receives `-D warnings`. |

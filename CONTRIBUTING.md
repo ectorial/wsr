@@ -118,3 +118,13 @@ preparation previews preserve file contents and the index.
 New crates use `cargo xtask add <semantic-name>` and capabilities use `cargo xtask init`.
 Generated `TEST_OBLIGATION` examples intentionally fail; replace them with meaningful
 behavioral assertions before completing implementation. See [AGENTS.md](AGENTS.md).
+
+## Validation corpus
+
+Python 3.11+ and Git are required for the corpus integration test included in ordinary Cargo tests.
+Use `cargo xtask corpus` for the offline native-reference/snapshot baseline,
+`cargo xtask corpus --list` for case inventory, and `cargo xtask corpus --prepare fastapi` (or `uv`) only when you
+explicitly need pinned upstream Git objects. Normal tests do not fetch sources or execute upstream
+workloads. WSR product inspection/execution/security cases remain planned. Follow
+[the corpus guide](tests/README.md) and [TDD handoff contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract)
+when implementing a feature from a validation case.

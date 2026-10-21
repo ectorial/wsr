@@ -20,6 +20,7 @@ fn run(cli: Cli) -> Result {
     match cli.command {
         Command::Check => tasks::check(&workspace),
         Command::Test(args) => tasks::test(&workspace, &args),
+        Command::Corpus(args) => tasks::corpus(&workspace, &args),
         Command::Build => tasks::build(&workspace),
         Command::Ci(args) => tasks::ci(&workspace, &args),
         Command::Coverage => tasks::coverage(&workspace),

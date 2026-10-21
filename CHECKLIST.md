@@ -6,6 +6,9 @@ for delivery gates.
 
 ## Present in the current checkout
 
+- [x] Offline validation corpus foundation: catalog validation, pinned upstream snapshot integrity,
+  native Python pass/failure references, and Cargo integration coverage. See
+  [tests/README.md](tests/README.md). This does not validate WSR workflow execution or security.
 - [x] Sixteen-product-crate Cargo workspace and binary entry point, with private template-based xtask tooling.
 - [x] Typed CLI argument definitions, help/version, command dispatch, and consistent placeholder diagnostics/exit codes.
 - [x] CLI parser/executable contract tests and smoke coverage of all eleven operational command paths.
