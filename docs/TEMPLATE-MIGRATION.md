@@ -28,7 +28,13 @@ cargo xtask doctor
 `check` runs formatting, locked all-feature/all-target compilation and warnings-denied Clippy.
 `test` also runs locked workspace tests; `build` then builds the release workspace. `ci` adds
 locked documentation with Rustdoc warnings denied while retaining caller-supplied Rustdoc flags.
-The current product scaffold has CLI contract tests; passing these checks does not verify workflow execution.
+WSR adds `cargo xtask corpus` for offline native Python references and pinned upstream snapshot
+integrity. `--list` inventories cases, `--case ID` selects one, and `--prepare fastapi|uv` explicitly
+fetches verified bare Git source without checking out or executing workloads. This is a WSR-owned
+extension, not an imported template capability; preserve it during future tooling merges.
+Ordinary Cargo tests now include the corpus bridge and require Python 3.11+ and Git. See
+[the corpus guide](../tests/README.md). Passing scaffold/native-reference checks does not verify
+WSR workflow execution or isolation.
 
 Tooling inherits the template's workspace lint policy. Product crates do not yet inherit that
 policy: the assessment identified 75 additional warnings, principally missing API documentation.

@@ -1,6 +1,7 @@
 # wsr implementation status
 
-Status checked against the current workspace on October 8, 2026. This file counts implemented
+Product status was checked on October 8, 2026; validation foundation evidence was added on
+October 21, 2026. This file counts implemented
 behavior, not design approval. See [PLAN.md](PLAN.md) for decisions and [ROADMAP.md](ROADMAP.md)
 for delivery gates.
 
