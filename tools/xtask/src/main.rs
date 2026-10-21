@@ -10,7 +10,7 @@ mod tools;
 mod workspace;
 
 use clap::Parser;
-use cli::{Cli, Command};
+use cli::{Cli, Command, ScaffoldCommand, ToolsCommand};
 use std::process::ExitCode;
 
 type Result<T = ()> = std::result::Result<T, String>;
@@ -23,12 +23,29 @@ fn run(cli: Cli) -> Result {
         Command::Build => tasks::build(&workspace),
         Command::Ci(args) => tasks::ci(&workspace, &args),
         Command::Coverage => tasks::coverage(&workspace),
+        Command::Add {
+            semantic_name,
+            bin,
+            private,
+            dry_run,
+        } => scaffold::run(
+            &workspace,
+            ScaffoldCommand::Crate {
+                semantic_name,
+                bin,
+                private,
+            },
+            dry_run,
+        ),
+        Command::Init { command, dry_run } => scaffold::init(&workspace, command, dry_run),
         Command::Scaffold { command, dry_run } => scaffold::run(&workspace, command, dry_run),
         Command::Doctor => {
             tools::doctor(&workspace);
             Ok(())
         }
-        Command::Tools { command } => tools::run(&workspace, &command),
+        Command::Tools { group, command } => {
+            tools::run(&workspace, &command.unwrap_or(ToolsCommand::Sync { group }))
+        }
         Command::Release { command } => release::run(&workspace, command),
     }
 }

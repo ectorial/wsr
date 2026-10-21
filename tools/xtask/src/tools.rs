@@ -91,7 +91,7 @@ pub(crate) fn doctor(workspace: &Workspace) {
             detail
         );
     }
-    println!("\nInstall optional tools with `cargo xtask tools sync <group>`.");
+    println!("\nInstall optional tools with `cargo xtask tools <group>`.");
 }
 
 pub(crate) fn execute<I, S>(workspace: &Workspace, tool: Tool, args: I) -> Result
@@ -101,7 +101,7 @@ where
 {
     let program = resolve_optional(workspace, tool).ok_or_else(|| {
         format!(
-            "{} is missing or incompatible; run `cargo xtask tools sync {}`",
+            "{} is missing or incompatible; run `cargo xtask tools {}`",
             tool.package(),
             group_for(tool)
         )
@@ -122,7 +122,7 @@ pub(crate) fn ensure(workspace: &Workspace, tool: Tool) -> Result {
     resolve_optional(workspace, tool).map_or_else(
         || {
             Err(format!(
-                "{} is missing or incompatible; run `cargo xtask tools sync {}`",
+                "{} is missing or incompatible; run `cargo xtask tools {}`",
                 tool.package(),
                 group_for(tool)
             ))

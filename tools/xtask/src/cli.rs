@@ -20,7 +20,25 @@ pub(crate) enum Command {
     Ci(CiArgs),
     /// Generate an HTML coverage report.
     Coverage,
-    /// Add an optional project capability.
+    /// Add a product crate with failing test examples.
+    Add {
+        semantic_name: String,
+        #[arg(long)]
+        bin: bool,
+        #[arg(long)]
+        private: bool,
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Initialize an optional project capability.
+    Init {
+        #[arg(long, global = true)]
+        dry_run: bool,
+        #[command(subcommand)]
+        command: InitCommand,
+    },
+    /// Legacy scaffold commands.
+    #[command(hide = true)]
     Scaffold {
         /// Show planned writes without changing files.
         #[arg(long, global = true)]
@@ -30,10 +48,12 @@ pub(crate) enum Command {
     },
     /// Report the availability of optional development tools.
     Doctor,
-    /// Sync latest stable tools locally and update Rust's stable toolchain.
+    /// Sync development tools and update Rust's stable toolchain.
     Tools {
+        #[arg(value_enum, default_value_t)]
+        group: ToolGroup,
         #[command(subcommand)]
-        command: ToolsCommand,
+        command: Option<ToolsCommand>,
     },
     /// Initialize, inspect, or prepare releases.
     Release {
@@ -104,6 +124,30 @@ pub(crate) enum ScaffoldCommand {
     },
 }
 
+#[derive(Clone, Copy, Debug, Subcommand)]
+pub(crate) enum InitCommand {
+    /// Add a Clap model crate and executable entrypoint.
+    Cli {
+        /// Choose where the executable target lives.
+        #[arg(long, value_enum, default_value_t)]
+        entrypoint: CliEntrypoint,
+    },
+    /// Add a GitHub Actions workflow.
+    Ci {
+        /// Lean uses Cargo only; full also enables policy and typo checks.
+        #[arg(long, value_enum, default_value_t)]
+        preset: CiPreset,
+    },
+    /// Add contribution and crate-index documentation.
+    Docs,
+    /// Add agent instruction files.
+    Agents {
+        /// Also add CLAUDE.md pointing at AGENTS.md.
+        #[arg(long)]
+        claude: bool,
+    },
+}
+
 /// Location of the executable target created by the CLI scaffold.
 #[derive(Clone, Copy, Debug, Default, ValueEnum)]
 pub(crate) enum CliEntrypoint {
@@ -124,6 +168,7 @@ pub(crate) enum CiPreset {
 #[derive(Debug, Subcommand)]
 pub(crate) enum ToolsCommand {
     /// Install an exact tool group under .xtask/tools.
+    #[command(hide = true)]
     Sync {
         #[arg(value_enum, default_value_t)]
         group: ToolGroup,
@@ -186,5 +231,62 @@ impl ReleaseLevel {
             Self::Minor => "minor",
             Self::Major => "major",
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn canonical_and_legacy_commands_parse() {
+        for arguments in [
+            vec!["add", "resolver", "--private", "--dry-run"],
+            vec!["scaffold", "crate", "resolver", "--private", "--dry-run"],
+            vec!["init", "cli", "--entrypoint", "primary", "--dry-run"],
+            vec!["scaffold", "cli", "--entrypoint", "primary", "--dry-run"],
+            vec!["init", "ci", "--preset", "full"],
+            vec!["init", "docs"],
+            vec!["init", "agents", "--claude"],
+            vec!["tools"],
+            vec!["tools", "test"],
+            vec!["tools", "sync", "test"],
+        ] {
+            let mut argv = vec!["xtask"];
+            argv.extend(arguments);
+            Cli::try_parse_from(argv).expect("supported command should parse");
+        }
+    }
+
+    #[test]
+    fn tool_defaults_and_legacy_group_are_preserved() {
+        assert!(matches!(
+            Cli::try_parse_from(["xtask", "tools"]).unwrap().command,
+            Command::Tools {
+                group: ToolGroup::All,
+                command: None
+            }
+        ));
+        assert!(matches!(
+            Cli::try_parse_from(["xtask", "tools", "test"])
+                .unwrap()
+                .command,
+            Command::Tools {
+                group: ToolGroup::Test,
+                command: None
+            }
+        ));
+        assert!(matches!(
+            Cli::try_parse_from(["xtask", "tools", "sync", "coverage"])
+                .unwrap()
+                .command,
+            Command::Tools {
+                command: Some(ToolsCommand::Sync {
+                    group: ToolGroup::Coverage
+                }),
+                ..
+            }
+        ));
+        assert!(Cli::try_parse_from(["xtask", "add", "resolver", "--unknown"]).is_err());
     }
 }
