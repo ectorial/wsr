@@ -14,6 +14,8 @@ pub(crate) enum Command {
     Check,
     /// Check the workspace, then run its tests.
     Test(TestArgs),
+    /// Validate owned references and pinned snapshots; WSR runtime cases remain pending.
+    Corpus(CorpusArgs),
     /// Test the workspace, then build release artifacts.
     Build,
     /// Run the checks used by generated CI.
@@ -60,6 +62,19 @@ pub(crate) enum Command {
         #[command(subcommand)]
         command: ReleaseCommand,
     },
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct CorpusArgs {
+    /// Run one named case; planned cases fail explicitly.
+    #[arg(long, conflicts_with_all = ["list", "prepare"])]
+    pub(crate) case: Option<String>,
+    /// List the corpus without executing cases.
+    #[arg(long, conflicts_with = "prepare")]
+    pub(crate) list: bool,
+    /// Fetch pinned bare Git source explicitly; never checks out or executes it.
+    #[arg(long)]
+    pub(crate) prepare: Option<String>,
 }
 
 #[derive(Debug, Args)]
