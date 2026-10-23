@@ -94,3 +94,6 @@ nohup.out
 
 # Project-local development tools
 /.xtask
+
+# Python validation harness bytecode
+__pycache__/

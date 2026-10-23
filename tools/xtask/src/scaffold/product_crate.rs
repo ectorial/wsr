@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::Result;
 use crate::workspace::Workspace;
 
-use super::plan::Plan;
+use super::{plan::Plan, tests};
 
 pub(crate) fn add(
     workspace: &Workspace,
@@ -16,7 +16,7 @@ pub(crate) fn add(
 ) -> Result {
     validate_semantic_name(semantic_name)?;
     if semantic_name == "cli" {
-        return Err("`cli` is reserved; run `cargo xtask scaffold cli`".into());
+        return Err("`cli` is reserved; run `cargo xtask init cli`".into());
     }
 
     let crate_name = workspace.product_crate(semantic_name);
@@ -41,6 +41,22 @@ pub(crate) fn add(
     plan.create(
         relative.join(if binary { "src/main.rs" } else { "src/lib.rs" }),
         source(&crate_name, semantic_name, binary),
+    )?;
+    let integration = if binary {
+        tests::e2e(&crate_name, "&[] as &[&str]")
+    } else {
+        let import = crate_name.replace('-', "_");
+        tests::integration(&format!(
+            "    use {import}::hello;\n    assert!(hello().starts_with(\"Hello from \"));"
+        ))
+    };
+    plan.create(
+        relative.join(if binary {
+            "tests/e2e.rs"
+        } else {
+            "tests/integration.rs"
+        }),
+        integration,
     )?;
     plan.apply(dry_run)
 }
@@ -96,7 +112,7 @@ fn manifest(name: &str, semantic_name: &str, binary: bool, private: bool) -> Str
 }
 
 fn source(name: &str, semantic_name: &str, binary: bool) -> String {
-    if binary {
+    let mut source = if binary {
         format!(
             "//! Executable for the `{semantic_name}` responsibility.\n\n\
              fn main() {{\n    println!(\"Hello from {name}!\");\n}}\n"
@@ -110,5 +126,17 @@ fn source(name: &str, semantic_name: &str, binary: bool) -> String {
              \x20   \"Hello from {name}!\"\n\
              }}\n"
         )
+    };
+    if binary {
+        source.push_str(&tests::unit("        super::main();"));
+    } else {
+        let import = name.replace('-', "_");
+        source = tests::documentation(&format!(
+            "assert_eq!({import}::hello(), \"Hello from {name}!\");"
+        )) + &source;
+        source.push_str(&tests::unit(
+            "        assert!(super::hello().starts_with(\"Hello from \"));",
+        ));
     }
+    source
 }

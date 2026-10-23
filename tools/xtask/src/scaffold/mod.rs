@@ -4,11 +4,12 @@ mod cli;
 mod plan;
 mod product_crate;
 mod repository;
+mod tests;
 
 use toml_edit::{Array, value};
 
 use crate::Result;
-use crate::cli::ScaffoldCommand;
+use crate::cli::{InitCommand, ScaffoldCommand};
 use crate::workspace::{Workspace, read_document};
 
 use self::plan::Plan;
@@ -54,4 +55,14 @@ pub(crate) fn release_files(workspace: &Workspace) -> Result {
         plan.create("CHANGELOG.md", repository::changelog())?;
     }
     plan.apply(false)
+}
+
+pub(crate) fn init(workspace: &Workspace, command: InitCommand, dry_run: bool) -> Result {
+    let command = match command {
+        InitCommand::Cli { entrypoint } => ScaffoldCommand::Cli { entrypoint },
+        InitCommand::Ci { preset } => ScaffoldCommand::Ci { preset },
+        InitCommand::Docs => ScaffoldCommand::Docs,
+        InitCommand::Agents { claude } => ScaffoldCommand::Agents { claude },
+    };
+    run(workspace, command, dry_run)
 }

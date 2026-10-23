@@ -1,0 +1,8 @@
+name: Unsupported platform
+on:
+  workflow_dispatch:
+jobs:
+  native-windows:
+    runs-on: windows-latest
+    steps:
+      - run: echo windows

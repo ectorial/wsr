@@ -1,5 +1,5 @@
 use crate::Result;
-use crate::cli::{CiArgs, CiJob, TestArgs};
+use crate::cli::{CiArgs, CiJob, CorpusArgs, TestArgs};
 use crate::process;
 use crate::tools::{self, Tool};
 use crate::workspace::Workspace;
@@ -7,6 +7,20 @@ use crate::workspace::Workspace;
 pub(crate) fn check(workspace: &Workspace) -> Result {
     format(workspace)?;
     lint(workspace)
+}
+
+pub(crate) fn corpus(workspace: &Workspace, args: &CorpusArgs) -> Result {
+    let mut command = vec!["scripts/corpus.py"];
+    if args.list {
+        command.push("--list");
+    }
+    if let Some(case) = &args.case {
+        command.extend(["--case", case]);
+    }
+    if let Some(repository) = &args.prepare {
+        command.extend(["--prepare", repository]);
+    }
+    process::run(workspace.root(), "python3", command)
 }
 
 fn format(workspace: &Workspace) -> Result {
