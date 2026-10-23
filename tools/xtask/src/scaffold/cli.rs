@@ -8,7 +8,7 @@ use crate::Result;
 use crate::cli::CliEntrypoint;
 use crate::workspace::{Workspace, read_document};
 
-use super::plan::Plan;
+use super::{plan::Plan, tests};
 
 pub(crate) fn add(workspace: &Workspace, entrypoint: CliEntrypoint, dry_run: bool) -> Result {
     let primary = workspace.primary_crate();
@@ -69,6 +69,22 @@ pub(crate) fn add(workspace: &Workspace, entrypoint: CliEntrypoint, dry_run: boo
             )?;
         }
     }
+    let import = cli_name.replace('-', "_");
+    plan.create(cli_relative.join("tests/integration.rs"), tests::integration(&format!(
+        "    use clap::Parser;\n    let parsed = {import}::Cli::try_parse_from([\"{primary}\", \"hello\"]);\n    assert!(parsed.is_ok());"
+    )))?;
+    let binary_directory = match entrypoint {
+        CliEntrypoint::Companion => cli_relative,
+        CliEntrypoint::Primary => workspace
+            .primary_manifest_path()?
+            .parent()
+            .ok_or("missing primary directory")?
+            .to_path_buf(),
+    };
+    plan.create(
+        binary_directory.join("tests/e2e.rs"),
+        tests::e2e(primary, "[\"hello\", \"world\"]"),
+    )?;
     plan.apply(dry_run)
 }
 
@@ -186,7 +202,7 @@ fn cli_manifest(project: &str, cli_name: &str, entrypoint: CliEntrypoint) -> Str
 }
 
 fn cli_source(project: &str) -> String {
-    format!(
+    let source = format!(
         "//! Clap command model for `{project}`.\n\n\
          use clap::{{Parser, Subcommand}};\n\n\
          /// `{project}` command-line interface.\n\
@@ -207,7 +223,14 @@ fn cli_source(project: &str) -> String {
          \x20       name: String,\n\
          \x20   }},\n\
          }}\n"
-    )
+    );
+    let import = format!("{project}-cli").replace('-', "_");
+    tests::documentation(&format!(
+        "use clap::Parser;\nassert!({import}::Cli::try_parse_from([\"{project}\", \"hello\"]).is_ok());"
+    )) + &source
+        + &tests::unit(
+            "        use clap::Parser;\n        assert!(super::Cli::try_parse_from([\"app\", \"hello\"]).is_ok());",
+        )
 }
 
 fn companion_binary_source(project: &str, cli_name: &str) -> String {

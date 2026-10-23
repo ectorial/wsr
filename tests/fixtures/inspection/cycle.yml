@@ -1,0 +1,14 @@
+name: Cyclic dependencies
+on:
+  workflow_dispatch:
+jobs:
+  first:
+    needs: second
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo first
+  second:
+    needs: first
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo second

@@ -1,0 +1,29 @@
+name: "Example Python reference"
+run-name: "Python reference — ${{ inputs.mode }}"
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "fail intentionally produces a failed workflow run"
+        type: choice
+        options: [pass, fail]
+        default: pass
+        required: true
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.13"
+      - name: "Run example tests directly (native reference)"
+        working-directory: examples/python-basic
+        env:
+          WSR_EXAMPLE_MODE: ${{ inputs.mode }}
+        run: python -m unittest discover -s tests -v
