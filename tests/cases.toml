@@ -1,0 +1,87 @@
+version = 1
+
+[[case]]
+id = "REF-PY-PASS"
+status = "required"
+kind = "native-python"
+input = "examples/python-basic"
+mode = "pass"
+expectation = "The native unittest command succeeds and reports one passing test. This does not exercise WSR."
+
+[[case]]
+id = "REF-PY-FAIL"
+status = "required"
+kind = "native-python"
+input = "examples/python-basic"
+mode = "fail"
+expectation = "The native unittest command exits 1 and names the controlled failing assertion. This does not exercise WSR."
+
+[[case]]
+id = "INS-001"
+status = "planned"
+kind = "inspection"
+input = "tests/fixtures/inspection/basic.yml"
+expectation = "Discover hello with one shell step, Linux platform and workflow_dispatch; retain workflow/job/step source locations."
+
+[[case]]
+id = "INS-002-YAML"
+status = "planned"
+kind = "inspection"
+input = "tests/fixtures/inspection/invalid-yaml.yml"
+expectation = "Reject malformed YAML with a source location; do not execute anything. Exact public diagnostic contract remains open."
+
+[[case]]
+id = "INS-002-STRUCTURE"
+status = "planned"
+kind = "inspection"
+input = "tests/fixtures/inspection/invalid-structure.yml"
+expectation = "Reject missing jobs as invalid workflow structure, separately from malformed YAML."
+
+[[case]]
+id = "INS-003"
+status = "planned"
+kind = "inspection"
+input = "tests/fixtures/inspection/unsupported.yml"
+expectation = "Report native Windows job as unsupported by the initial Linux execution scope; do not silently lower it to Linux."
+
+[[case]]
+id = "INS-004"
+status = "planned"
+kind = "inspection"
+input = "tests/fixtures/inspection/cycle.yml"
+expectation = "Reject the first/second dependency cycle with source traceability."
+
+[[case]]
+id = "INS-005"
+status = "planned"
+kind = "inspection"
+input = "tests/fixtures/inspection/side-effect.yml"
+expectation = "Inspect without creating inspection-side-effect.txt or changing repository/host sentinels."
+
+[[case]]
+id = "EXE-001"
+status = "planned"
+kind = "execution"
+input = ".github/workflows/example-python.yml"
+expectation = "WSR executes the pass variant successfully through provider/planner/executor and reports runtime identity and grants."
+
+[[case]]
+id = "EXE-002"
+status = "planned"
+kind = "execution"
+input = ".github/workflows/example-python.yml"
+expectation = "WSR executes the fail variant, returns failure and attributes it to the test step/job with useful test output."
+
+[[case]]
+id = "ECO-FASTAPI-INSPECT"
+status = "planned"
+kind = "inspection"
+input = "tests/ecosystem/fastapi/test.yml"
+expectation = "Inspect pinned FastAPI workflow with source locations and explicit unsupported diagnostics; snapshots are not self-contained executable projects."
+
+[[case]]
+id = "ECO-UV-INSPECT"
+status = "planned"
+kind = "inspection"
+input = "tests/ecosystem/uv/ci.yml"
+expectation = "Inspect pinned uv workflow and diagnose unresolved reusable workflows/platform requirements rather than discarding them."

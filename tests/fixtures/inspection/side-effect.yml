@@ -1,0 +1,8 @@
+name: Inspection must not execute
+on:
+  workflow_dispatch:
+jobs:
+  sentinel:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo executed > inspection-side-effect.txt

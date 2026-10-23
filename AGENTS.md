@@ -49,6 +49,14 @@ Use `cargo xtask --help`, `cargo xtask help <command>`, or a command's `--help` 
 
 ## Development command reference
 
+The [validation corpus](tests/README.md) separates required native references and snapshot integrity
+from planned WSR behavior. `cargo xtask corpus` runs the offline foundation; `--list` inventories
+cases, `--case ID` explicitly selects one, and `--prepare fastapi|uv` fetches pinned bare sources
+without executing them. Ordinary Cargo tests require Python 3.11+ and include the foundation.
+For agent feature work, follow [the TDD handoff contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract):
+observe the intended red failure, implement one behavior, preserve assertions, then report green
+and regression evidence. Planned cases and source preparation are not product compatibility proof.
+
 | Command | Actual behavior |
 | --- | --- |
 | `cargo xtask check` | `cargo fmt --all --check`, then locked compilation and Clippy for the workspace, all targets and all features. Clippy receives `-D warnings`. |
@@ -60,8 +68,8 @@ Use `cargo xtask --help`, `cargo xtask help <command>`, or a command's `--help` 
 | `cargo xtask ci --job format\|lint\|docs\|test` | Runs only that hosted CI job: formatting; locked all-target/all-feature compilation and Clippy; strict locked docs; or locked tests. Cannot combine with `--full`. |
 | `cargo xtask coverage` | Delegates to available `cargo llvm-cov --workspace --html`. It does not first run `check`, and the wrapper does not add `--locked`. |
 | `cargo xtask doctor` | Reports built-in rustfmt/Clippy availability and optional tool availability/locations. It accepts working executables, except dist must match `dist-workspace.toml`. It does not install tools or fail merely because an optional tool is missing. |
-| `cargo xtask tools sync [GROUP]` | Updates stable Rust, adds its rustfmt/Clippy components, and installs current stable crates.io releases under `.xtask/tools`; WSR's configured cargo-dist version is the exception. The default group is `all`. |
-| `cargo xtask scaffold <COMMAND> [OPTIONS]` | Plans and, unless `--dry-run` is supplied, writes the requested scaffold after validation. See below. |
+| `cargo xtask tools [GROUP]` | Updates stable Rust, adds its rustfmt/Clippy components, and installs current stable crates.io releases under `.xtask/tools`; WSR's configured cargo-dist version is the exception. The default group is `all`. |
+| `cargo xtask init <COMMAND> [OPTIONS]` | Plans and, unless `--dry-run` is supplied, writes the requested scaffold after validation. See below. |
 | `cargo xtask release <COMMAND> [OPTIONS]` | Runs the selected release operation. See below; preparation, publishing, and Git pushing are distinct steps. |
 
 For routine Rust edits, choose the smallest sequence that covers the change: `check` for lint/build
@@ -82,7 +90,7 @@ it no longer pins optional tool versions. A working project-local executable is 
 a working executable on `PATH` is the fallback. Commands that need optional tools return
 installation guidance when they are missing. They do not install tools automatically.
 
-| `tools sync` group | Installed tools |
+| `tools` group | Installed tools |
 | --- | --- |
 | `ci` | cargo-deny and typos-cli |
 | `coverage` | cargo-llvm-cov; also adds Rustup's `llvm-tools-preview` component |
@@ -105,21 +113,21 @@ merging any additional checks.
 
 ## Scaffold command reference
 
-`--dry-run` is global within `scaffold` and can appear before or after its child command.
+`--dry-run` is global within `init` and can appear before or after its child command.
 Start with a dry-run for requested additions. Scaffold plans validate file ownership and parent
 paths before writing; dry-runs perform the same checks and may refuse a conflicting existing file.
 
 | Command | Behavior and options |
 | --- | --- |
-| `cargo xtask scaffold crate <semantic-name>` | Creates `crates/wsr-<semantic-name>` as a library, inheriting workspace package settings and lints, and adds a root workspace dependency. |
-| `cargo xtask scaffold crate <semantic-name> --bin` | Creates a binary with `src/main.rs`; does not add a root workspace dependency. `crates/*` makes it a workspace member. |
-| `cargo xtask scaffold crate <semantic-name> --private` | Sets `publish = false`. Can combine with `--bin`; a private library's root dependency has a path but no registry version. |
-| `cargo xtask scaffold cli --entrypoint companion` | Default CLI mode: creates private `wsr-cli` with the parser and a `wsr` binary depending on the primary library. |
-| `cargo xtask scaffold cli --entrypoint primary` | Creates publishable `wsr-cli` argument types and a thin binary in the primary `wsr` crate; adjusts dependencies and the binary harness settings. |
-| `cargo xtask scaffold ci --preset lean` | Default CI preset: renders a managed `.github/workflows/ci.yml` using bundled action references. |
-| `cargo xtask scaffold ci --preset full` | Also renders managed `deny.toml`, `typos.toml`, an audit workflow, and Dependabot configuration. Its install action selects cargo-deny and typos-cli without tool version pins. |
-| `cargo xtask scaffold docs` | Renders managed `CONTRIBUTING.md` and `crates/README.md`. |
-| `cargo xtask scaffold agents [--claude]` | Renders a managed starter `AGENTS.md`; `--claude` also creates a `CLAUDE.md` reference to it. |
+| `cargo xtask add <semantic-name>` | Creates `crates/wsr-<semantic-name>` as a library, inheriting workspace package settings and lints, and adds a root workspace dependency. |
+| `cargo xtask add <semantic-name> --bin` | Creates a binary with `src/main.rs`; does not add a root workspace dependency. `crates/*` makes it a workspace member. |
+| `cargo xtask add <semantic-name> --private` | Sets `publish = false`. Can combine with `--bin`; a private library's root dependency has a path but no registry version. |
+| `cargo xtask init cli --entrypoint companion` | Default CLI mode: creates private `wsr-cli` with the parser and a `wsr` binary depending on the primary library. |
+| `cargo xtask init cli --entrypoint primary` | Creates publishable `wsr-cli` argument types and a thin binary in the primary `wsr` crate; adjusts dependencies and the binary harness settings. |
+| `cargo xtask init ci --preset lean` | Default CI preset: renders a managed `.github/workflows/ci.yml` using bundled action references. |
+| `cargo xtask init ci --preset full` | Also renders managed `deny.toml`, `typos.toml`, an audit workflow, and Dependabot configuration. Its install action selects cargo-deny and typos-cli without tool version pins. |
+| `cargo xtask init docs` | Renders managed `CONTRIBUTING.md` and `crates/README.md`. |
+| `cargo xtask init agents [--claude]` | Renders a managed starter `AGENTS.md`; `--claude` also creates a `CLAUDE.md` reference to it. |
 
 Semantic names start with a lowercase ASCII letter and use lowercase letters, digits, or single
 hyphens; trailing and doubled hyphens are rejected. `cli` and `xtask` are reserved. Start new
@@ -132,7 +140,7 @@ content as a migration/update shortcut. Managed files require their generated ma
 overwritten; created files must be absent or exactly match the scaffold. The planners also reject
 symlink/nonregular destinations and conflicting dependencies. Do not add markers to bypass guards.
 This `AGENTS.md` is deliberately user-owned, without a generated marker; edit it directly rather
-than replacing it with `scaffold agents`.
+than replacing it with `init agents`.
 
 ## Release command reference
 
@@ -190,3 +198,17 @@ into this existing workspace. Preserve WSR's concrete requirements and documente
 Validate actual help and behavior rather than trusting inherited template descriptions. Test
 mutating generators in temporary fixtures, preserve user-owned files, and distinguish local
 verification from hosted CI results. Template development tooling does not enforce workload isolation.
+
+## Generated test obligations
+
+Use `cargo xtask add <semantic-name>`, `cargo xtask init <capability>`, and
+`cargo xtask tools <group>` as the canonical commands. Hidden `scaffold` and
+`tools sync` commands remain compatible with older scripts.
+
+New library scaffolds include unit, integration, and documentation tests marked
+`TEST_OBLIGATION`; binary scaffolds include unit and executable integration tests.
+CLI scaffolds also include executable integration tests. These examples intentionally fail.
+Run the generated tests to confirm the intended failures, then replace each obligation
+with meaningful assertions for the requested behavior. Do not delete, ignore, or mark them
+`should_panic` to get a green suite. For scaffolding-only work, retain and report the failures.
+Existing WSR crates and tests are not rewritten by this tooling update.
