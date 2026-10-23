@@ -24,7 +24,7 @@ pub(crate) fn run(workspace: &Workspace, command: ReleaseCommand) -> Result {
         ReleaseCommand::Plan { tag } => {
             if !workspace.has_publishable_binary() {
                 return Err(
-                    "cargo-dist needs a publishable binary; run `cargo xtask scaffold cli --entrypoint primary` or scaffold a publishable binary crate first"
+                    "cargo-dist needs a publishable binary; run `cargo xtask init cli --entrypoint primary` or scaffold a publishable binary crate first"
                         .into(),
                 );
             }

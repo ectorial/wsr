@@ -1,0 +1,35 @@
+version = 1
+
+[[repository]]
+name = "fastapi"
+url = "https://github.com/fastapi/fastapi.git"
+commit = "5c3e3d47abe649136a51f0cfc6353c5bdb5425e5"
+workflow = ".github/workflows/test.yml"
+purpose = "Inspection baseline; execution and transitive action support pending."
+[[repository.file]]
+upstream = ".github/workflows/test.yml"
+path = "tests/ecosystem/fastapi/test.yml"
+sha256 = "353d7900246c3efa39494b115449fb2d0cdbcd3a11e1d0993f30ee08514b7d03"
+[[repository.file]]
+upstream = "LICENSE"
+path = "tests/ecosystem/fastapi/LICENSE"
+sha256 = "4ec89ffc81485b97fec584b2d4a961032eeffe834453894fd9c1274906cc744e"
+
+[[repository]]
+name = "uv"
+url = "https://github.com/astral-sh/uv.git"
+commit = "dce159bf3c49174bb37ed53ec1a15e62ff5fc6da"
+workflow = ".github/workflows/ci.yml"
+purpose = "Inspection baseline; execution and transitive action support pending."
+[[repository.file]]
+upstream = ".github/workflows/ci.yml"
+path = "tests/ecosystem/uv/ci.yml"
+sha256 = "848474dba59548f98fe1cf8144b6d6fed7e7508f57e08981371af352129d7c2c"
+[[repository.file]]
+upstream = "LICENSE-MIT"
+path = "tests/ecosystem/uv/LICENSE-MIT"
+sha256 = "860e3d7a86b84e6a7012c7a635fc64df475cebc6cce34dfeb73a5982ec58176c"
+[[repository.file]]
+upstream = "LICENSE-APACHE"
+path = "tests/ecosystem/uv/LICENSE-APACHE"
+sha256 = "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
