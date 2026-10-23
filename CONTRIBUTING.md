@@ -65,7 +65,7 @@ historical release notes and unpublished recovery material as history, not curre
 
 The private `tools/xtask` package is imported from rust-template. `cargo xtask ci` runs the
 local equivalents of format, locked all-feature lint, tests, and warnings-denied documentation.
-Optional tools are installed explicitly with `cargo xtask tools sync <group>` under `.xtask/tools`.
+Optional tools are installed explicitly with `cargo xtask tools <group>` under `.xtask/tools`.
 Each sync updates stable Rust, adds rustfmt/Clippy, and uses `cargo +stable install --locked` to
 resolve current stable tool releases from crates.io. Working local tools take priority over
 working tools on `PATH`; cargo-dist must match the configured version before use. Cargo-dist installs
@@ -78,6 +78,8 @@ release exceptions, and future update rules. Hosted jobs use `cargo xtask ci --j
 `lint`, `docs`, or `test` so each check runs once. Ordinary `cargo xtask ci` still runs them all.
 Run `python3 scripts/test-tooling.py` after building xtask to verify job isolation, dist compatibility,
 and release-hook dry-run behavior without installing tools or publishing.
+Run `python3 scripts/test-scaffolds.py` to verify generated test obligations in temporary
+workspaces, including library/binary crates and both CLI entrypoint modes.
 
 Weekly Dependabot updates cover Cargo dependencies and GitHub Actions. The cargo-dist-generated
 release workflow stays byte-for-byte reproducible. `.github/actionlint.yaml` records five narrow
@@ -112,3 +114,17 @@ events when more than three tags are pushed together, so `--follow-tags` is unsu
 the binary distribution workflow. Do not delete/recreate existing remote tags to retrigger CI.
 The root changelog hook generates and stages files only in execute mode (`DRY_RUN=false`);
 preparation previews preserve file contents and the index.
+
+New crates use `cargo xtask add <semantic-name>` and capabilities use `cargo xtask init`.
+Generated `TEST_OBLIGATION` examples intentionally fail; replace them with meaningful
+behavioral assertions before completing implementation. See [AGENTS.md](AGENTS.md).
+
+## Validation corpus
+
+Python 3.11+ and Git are required for the corpus integration test included in ordinary Cargo tests.
+Use `cargo xtask corpus` for the offline native-reference/snapshot baseline,
+`cargo xtask corpus --list` for case inventory, and `cargo xtask corpus --prepare fastapi` (or `uv`) only when you
+explicitly need pinned upstream Git objects. Normal tests do not fetch sources or execute upstream
+workloads. WSR product inspection/execution/security cases remain planned. Follow
+[the corpus guide](tests/README.md) and [TDD handoff contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract)
+when implementing a feature from a validation case.

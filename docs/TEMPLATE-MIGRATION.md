@@ -28,7 +28,13 @@ cargo xtask doctor
 `check` runs formatting, locked all-feature/all-target compilation and warnings-denied Clippy.
 `test` also runs locked workspace tests; `build` then builds the release workspace. `ci` adds
 locked documentation with Rustdoc warnings denied while retaining caller-supplied Rustdoc flags.
-The current product scaffold has no behavioral tests; passing these checks is build verification.
+WSR adds `cargo xtask corpus` for offline native Python references and pinned upstream snapshot
+integrity. `--list` inventories cases, `--case ID` selects one, and `--prepare fastapi|uv` explicitly
+fetches verified bare Git source without checking out or executing workloads. This is a WSR-owned
+extension, not an imported template capability; preserve it during future tooling merges.
+Ordinary Cargo tests now include the corpus bridge and require Python 3.11+ and Git. See
+[the corpus guide](../tests/README.md). Passing scaffold/native-reference checks does not verify
+WSR workflow execution or isolation.
 
 Tooling inherits the template's workspace lint policy. Product crates do not yet inherit that
 policy: the assessment identified 75 additional warnings, principally missing API documentation.
@@ -41,7 +47,7 @@ responsibility and a useful testable seam. Existing placeholder crates do not di
 architecture. [PLAN.md](../PLAN.md) still owns those decisions.
 
 ```sh
-cargo xtask scaffold crate <semantic-name> --dry-run
+cargo xtask add <semantic-name> --dry-run
 ```
 
 New scaffolds support planning and ownership checks. Existing CLI sources, CI, contribution
@@ -102,9 +108,9 @@ temporary fixtures without installs or uploads.
 Optional tools are installed only on request:
 
 ```sh
-cargo xtask tools sync test
-cargo xtask tools sync coverage
-cargo xtask tools sync release
+cargo xtask tools test
+cargo xtask tools coverage
+cargo xtask tools release
 ```
 
 Executables install under ignored `.xtask/tools`; coverage setup also installs Rustup's
@@ -125,7 +131,7 @@ Existing `release.toml`, `cliff.toml`, CHANGELOG, and target list are preserved.
 remains a guarded generator and refuses the existing user-owned release configuration;
 this repository is already initialized.
 
-The refresh was verified locally with `cargo xtask tools sync all`, `cargo xtask doctor`,
+The refresh was verified locally with `cargo xtask tools all`, `cargo xtask doctor`,
 `cargo xtask ci`, `cargo xtask release plan`, and the release workflow generation check.
 All seven optional tools then resolved to their pinned project-local installations; cargo-generate
 **0.25.0** was already available globally. Hosted CI was not run for those local edits.
@@ -173,3 +179,25 @@ manifests, automation, and documents from overwriting the template migration or 
 WSR keeps technical decisions/status in its existing documents; the organization's `.github`
 repository continues to summarize that direction. Template adoption changes development tooling,
 not the accepted runtime design or its implementation status.
+
+## October 21 template sync
+
+Merged tooling changes from local rust-template commit
+`7810ac016fc79a62fbcfaf1d297b493c1ca4b044` (October 17). This commit is on the
+local template branch; template `origin/main` still points to `62488bc`.
+Canonical commands are now `add <semantic-name>`, `init <capability>`, and
+`tools <group>`; hidden legacy commands remain supported. New crate and CLI
+scaffolds generate intentionally failing unit, integration, documentation (for
+libraries), and executable test obligations, as appropriate. Existing product
+sources and tests remain intact. Agent scaffolding now creates the bundled
+CLI-first guide and refuses to overwrite user-owned instructions.
+
+The merge retains WSR's individual CI jobs, dist compatibility checks, locked
+checks, publication exclusions, no-push preparation, and dry-run changelog guards.
+Generation hooks and initial template crate placeholders are not imported.
+
+Verification passed: `cargo xtask ci`, `python3 scripts/test-tooling.py`,
+`python3 scripts/test-scaffolds.py`, canonical help and add dry-run inspection,
+and `git diff --check`. Disposable library, binary, primary CLI, and companion
+CLI fixtures compiled their generated tests, failed with the expected obligations,
+and passed after completing the examples. Hosted CI has not run for this merge.
