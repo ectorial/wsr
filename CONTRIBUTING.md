@@ -2,6 +2,15 @@
 
 Thank you for your interest in contributing!
 
+## Scope and choosing work
+
+WSR is pre-alpha: operational CLI commands are placeholders. Start with the
+[README](README.md), [roadmap](ROADMAP.md), and [validation cases](tests/README.md).
+Bug fixes, tests, and documentation improvements are welcome. Open an issue before
+starting a new execution feature or changing architecture so maintainers can confirm
+scope and unresolved design choices. Never include credentials in issues or test fixtures;
+report vulnerabilities through [SECURITY.md](SECURITY.md).
+
 ## How to contribute
 
 1. **Fork** the repository and clone your fork locally.
@@ -34,10 +43,25 @@ Common prefixes:
 ```bash
 git clone https://github.com/<your-fork>/wsr.git
 cd wsr
-cargo xtask check
-cargo xtask test
-cargo xtask build
+# Install stable Rust with rustup first. Python 3.11+ and Git must be on PATH.
+# Install the components selected by rust-toolchain.toml.
+rustup show
+rustc --version
+python3 --version
+git --version
+cargo xtask ci
 ```
+
+`cargo xtask ci` checks formatting, locked workspace compilation and Clippy,
+tests (including the offline corpus), and documentation. No optional Cargo tools,
+credentials, or upstream source downloads are needed for this baseline. Use
+`cargo fmt --all` to fix formatting. See [AGENTS.md](AGENTS.md) for focused commands.
+
+Before opening a PR, run `cargo xtask ci` and `git diff --check`, explain the
+behavior changed and validation results, and update affected documentation. Feature
+work should follow the [TDD contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract).
+Maintainers review scope, behavior, and CI before merging; a green build alone does
+not prove workflow compatibility or security enforcement.
 
 ## Preview the changelog before releasing
 
