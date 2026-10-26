@@ -20,3 +20,20 @@ example semantics or setup change. WSR execution cases EXE-001 and EXE-002 remai
 Local implementation verification also passed `cargo xtask ci`, the existing tooling/scaffold
 regressions and ten corpus harness regression tests. Explicit preparation fetched both cataloged
 FastAPI/uv commits and verified their workflow/license snapshots without executing upstream code.
+
+## Shell dogfood workflow — October 25, 2026 (America/Denver)
+
+Verified at source revision `2813537dd140f5e6d5f8d9e29ae07676e5f616b5`
+(implementation PR #14), using `.github/workflows/example-shell.yml`, job `shell`,
+`ubuntu-latest`, and `/usr/bin/sh -e`. Both runs were triggered manually.
+
+| Input `mode` | Observed outcome | Evidence |
+| --- | --- | --- |
+| `pass` | Success; the step printed `WSR shell example passed` | [Native shell pass](https://github.com/ectorial/wsr/actions/runs/40261645085) |
+| `fail` | Expected failure; the step printed `controlled WSR shell failure` and exited 1 | [Native shell failure](https://github.com/ectorial/wsr/actions/runs/40261647553) |
+
+The Cargo integration test `workflow_examples` reads the script from this same YAML
+and validates both native outcomes locally. Its manual-trigger guard also rejects
+additional automatic triggers. The fail-mode GitHub conclusion is intentional;
+ordinary Cargo tests assert that failure and stay green. These runs and tests do
+not implement or establish GHA-to-IR translation, WSR execution, or isolation.
