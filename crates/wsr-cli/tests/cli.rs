@@ -147,3 +147,23 @@ fn workflow_paths_preserve_non_utf8_os_strings() {
     };
     assert_eq!(file.into_os_string(), path);
 }
+
+#[cfg(unix)]
+#[test]
+fn run_preserves_non_utf8_workflow_paths_after_option_terminator() {
+    use std::ffi::OsString;
+    use std::os::unix::ffi::OsStringExt;
+
+    let path = OsString::from_vec(b"-workflow-\xff.yml".to_vec());
+    let Cmd::Run(args) = Cli::parse_from([
+        OsString::from("wsr"),
+        OsString::from("run"),
+        OsString::from("--"),
+        path.clone(),
+    ])
+    .command
+    else {
+        panic!("expected run");
+    };
+    assert_eq!(args.file.unwrap().into_os_string(), path);
+}
