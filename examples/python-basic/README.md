@@ -19,5 +19,5 @@ command directly on GitHub with a typed `mode` input (`pass` or `fail`). A fail-
 expected to have a failed conclusion. It is evidence only when the test assertion caused the
 failure, not when setup or checkout failed. See [recorded reference runs](../../tests/reference-runs.md).
 
-WSR execution is **pending** (EXE-001/EXE-002). `cargo xtask corpus` tests the native reference in
+WSR translation and execution of this workflow are **pending**. `cargo xtask corpus` tests the native reference in
 disposable copies; it does not invoke the WSR runner or establish isolation.

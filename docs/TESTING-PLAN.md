@@ -12,6 +12,22 @@ This plan defines how tests will guide WSR development. It does not approve unre
 architecture or change the design status in [PLAN.md](../PLAN.md). [ROADMAP.md](../ROADMAP.md)
 owns delivery gates; [CHECKLIST.md](../CHECKLIST.md) records implemented behavior.
 
+## Development entrypoint: Rust tests and manual workflows
+
+Use ordinary Cargo unit tests in source files and integration tests in each owning
+crate's `tests/` directory. [Testing WSR](../tests/README.md) gives the implemented
+commands and layout. There is no mandatory case-ID or catalog-registration step.
+The INS/EXE inventory below is supporting planning material, not a prescribed task
+queue or a prerequisite for starting TDD.
+
+The dogfood inputs are the actual manual-only `.github/workflows/example-*.yml` files.
+As the GHA translator is implemented, use these same files in Rust tests asserting the
+real translation to IR without executing commands. Once execution is implemented,
+use them in WSR CLI/engine tests and compare meaningful outcomes against manual native
+GitHub runs. Do not substitute a YAML parse test or a simulation for either product path.
+Unresolved future runtime decisions do not block independent unit/translation work;
+settle the narrow interface needed for each behavior before writing its acceptance test.
+
 ## 1. Goal and assumptions
 
 Success means a developer can change WSR, run the relevant validation, and identify which documented
@@ -46,12 +62,13 @@ Assumptions for this proposal:
 An intentionally failing workload can produce a passing WSR test: the assertion is that WSR reports
 its failure correctly. Conversely, a workload passing does not prove that WSR enforced isolation.
 
-## 3. Proposed repository layout
+## 3. Repository layout and planned additions
 
 ```text
 .github/workflows/
-  example-python.yml                 # Manual native GitHub reference
-  example-job-outputs.yml            # Added with that feature
+  example-shell.yml                 # Manual shell pass/failure reference
+  example-python.yml                # Manual Python pass/failure reference
+  example-job-outputs.yml            # Future example, added with that feature
   validate-wsr.yml                   # Future host-driven suite orchestration
 examples/
   README.md
@@ -71,6 +88,9 @@ tests/                              # Root test data
   expected/                          # Reviewed semantic results/diagnostics
   ecosystem/
     cases.toml                       # Upstream revisions, selections, provenance
+crates/wsr-gha/tests/
+  workflow_examples.rs               # Manual-trigger guard/native shell reference
+  translation.rs                     # Future real GHA-to-IR tests using example YAML
 crates/wsr/tests/
   cli.rs                             # Existing executable contract
   corpus.rs                          # Implemented foundation/native-reference bridge
@@ -90,9 +110,10 @@ Use immutable cached source snapshots plus a separate fresh writable copy per ex
 A developer may manually supply a local repository snapshot later; required cases always use the
 recorded commit and must not mutate that developer's checkout.
 
-## 4. Case catalog and result contract
+## 4. Supporting case catalog and result contract
 
-Start with a small validated catalog, not a general test framework. The implemented loader is
+The existing small catalog supports native references and preserved inputs; it does not
+replace Rust tests or require every new behavior/workflow to be registered. The implemented loader is
 Python 3.11+ using standard-library TOML parsing, called by xtask and a Rust integration test.
 The current schema covers IDs, status, kind, input, expectations and native mode; pinned source
 metadata lives in the ecosystem catalog. Add the remaining fields below when their executable
@@ -218,14 +239,14 @@ When WSR fully supports a selected case, a new failure is a regression until dia
 
 ## 8. Implementation sequence and acceptance gates
 
-### Phase 0 — Define and validate the corpus
+### Phase 0 — Supporting corpus foundation (implemented)
 
 Deliver `tests/README.md`, the minimal catalog schema/loader, INS-001 through INS-005 behavioral
 specifications, the first active inspection fixture, the Python example, and its manual native
 GitHub workflow. Create remaining executable fixtures as their slices become active.
 Keep unimplemented product cases marked planned; do not add fake green execution tests.
 Use existing Rust dependencies/test helpers where sufficient; no new crate is required.
-Document the section 11 handoff template and first ready slice in `tests/README.md`.
+Use the section 11 handoff template for concrete behaviors; catalog IDs are optional.
 
 Gate: catalog validation rejects malformed/duplicate/missing entries; existing tests remain intact;
 the Python example's pass/fail variants work directly in a declared environment. Before treating
@@ -234,8 +255,10 @@ A workflow file alone is not reference evidence.
 
 ### Phase 1 — Inspection becomes the first product gate
 
-Implement the inspection driver and activate INS-001 through INS-005 against the actual product
-path as that path is delivered. Test discovery, provider failures, diagnostics and source mappings;
+Drive GHA-to-IR translation through ordinary Rust tests on the canonical manual workflow files.
+Assert the supported jobs/steps/trigger mapping and IR semantics without executing commands.
+Add inspection CLI tests when that path is delivered; the INS inventory suggests boundary cases,
+but is not a required sequence. Test discovery, provider failures, diagnostics and source mappings;
 use deterministic local provider artifacts for normal tests rather than implicit downloads.
 Provider bootstrap tests separately cover signature/digest rejection, pins, atomic installation,
 offline cache hits and missing pinned artifacts using controlled sources.
@@ -311,11 +334,12 @@ synthetic secrets redacted. A small versioned JSON result format is sufficient; 
 
 ## 10. Completion and claim rules
 
-A feature is complete only when its required cases run, pass and are enforced by the appropriate
-CI gate. Planned fixtures, ignored tests, documentation and source compilation are not completion.
+A feature is complete only when its behavior tests run, pass and are enforced by the appropriate
+CI gate. Standard Cargo discovery is sufficient; catalog registration is optional. Planned fixtures, ignored tests, documentation and source compilation are not completion.
 Unsupported behavior must receive a precise diagnostic and must never become an implicit success.
 
-The first useful deliverable is the corpus and inspection gate. The first compelling execution
+The corpus foundation is supporting tooling. Product progress is measured by real Rust
+behavior tests, then translation and execution of the canonical manual workflows. The first compelling execution
 demonstration is the tiny Python project's controlled failure, actionable diagnosis and repaired
 success, using the same example workflow locally and as a native GitHub reference. Pinned external
 cases then challenge assumptions that owned examples might miss.
@@ -324,11 +348,12 @@ cases then challenge assumptions that owned examples might miss.
 
 ### Ready slices
 
-Each task is a small observable behavior with a named case, not an entire subsystem. A maintainer
+Each task is a small observable behavior with a descriptive Rust test name, not an entire subsystem.
+A catalog case ID is optional; a normal unit or integration test is sufficient. A maintainer
 or planning agent prepares the following handoff before assigning implementation:
 
 ```text
-Behavior and case ID:
+Behavior and test name (optional catalog ID):
 Accepted decision/specification links:
 Public interface and expected outcome:
 Input fixture/event and relevant negative or boundary case:
@@ -368,8 +393,9 @@ Do not introduce ignored tests or expected-failure wrappers to simulate this dis
 4. Run the focused test and existing relevant required cases. If green, refactor only within the
    authorized scope, then rerun. Add the next test only after this cycle is complete; do not write
    a whole subsystem's speculative test suite before implementing anything.
-5. Before completion, run the specified regression lane and standard repository checks, promote
-   the case to required, and connect it to the appropriate CI gate. Record commands and outcomes.
+5. Before completion, run the specified regression lane and standard repository checks. Keep the
+   new Rust test in the default Cargo suite or the relevant required execution lane. If the test
+   also has a catalog entry, promote that entry to required. Record commands and outcomes.
 
 If a supplied test already passes, verify that it reaches the intended path and covers the
 acceptance behavior. Report that result; do not manufacture a red run or add unnecessary product
