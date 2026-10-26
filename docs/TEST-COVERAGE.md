@@ -2,7 +2,8 @@
 
 Reviewed October 26, 2026 against base `faf418eb0afd4cc567ad9b69cd6414a88bde1c47`.
 This index records observed behavior, not feature completeness. The test/documentation
-change is on `codex/test-coverage-index`; the added run-path regression is not yet on main.
+change was prepared on `codex/test-coverage-index` in [PR #16](https://github.com/ectorial/wsr/pull/16);
+consult its merge state to determine availability on main.
 No ready failing implementation task exists. No product behavior was implemented.
 
 ## Reviewed product scope
@@ -38,8 +39,8 @@ for future real translation tests and later execution tests; do not fork local w
 
 ## Pending implementation preparation: blocked on a narrow contract
 
-**Ready failing tasks: none. Pending failing branch/PR: none.** Existing remote PRs
-#12 and #13 are dependency updates, not implementation handoffs. No additional speculative
+**Ready failing tasks: none. Pending failing branch/PR: none.** PRs
+#12 and #13 contain dependency updates, not implementation handoffs. No additional speculative
 implementation suite should be accumulated.
 
 The smallest next decision is to approve a first translation-only observable contract:
