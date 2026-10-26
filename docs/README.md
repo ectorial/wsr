@@ -10,6 +10,7 @@ from accepted design; none is a workflow-execution tutorial.
 | [Roadmap](../ROADMAP.md) | Delivery order and completion gates |
 | [Checklist](../CHECKLIST.md) | Implementation status |
 | [Validation suite plan](TESTING-PLAN.md) | Implemented corpus foundation and planned product validation gates |
+| [Behavioral coverage](TEST-COVERAGE.md) | Reviewed behavior, commands, evidence limits and pending test-first decisions |
 | [Testing WSR](../tests/README.md) | Standard Rust tests, manual dogfood workflows, translation/execution stages, and supporting corpus |
 | [Security model](SECURITY-MODEL.md) | Planned grants, containment, and compatibility exception |
 | [CLI](cli/README.md) | Defined arguments versus implemented commands |
