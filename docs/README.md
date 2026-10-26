@@ -10,7 +10,7 @@ from accepted design; none is a workflow-execution tutorial.
 | [Roadmap](../ROADMAP.md) | Delivery order and completion gates |
 | [Checklist](../CHECKLIST.md) | Implementation status |
 | [Validation suite plan](TESTING-PLAN.md) | Implemented corpus foundation and planned product validation gates |
-| [Corpus guide](../tests/README.md) | Native references, pinned FastAPI/uv snapshots, commands, and TDD handoffs |
+| [Testing WSR](../tests/README.md) | Standard Rust tests, manual dogfood workflows, translation/execution stages, and supporting corpus |
 | [Security model](SECURITY-MODEL.md) | Planned grants, containment, and compatibility exception |
 | [CLI](cli/README.md) | Defined arguments versus implemented commands |
 | [Configuration](config/README.md) | Planned root `wsr.toml`, provider/default resolution, and policy ownership |
