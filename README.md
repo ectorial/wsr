@@ -49,6 +49,10 @@ product crates and private `tools/xtask` automation. Product crates declare Rust
 version and the development toolchain tracks stable. Future runtime/toolchain choices remain open. No installer or schema
 URL is advertised as a working onboarding path.
 
+Unit tests and Cargo integration tests drive implementation through TDD. The
+[testing guide](tests/README.md) explains how the manual-only example workflows become
+shared GHA-to-IR and execution test inputs as those capabilities are implemented.
+
 ## Documentation
 
 | Document | Responsibility |

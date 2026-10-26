@@ -1,4 +1,69 @@
-# WSR validation corpus
+# Testing WSR
+
+## Rust tests drive implementation
+
+Use Cargo's standard test layout; no custom test framework or case registry is required:
+
+- Unit tests live beside the code in `src/*.rs`, inside `#[cfg(test)] mod tests`.
+- Integration tests live in the owning package's `tests/*.rs`. For larger suites, a
+  `tests/it.rs` entrypoint can declare modules under `tests/it/`; an arbitrary root
+  `it/` directory is not automatically discovered by Cargo.
+- Shared fixture data lives under root `tests/fixtures/`. Resolve it from
+  `CARGO_MANIFEST_DIR` so tests work from any working directory.
+- GHA translation tests belong in `crates/wsr-gha/tests/`; executable WSR tests
+  belong in `crates/wsr/tests/`. Add tests to other owning crates as behaviors emerge.
+
+For each behavior: write one meaningful failing test, observe the intended failure,
+implement the smallest change, then refactor while keeping the tests green. Preserve
+existing regression coverage. A case ID such as INS-001 is optional bookkeeping,
+not an interface specification or permission to choose an unresolved design.
+Do not prewrite an entire disabled suite or accept generic placeholder failures as success.
+
+Current commands:
+
+```sh
+cargo test -p wsr-cli --locked
+cargo test -p wsr --test cli --locked
+cargo test -p wsr-gha --test workflow_examples --locked
+cargo test --workspace --locked
+cargo xtask ci
+```
+
+The workflow example tests validate manual-only triggers and execute the shell
+example's exact script natively in pass/fail modes. They do not translate GHA to IR,
+evaluate GHA expressions, or invoke WSR's executor.
+
+## Manual workflows are the dogfood suite
+
+The canonical examples live in `.github/workflows/example-*.yml`, each triggered only
+by `workflow_dispatch`. Start with [the example guide](../examples/README.md).
+Native GitHub dispatch runs those workflows directly. Future WSR tests must use the
+same YAML files, rather than maintaining separate local copies.
+
+Build coverage incrementally:
+
+1. **Now:** Cargo unit/integration tests drive the currently implemented code. Native
+   reference checks validate the examples independently. Manual GitHub runs provide
+   hosted reference evidence; normal Cargo tests do not dispatch workflows.
+2. **As GHA-to-IR translation is implemented:** add Rust integration tests calling
+   the real translator on the canonical workflow files. Assert jobs, steps, inputs,
+   trigger mapping and meaningful IR fields for the supported subset; include malformed
+   or unsupported inputs. Translation tests do not execute workflow commands.
+3. **As execution becomes available:** add executable integration tests invoking WSR
+   on those same workflows with explicit manual-event inputs in disposable workspaces.
+   Assert successful execution and controlled failure attribution/exit status. Compare
+   meaningful outcomes with native GitHub runs. Qualify isolation separately.
+
+Stages 2 and 3 are not implemented yet. Do not invent a translator API, stable CLI
+invocation or expected IR schema here. Settle the narrow behavior when implementing
+its test, following [the TDD contract](../docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract).
+A passing YAML/reference check is never evidence that WSR translated or ran a workflow.
+
+## Supporting corpus checks
+
+The existing catalog and upstream snapshots remain supporting validation material.
+They are not the development entrypoint, a prerequisite for every contribution, or
+an exhaustive specification. New Rust tests and manual examples need no catalog ID.
 
 This is a validation **foundation**, not a working WSR workflow runner. Python 3.11+ and Git
 are prerequisites. The owned Python example has no third-party dependencies.
@@ -63,31 +128,13 @@ unmodified snapshots, update their hashes and commit SHA together, and run the s
 preparation. Never regenerate expected behavior from current WSR output. Job/expression/platform
 semantics and dependencies require review before promoting an external case to execution.
 
-## First ready implementation slice
+## Choosing the next behavior
 
-The next product slice is **INS-001**: inspect the minimal manual-dispatch workflow without
-execution. Its behavioral specification is in [cases.toml](cases.toml). The fixture already exists;
-the diagnostic/output API and provider-host prerequisites remain architecture decisions in
-[PLAN.md](../PLAN.md). This task is not ready for autonomous product implementation until those
-prerequisites and its executable assertions are settled.
+Choose a small behavior from the agreed product direction and the example workflows.
+Use an ordinary named Rust test as its acceptance check. Existing INS/EXE entries may
+help identify edge cases, but they do not mandate development order. Resolve only the
+interface or architecture decisions needed for that behavior; unrelated future runtime
+choices need not block independent unit or translation tests.
 
-Agents can already implement additional **foundation** cases from this example handoff:
-
-```text
-Behavior and case ID: reject an invalid catalog input (add a focused regression)
-Specification: docs/TESTING-PLAN.md sections 4 and 11
-Public interface: scripts/corpus.py exits nonzero with an actionable validation error
-Input: temporary malformed catalog created by the test; never edit required baseline data
-Existing tests: scripts/test-corpus.py
-Focused command: python3 scripts/test-corpus.py CatalogTests.<new_test_name>
-Expected red: validator accepts the invalid input; assertion fails
-Regression commands: python3 scripts/test-corpus.py; cargo xtask ci
-Scope: catalog validation only; no WSR runtime, downloads or architecture choices
-Unresolved prerequisites: none after a concrete invalid-input rule is selected from the specification
-Completion: observed intended red, green, regression results and CI evidence in task/PR
-```
-
-Replace the illustrative test name with an actual focused command before handing off a concrete
-task. Add one behavior/test, observe red, implement, then move to the next. Do not write speculative
-acceptance tests for unsettled interfaces or weaken existing expectations to satisfy a feature.
-Follow the complete [TDD handoff contract](../docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract).
+Follow the [TDD handoff contract](../docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract)
+for exact commands, the intended red failure, scope and regression evidence.

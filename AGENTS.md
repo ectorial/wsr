@@ -47,6 +47,21 @@ Inspect the product CLI with `cargo run -p wsr -- --help`. This is separate from
 Use `cargo xtask --help`, `cargo xtask help <command>`, or a command's `--help` to inspect options.
 `--version` reports xtask's version, which now inherits the shared workspace version.
 
+## TDD and dogfood workflows
+
+Use standard Rust tests: unit tests in source modules, integration tests in each owning
+crate's `tests/` directory. Root `tests/` is shared test data, not a Cargo test target.
+Develop one behavior through observed red, minimal implementation, green, then refactor;
+never weaken acceptance assertions or count setup failures as behavioral red evidence.
+
+The dogfood suite is `.github/workflows/example-*.yml`, with `workflow_dispatch` only.
+Use those same files for real GHA-to-IR translation tests as translation is delivered,
+then real CLI/engine execution tests as execution is delivered. Native GitHub or shell
+reference success does not establish WSR support. Keep translation free of workload execution.
+Catalog IDs are optional supporting inventory; do not require INS-001 or catalog work
+before ordinary feature tests. See [Testing WSR](tests/README.md) and the existing
+[TDD contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract).
+
 ## Development command reference
 
 The [validation corpus](tests/README.md) separates required native references and snapshot integrity

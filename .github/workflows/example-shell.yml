@@ -1,0 +1,28 @@
+name: "Example shell reference"
+run-name: "Shell reference — ${{ inputs.mode }}"
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "fail intentionally produces a failed workflow run"
+        type: choice
+        options: [pass, fail]
+        default: pass
+        required: true
+permissions:
+  contents: read
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: "Controlled shell outcome"
+        shell: sh
+        env:
+          WSR_EXAMPLE_MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$WSR_EXAMPLE_MODE" = fail ]; then
+            printf '%s\n' 'controlled WSR shell failure' >&2
+            exit 1
+          fi
+          printf '%s\n' 'WSR shell example passed'

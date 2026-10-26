@@ -5,7 +5,7 @@ Thank you for your interest in contributing!
 ## Scope and choosing work
 
 WSR is pre-alpha: operational CLI commands are placeholders. Start with the
-[README](README.md), [roadmap](ROADMAP.md), and [validation cases](tests/README.md).
+[README](README.md), [roadmap](ROADMAP.md), and [testing guide](tests/README.md).
 Bug fixes, tests, and documentation improvements are welcome. Open an issue before
 starting a new execution feature or changing architecture so maintainers can confirm
 scope and unresolved design choices. Never include credentials in issues or test fixtures;
@@ -62,6 +62,17 @@ behavior changed and validation results, and update affected documentation. Feat
 work should follow the [TDD contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract).
 Maintainers review scope, behavior, and CI before merging; a green build alone does
 not prove workflow compatibility or security enforcement.
+
+## Test-driven development and dogfooding
+
+Write unit tests beside Rust code and integration tests in the owning crate's `tests/`
+directory. Work one behavior at a time: observe its intended failing test, implement,
+then refactor with tests green. Case catalog registration is not required.
+
+The manual-only `.github/workflows/example-*.yml` files are WSR's dogfood inputs.
+Use these same workflows for real GHA-to-IR tests when translation is implemented,
+then WSR execution tests when supported. Existing native reference checks do not prove
+translation or execution. See [Testing WSR](tests/README.md) for layout, commands and stages.
 
 ## Preview the changelog before releasing
 
