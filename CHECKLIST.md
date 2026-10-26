@@ -1,11 +1,17 @@
 # wsr implementation status
 
 Product status was checked on October 8, 2026; validation foundation evidence was added on
-October 21, 2026. This file counts implemented
+October 21, 2026; Rust dogfood guards and a native shell reference were added on
+October 25, 2026. This file counts implemented
 behavior, not design approval. See [PLAN.md](PLAN.md) for decisions and [ROADMAP.md](ROADMAP.md)
 for delivery gates.
 
 ## Present in the current checkout
+
+- [x] Standard Cargo TDD guidance and manual-only shell/Python dogfood workflows.
+  `cargo test -p wsr-gha --test workflow_examples --locked` validates example trigger
+  contracts and the shell workflow's native pass/fail script. It does not test GHA-to-IR
+  translation or WSR execution; those remain unchecked below.
 
 - [x] Offline validation corpus foundation: catalog validation, pinned upstream snapshot integrity,
   native Python pass/failure references, and Cargo integration coverage. See
