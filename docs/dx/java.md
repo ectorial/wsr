@@ -33,6 +33,10 @@ flowchart LR
 ```
 
 The profiles, metadata file layout, daemon, cache CLI and attestation schemas remain proposals.
+
+The adjacent YAML requests ubuntu-latest, whose target is Linux x64. The simulated traces preserve
+that target. On an ARM64 Mac, execution needs an explicitly qualified x64 mechanism or an explicitly
+selected ARM64 workflow/profile adaptation. No emulation or backend is selected by this walkthrough.
 Backend/platform selection and image/tool identities in simulated logs require separate decisions.
 
 ## 1. Meet the repository
@@ -209,7 +213,7 @@ SIMULATED VERBOSE RUN — Java / cold ecosystem cache
 [wsr run=java-001] source=committed-revision event=workflow_dispatch provider=gha
 [wsr provider] signed component HIT; identity and protocol accepted
 [wsr compile] workflow+action metadata MISS; lower -> validate -> record canonical input identity
-[wsr plan] job=verify requested-os=linux target=linux/arm64 image=<pinned-image>
+[wsr plan] job=verify requested-os=linux target=linux/x86_64 image=<pinned-image>
 [wsr plan] checkout,setup-java: qualified Bun action paths; verify: isolated system command
 [wsr policy] registry-write=denied host-home=denied; network grants scoped per step
 [wsr runtime] Linux JDK21 artifact MISS; acquire/verify using approved tool provisioning
@@ -218,7 +222,7 @@ SIMULATED VERBOSE RUN — Java / cold ecosystem cache
 [wsr step=checkout] start runtime=Bun@<qualified-version> action=<resolved-checkout-sha>
 [wsr step=checkout] Git child allowed; materialize selected revision; credentials not persisted
 [wsr step=checkout] exit=0; private descendants/scratch cleaned
-[wsr cache] namespace=maven-dependencies target=linux/arm64 identity=<pom+wrapper+toolchain+policy>
+[wsr cache] namespace=maven-dependencies target=linux/x86_64 identity=<pom+wrapper+toolchain+policy>
 [wsr cache] MISS; create job-local writable repository; macOS cache remains broker-controlled
 [wsr step=setup-java] start runtime=Bun@<qualified-version> action=<resolved-setup-java-sha>
 [wsr step=setup-java] expose selected Linux JDK to action tool-cache contract
@@ -376,9 +380,9 @@ SIMULATED WSR OUTPUT — proposed maintenance presentation
 Use A for routine cleanup. `cache purge` exists only as a stub; its deletion scope and confirmation
 contract are undecided. This guide does not invent `cache gc`, `repair`, `logs`, or `retry` commands.
 
-For corruption, A is visible quarantine/reacquisition of the same pinned object when allowed; B is
-stop and require explicit repair. We prefer A for this example, but repair policy is still open.
-No repair silently changes a pinned version.
+D-027 requires corrupt objects to be quarantined and the same pinned identity reacquired when
+authorized. If acquisition is unavailable or denied, report the blocked requirement. Exact repair
+commands remain open. No repair silently changes a pinned version.
 
 For offline work, A is preflight rejection of statically known missing objects; B is discovering
 misses during execution. Prefer A. A cached provider alone does not make the job offline-capable:
