@@ -33,6 +33,10 @@ flowchart LR
 ```
 
 The profiles, metadata file layout, daemon, cache CLI and attestation schemas remain proposals.
+
+The adjacent YAML requests ubuntu-latest, whose target is Linux x64. The simulated traces preserve
+that target. On an ARM64 Mac, execution needs an explicitly qualified x64 mechanism or an explicitly
+selected ARM64 workflow/profile adaptation. No emulation or backend is selected by this walkthrough.
 Backend/platform selection and image/tool identities in simulated logs require separate decisions.
 
 ## 1. Meet the repository
@@ -220,21 +224,22 @@ SIMULATED VERBOSE RUN — Python / cold dependency cache
 [wsr input] vars.UV_VERSION=<explicit-qualified-version>; no implicit GitHub variables/secrets
 [wsr provider] signed component HIT; protocol verified
 [wsr compile] MISS -> resolve metadata -> lower -> validate; source locations retained
-[wsr plan] job=verify target=linux/arm64 image=<pinned-image>
+[wsr plan] job=verify target=linux/x86_64 image=<pinned-image>
 [wsr plan] checkout/setup-uv: qualified Bun actions; project tools: isolated system processes
-[wsr policy] setup/sync/build acquisition endpoints allowed as declared; registry-write denied
+[wsr preflight] Linux uv/Python and formatter/type-checker tool identities verified/prepared
+[wsr policy] sync/build dependency endpoints allowed as declared; registry-write denied
 [wsr vm] Linux environment ready; host home and personal .venv not mounted
 [wsr workspace] /workspace/python-001 created; private scratch separated from shared job files
 [wsr step=checkout] qualified Bun + Git child materialize selected revision; exit=0
 [wsr step=setup-uv] action=<resolved-sha> compatibility-runtime=Bun@<qualified-version>
-[wsr runtime] Linux uv/Python artifacts prepared through approved tool provisioning
+[wsr runtime] expose previously prepared Linux uv/Python artifacts
 [wsr state] validate PATH/UV_PYTHON updates; tool files retained by supervisor
 [wsr cache] namespace=uv-packages key=<lock+target+python+tool+build-inputs>; MISS
 [wsr cache] create job-local uv cache view; no writable host cache mounted
 [wsr step=sync] exec uv sync --locked --all-extras --dev
 [workload sync] Python selected; fresh .venv created; locked dependencies installed
 [wsr step=sync] exit=0; .venv persists inside this job only
-[wsr tools] formatter/type-checker identities resolved and prepared explicitly
+[wsr tools] activate/use preflight-admitted formatter/type-checker identities
 [wsr step=format] exec uv format --check
 [workload format] Formatting check passed
 [wsr step=format] exit=0; source files unchanged
@@ -370,9 +375,9 @@ SIMULATED WSR OUTPUT — proposed maintenance presentation
 Use A for routine cleanup. `cache purge` exists only as a stub; its deletion scope and confirmation
 contract are undecided. This guide does not invent `cache gc`, `repair`, `logs`, or `retry` commands.
 
-For corruption, A is visible quarantine/reacquisition of the same pinned object when allowed; B is
-stop and require explicit repair. We prefer A for this example, but repair policy is still open.
-No repair silently changes a pinned version.
+D-027 requires corrupt objects to be quarantined and the same pinned identity reacquired when
+authorized. If acquisition is unavailable or denied, report the blocked requirement. Exact repair
+commands remain open. No repair silently changes a pinned version.
 
 For offline work, A is preflight rejection of statically known missing objects; B is discovering
 misses during execution. Prefer A. A cached provider alone does not make the job offline-capable:

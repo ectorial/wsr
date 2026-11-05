@@ -122,21 +122,35 @@ upstream ShellCheck exceptions for cargo-dist 0.33.0; review them when changing 
 
 ## Publish a workspace release
 
-Run `cargo xtask ci` before preparing a release from a clean checkout:
+The main branch requires a pull request and the format, lint, docs and test checks. Prepare
+release changes on a clean release branch with a separately authorized release scope:
 
 ```sh
+cargo xtask ci
 cargo xtask release prepare patch --execute
-cargo xtask release publish
-cargo xtask release publish --execute
-git push origin main
-# Replace VERSION with the prepared product version.
-git push origin wsr-vVERSION
 ```
 
-Preparation synchronizes product versions, generates changelogs, and creates a local commit
-and package tags. It does not publish or push. `publish` defaults to a registry dry run;
-`--execute` uploads unpublished versions in dependency order, with cargo-release's confirmation
-prompt. The private `xtask` and `wsr-bench` packages are not uploaded.
+Preparation synchronizes versions, generates changelogs and creates a local release commit and
+package tags. Review that diff, push the release branch, open a PR and satisfy the protected-branch
+checks/review policy. A direct push to main is not the release path.
+
+Before registry publication or tag pushes, verify that the final approved release revision is
+present on main, its version/changelog contents match the approved release, and applicable
+release checks passed for that revision. Cargo-release's locally prepared tags may point to a
+pre-merge commit. If the merge rewrites it, stop and explicitly reconcile unpushed local tag
+identities against the approved revision before proceeding. Never rewrite an already published tag.
+Exact merge/tag reconciliation depends on the repository's enabled merge methods.
+
+From the verified release checkout, perform the separately authorized registry dry run and upload:
+
+```sh
+cargo xtask release publish
+cargo xtask release publish --execute
+```
+
+Inspect each approved release tag's target before pushing it individually, for example
+`git push origin wsr-vVERSION`. Replace VERSION with the reviewed version. The publisher does
+not push commits or tags. Private xtask and wsr-bench packages are excluded from registry uploads.
 
 If crates.io rejects an upload, the command exits with the registry error and retry time.
 After that time, rerun `cargo xtask release publish --execute`: already-published versions

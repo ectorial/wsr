@@ -7,17 +7,29 @@ flowchart LR
     E --> G[Limits and gaps]
 ```
 
-Reviewed October 26, 2026 against base `faf418eb0afd4cc567ad9b69cd6414a88bde1c47`.
-This index records observed behavior, not feature completeness. The test/documentation
-change was prepared on `codex/test-coverage-index` in [PR #16](https://github.com/ectorial/wsr/pull/16);
-consult its merge state to determine availability on main.
-No ready failing implementation task exists. No product behavior was implemented.
+## Current status — November 5, 2026
+
+The October 26 coverage work landed through [PR #16](https://github.com/ectorial/wsr/pull/16)
+in merged baseline `a64136113d0a42f20c96a585ead5cc76dcbe0a94`.
+[PR #17](https://github.com/ectorial/wsr/pull/17) added design documentation at
+`031b583e60ce93b6b0af3b41afdec02b393aedff`. No ready failing implementation task is recorded.
+Product execution remains scaffold. Dates below identify observed evidence, not fresh test runs.
+
+The [Java checkpoint](implementation/java-progress.md#current-checkpoint--november-5-2026)
+owns the current worker handoff under the [Java contract](implementation/java-e2e.md).
+The earlier test-preparation-only mandate is superseded. Review live checkout/remote state and
+owner stop/hold instructions before selecting work.
+
+## October 26 review provenance
+
+The product scope below was reviewed against preparation base
+`faf418eb0afd4cc567ad9b69cd6414a88bde1c47`. Preserve its observation dates and limits.
 
 ## Reviewed product scope
 
 | Source scope | Tested observable behavior and tests | Focused command | Status and limits |
 | --- | --- | --- | --- |
-| [wsr-cli](../crates/wsr-cli/src/lib.rs), including run/cache/hook/daemon arguments | [Parser tests](../crates/wsr-cli/tests/cli.rs): command tree, required arguments, run defaults/options/formats, rejection of invalid values/options, Unix OS-string preservation for inspect and run. Run regression also covers a leading-dash filename after `--`. | `cargo test -p wsr-cli --test cli --locked` | Passing on review branch, October 26. New regression already passes existing code; no red phase. Unix path checks are conditional. No file access or execution coverage. |
+| [wsr-cli](../crates/wsr-cli/src/lib.rs), including run/cache/hook/daemon arguments | [Parser tests](../crates/wsr-cli/tests/cli.rs): command tree, required arguments, run defaults/options/formats, rejection of invalid values/options, Unix OS-string preservation for inspect and run. Run regression also covers a leading-dash filename after `--`. | `cargo test -p wsr-cli --test cli --locked` | Passed during October 26 preparation; available on main through PR #16. New regression already passes existing code; no red phase. Unix path checks are conditional. No file access or execution coverage. |
 | [wsr entrypoint](../crates/wsr/src/lib.rs), binary and all eight [handler modules](../crates/wsr/src/commands/mod.rs) | [Executable tests](../crates/wsr/tests/cli.rs): all eleven operational paths exit 1 with exact placeholder diagnostic; help/version exit 0; invalid arguments exit 2; disposable repository sentinels remain unchanged. | `cargo test -p wsr --test cli --locked` | Passing October 26. Placeholder checks protect scaffold behavior only; they are not implementation acceptance tests for future operations, and do not prove isolation. |
 | [wsr corpus bridge](../crates/wsr/tests/corpus.rs) | Invokes Python harness regressions and offline baseline from an unrelated working directory. Catalog integrity, pinned snapshot digests, owned Python native pass/failure checks. | `cargo test -p wsr --test corpus --locked` | Passing October 26. Requires Python 3.11+ and Git. [Catalog](../tests/cases.toml), [fixtures](../tests/fixtures/), [snapshots](../tests/ecosystem/), and examples are supporting inputs. No upstream execution/download or WSR execution. Python harness internals were not exhaustively reviewed here. |
 | [wsr-gha scaffold](../crates/wsr-gha/src/lib.rs) and [example guards](../crates/wsr-gha/tests/workflow_examples.rs) | All example YAML workflows have only manual dispatch and nonempty jobs; exact shell workflow script produces native pass/failure markers and exit status with explicitly bound mode. | `cargo test -p wsr-gha --test workflow_examples --locked` | Passing October 26. Requires POSIX sh. Uses canonical [shell](../.github/workflows/example-shell.yml) and [Python](../.github/workflows/example-python.yml) YAML. No GHA expression evaluation, translation, WSR engine or isolation evidence. |
@@ -44,9 +56,10 @@ code/stash was not restored or tested.
 No workflows were dispatched during this review. Canonical example YAML must be reused
 for future real translation tests and later execution tests; do not fork local workflow copies.
 
-## Pending implementation preparation: blocked on a narrow contract
+## Historical October 26 implementation-preparation proposal
 
-**Ready failing tasks: none. Pending failing branch/PR: none.** PRs
+This section preserves the October 26 proposal and its then-current instructions. It is not
+the active worker handoff. At that review, **ready failing tasks: none; pending failing branch/PR: none.** PRs
 #12 and #13 contain dependency updates, not implementation handoffs. No additional speculative
 implementation suite should be accumulated.
 
@@ -67,9 +80,10 @@ failures or generic CLI placeholder errors do not qualify. Non-goals: engine/run
 execution, isolation, backend selection, plugin host, new framework and broad IR design.
 Follow [the handoff contract](TESTING-PLAN.md#11-tdd-and-agent-implementation-contract),
 including prerequisite decisions, negative fixture, regression commands and completion evidence.
-Do not implement production behavior as part of scheduled test preparation.
+The then-current scheduled test-preparation scope prohibited production implementation. The
+November 1 Java worker authorization superseded that scope for settled, bounded TDD slices.
 
-## Validation and resumption
+## Historical October 26 validation and resumption
 
 October 26 review branch: `cargo xtask ci` passed (format, locked compilation/Clippy,
 workspace tests including corpus/native references, and strict rustdoc); `git diff --check`
@@ -78,7 +92,7 @@ test is concealed, ignored or wrapped as expected failure. Hosted CI for the bas
 [40261792393](https://github.com/ectorial/wsr/actions/runs/40261792393) succeeded; branch
 CI is separate and must be checked on its PR before any merge. Auto-merge remains disabled.
 
-Next run: inspect live state and this branch/PR before changing branches; preserve dirty work.
+At that checkpoint, the next-run instruction was to inspect the preparation branch/PR and preserve dirty work.
 Keep useful passing regression work bounded while the translator contract is unsettled.
 Update this index only for material changes, and do not repeatedly notify the same blocker.
 

@@ -176,17 +176,17 @@ Preparation defaults to cargo-release's dry-run. The root `release.toml` hook ru
 generation and staging only when `DRY_RUN=false`; previews preserve both file contents and the
 index. Use a clean isolated checkout for previewing preparation and inspect status afterward.
 
-For an authorized release from a clean checkout:
+For authorized release work, use a clean release branch, run cargo xtask ci, then prepare with
+`cargo xtask release prepare patch --execute`. Submit the prepared release changes through a PR
+and satisfy main's required checks. Do not use a direct push to main.
 
-```sh
-cargo xtask ci
-cargo xtask release prepare patch --execute
-cargo xtask release publish
-cargo xtask release publish --execute
-git push origin main
-# Replace VERSION with the prepared product version; push the binary tag separately.
-git push origin wsr-vVERSION
-```
+Verify the approved merged revision, version/changelog contents and applicable release checks
+before registry publication. Prepared local tags may refer to a pre-merge commit; reconcile any
+unpublished tags explicitly if merging rewrites that commit. Never rewrite published tags.
+From the verified release checkout, use `cargo xtask release publish` for the registry dry run,
+then `cargo xtask release publish --execute` only within explicit publication authorization.
+Inspect each tag target and push approved tags individually. See the
+[release runbook](CONTRIBUTING.md#publish-a-workspace-release).
 
 Push other intended package tags individually after reviewing them. GitHub suppresses tag push
 events for batches larger than three tags, so do not rely on `--follow-tags` to trigger binary

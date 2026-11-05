@@ -11,9 +11,9 @@ Reviewed November 5, 2026. The owner subsequently authorized the documentation r
 prototype stash are preserved. This plan proposes document ownership and sequencing, not
 production interfaces, new crates, a selected backend or implemented capabilities.
 
-## Assessment
+## Historical assessment before the refactor
 
-The documentation is partially aligned. ARCHITECTURE.md already separates provider compilation,
+At the pre-refactor audit, the documentation was partially aligned. ARCHITECTURE.md already separates provider compilation,
 planning/policy, provisioning, supervision, backends and results. D-012 ends provider callbacks at
 compilation; D-016 owns state/lifecycle; D-025 requires tool preflight; D-026 separates repository
 observability from shared resource measurements. These boundaries should be retained.
@@ -23,7 +23,7 @@ on-demand verified tools, shared immutable caches and deny-by-default enforcemen
 GitHub communication and attestations follow execution. These refinements require formal decision
 updates before describing them as settled interfaces or security guarantees.
 
-## Findings and disposition
+## Historical findings and planned disposition
 
 | Finding | Evidence | Refactor action |
 | --- | --- | --- |
@@ -38,7 +38,7 @@ updates before describing them as settled interfaces or security guarantees.
 | Profiles and repository metadata remain conversational proposals | Configuration schema remains open in D-023 | Track runner/tool catalogs, custom profiles, lockfile and .wsr layout as proposals |
 | DX guides and worker contract can drift | Simulated Java/Python/Node guides; Java worker still prioritizes Docker native reference | Reconcile scenarios and future worker instructions after the architectural decisions are recorded |
 
-## Proposed document ownership
+## Ownership proposed during the audit
 
 Paths marked new are planned destinations, not existing specifications.
 
@@ -93,7 +93,7 @@ For background operation, decide foreground ownership versus optional shared coo
 client authentication, persistence/reconnect, fairness and crash reconciliation. The owner's global
 job-count preference is 0 for no count cap; hardware capacity and policy admission remain effective.
 
-## Refactor sequence
+## Historical refactor sequence
 
 1. Update authoritative decisions for offline-first execution and optional reporting. Reconcile
    D-010, D-017, D-023, D-025 and D-026; record unresolved schemas and trust choices explicitly.
@@ -113,7 +113,7 @@ job-count preference is 0 for no count cap; hardware capacity and policy admissi
 7. Check internal links/anchors, Mermaid syntax/rendering and terminology. Run git diff --check.
    A documentation move must preserve decisions, open questions and implementation status.
 
-## Completion criteria
+## Refactor completion criteria
 
 Each responsibility has one owning specification; overview/index docs link to it. Every handoff
 has inputs, outputs, failure/cancellation behavior and an authority boundary. Known contradictions
@@ -140,6 +140,25 @@ summaries are synchronized only for product-direction wording, with profile/temp
 
 Validation results are recorded in the final handoff. Runtime behavioral claims require their own
 TDD evidence. This record is completion of document separation, not completion of open designs.
+
+### Current disposition — November 5, 2026
+
+| Original finding | Disposition after PR #17 |
+| --- | --- |
+| Provisioning ownership | Resolved by the provisioning guide |
+| Validation meanings | Separated by the planning guide |
+| Scheduler/dispatcher | Responsibilities separated; mechanisms remain open |
+| Concurrency preference | Recorded in D-028; schema/fairness remain open |
+| Independent execution | Refined in D-017/D-027 and integration guide |
+| Acquisition rules | Recorded in D-027 and cache/provisioning guides |
+| Evidence ownership | Added evidence guide and D-030; formats/trust remain open |
+| Telemetry coordination | Cross-subsystem ownership documented; daemon remains open |
+| Profiles and metadata | D-029/configuration preserve schema proposals explicitly |
+| DX/worker drift | Follow-up audit corrects platform/preflight examples and current handoff |
+
+The follow-up cleanup is a documentation correction. It supplies no runtime implementation.
+Companion organization-summary publication has a separate repository/PR lifecycle; local
+synchronization alone does not establish that GitHub's organization profile was updated.
 
 ### Validation record
 

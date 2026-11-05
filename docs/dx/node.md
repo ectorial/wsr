@@ -33,6 +33,10 @@ flowchart LR
 ```
 
 The profiles, metadata file layout, daemon, cache CLI and attestation schemas remain proposals.
+
+The adjacent YAML requests ubuntu-latest, whose target is Linux x64. The simulated traces preserve
+that target. On an ARM64 Mac, execution needs an explicitly qualified x64 mechanism or an explicitly
+selected ARM64 workflow/profile adaptation. No emulation or backend is selected by this walkthrough.
 Backend/platform selection and image/tool identities in simulated logs require separate decisions.
 
 ## 1. Meet the repository
@@ -235,17 +239,18 @@ SIMULATED VERBOSE RUN — TypeScript / cold package cache
 [wsr input] vars.BUN_VERSION=<explicit-project-version>; credentials absent
 [wsr provider] signed component HIT; metadata compilation MISS -> canonical plan validated
 [wsr plan] checkout/setup-bun qualified for action-host Bun@<compat-version>
-[wsr plan] project Bun@<project-version> selected separately; target=linux/arm64
+[wsr plan] project Bun@<project-version> selected separately; target=linux/x86_64
+[wsr preflight] known tool/script requirements validated; unsupported requirements block admission
+[wsr runtime] project Bun Linux artifact MISS; approved acquisition/identity verification
 [wsr policy] package-download access allowed for install; registry-write denied
 [wsr vm] managed Linux ready; host ~/.npmrc and host node_modules not mounted
 [wsr workspace] /workspace/node-001 created; private step scratch allocated separately
 [wsr step=checkout] qualified Bun action + Git child; selected source materialized; exit=0
 [wsr step=setup-bun] start action-host Bun@<compat-version> action=<resolved-sha>
-[wsr runtime] project Bun Linux artifact MISS; approved acquisition/identity verification
-[wsr state] export project runtime PATH; retain job-owned executable after action exits
+[wsr state] activate prepared project runtime PATH; retain job-owned executable after action exits
 [wsr cache] package namespace key=<lock+target+runtime+install-options+trust>; MISS
 [wsr cache] job-local writable package cache prepared; no host cache write access
-[wsr step=install] preflight known script/native requirements; enforce grants throughout execution
+[wsr step=install] enforce admitted script/native requirements throughout execution
 [wsr step=install] exec bun install --frozen-lockfile
 [workload install] Locked dependencies installed
 [wsr step=install] exit=0; execution remained within enforced policy
@@ -383,9 +388,9 @@ SIMULATED WSR OUTPUT — proposed maintenance presentation
 Use A for routine cleanup. `cache purge` exists only as a stub; its deletion scope and confirmation
 contract are undecided. This guide does not invent `cache gc`, `repair`, `logs`, or `retry` commands.
 
-For corruption, A is visible quarantine/reacquisition of the same pinned object when allowed; B is
-stop and require explicit repair. We prefer A for this example, but repair policy is still open.
-No repair silently changes a pinned version.
+D-027 requires corrupt objects to be quarantined and the same pinned identity reacquired when
+authorized. If acquisition is unavailable or denied, report the blocked requirement. Exact repair
+commands remain open. No repair silently changes a pinned version.
 
 For offline work, A is preflight rejection of statically known missing objects; B is discovering
 misses during execution. Prefer A. A cached provider alone does not make the job offline-capable:

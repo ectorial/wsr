@@ -7,6 +7,38 @@ flowchart LR
     L --> N[Next verified action]
 ```
 
+## Current checkpoint — November 5, 2026
+
+Design documentation is merged on main at `031b583e60ce93b6b0af3b41afdec02b393aedff`
+([PR #17](https://github.com/ectorial/wsr/pull/17)). Refresh live state before work; historical branch
+names and dirty-document lists below describe their original sessions.
+
+The selected source remains junit-team/junit-examples at
+`5bd6594a2336f1eff52527733ba28682a3215d83`, subproject junit-jupiter-starter-maven.
+Last recorded prerequisite results are wrapper bootstrap and a partial 51-artifact dependency
+repository. Native Maven success, the intended assertion failure, JAR checks and WSR execution
+remain unverified. Liberica 25 / clean verify evidence below is an adapted reference; the Java
+walkthrough requests Temurin 21 / verify and requires separately matching evidence.
+
+The owner stopped smoke-test implementation during the subsequent design discussion. This document
+does not resume that work. Before implementation resumes, reconcile the live owner instruction and
+external worker prompt with the current architecture, verify the required orchestrator model,
+and settle the next bounded behavior. Documentation-only approval does not resume the Java milestone.
+
+After explicit resumption, verify existing fixture/artifact identities and qualify the chosen
+reference path before running workloads. Do not select another project or repeat completed source
+selection. Acquire live checkout ownership and preserve unrelated edits.
+
+All target/wsr-tests paths below are ignored, machine-local evidence/preparation. They are not
+included in a clean clone. The historical Python scripts and their exact resume commands apply
+only if those files and their recorded hashes are present. A fresh checkout requires documented
+input reconstruction and verified source/tool acquisition before any execution claim.
+
+## Historical checkpoints
+
+Dated entries below preserve observations and their original next-action suggestions. The current
+checkpoint above is authoritative for handoff; later evidence must be added with its own date.
+
 ## Initial checkpoint — November 1, 2026
 
 - Authorization: replace the existing test-preparation schedule with the [Java implementation worker](java-e2e.md).
@@ -27,7 +59,7 @@ flowchart LR
 - Native reference results: not run.
 - Active implementation test: none; no red/green result claimed.
 
-## Next invocation
+## Historical initial next invocation
 
 Inspect the live checkout and prerequisites, acquire exclusive ownership, then select and pin a
 small Maven/GHA reference project. Record its license, workflow/actions, toolchain requirements,
