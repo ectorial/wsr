@@ -1,5 +1,12 @@
 # Testing WSR
 
+```mermaid
+flowchart LR
+    F[Canonical fixture] --> N[Native reference]
+    F --> T[Translation tests]
+    T --> E[WSR execution tests]
+```
+
 ## Rust tests drive implementation
 
 Use Cargo's standard test layout; no custom test framework or case registry is required:

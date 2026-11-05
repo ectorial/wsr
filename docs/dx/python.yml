@@ -1,0 +1,33 @@
+# Reference workflow for the adjacent WSR DX guide; not a WSR compatibility result.
+# Stored outside .github/workflows so this repository does not execute it.
+# Supply the example project and explicit version variables described in the guide.
+# Review and pin action commit SHAs before using as an execution fixture.
+name: Python CI
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: ${{ vars.UV_VERSION }}
+          python-version: '3.13'
+          enable-cache: false
+      - name: Prepare project
+        run: uv sync --locked --all-extras --dev
+      - name: Formatting
+        run: uv format --check
+      - name: Lint
+        run: uv run --no-sync ruff check .
+      - name: Type check
+        run: uv check
+      - name: Test
+        run: uv run --no-sync pytest --junitxml=reports/pytest.xml
+      - name: Build distributions
+        run: uv build

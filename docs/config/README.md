@@ -1,38 +1,63 @@
-# Configuration and policy
+# Configuration, pins and repository metadata
 
-## Current scaffold
+## Status
 
-The current checkout has no configuration loading/generation implementation or supported published
-schema. `init` is a stub. Earlier `wsr.json`, schema URL, and secret-file examples are historical,
-not a working setup contract. Root `wsr.toml` is the selected planned format; the exact TOML schema
-is still open. [Shared types](../../crates/wsr-types/src/lib.rs) do not define configuration.
+D-023 selects root wsr.toml. Loading/generation remains unimplemented. D-029 records runner/tool
+metadata direction. Examples of fields and file layouts remain proposals; source scaffold types
+are not configuration schemas.
 
-## Accepted design — planned
+```mermaid
+flowchart LR
+    W[wsr.toml and workflow requests] --> R[Resolve with invocation options]
+    P[Trusted global policy] --> A[Authorize effective plan]
+    R --> A
+    L[Pinned identities] --> R
+```
 
-`wsr init` creates `wsr.toml` at the repository root, preserving existing configuration and pins
-on reinitialization. It records repository parameters, configured providers, the primary provider,
-workflow discovery settings, and invocation defaults. GitHub Actions is the initial primary
-provider; local execution is the default product path. Exact key names are not yet specified.
+## Configuration ownership
 
-Normal commands use these defaults. Explicit invocation options override applicable repository
-settings, which override built-in defaults. In the CLI proposal, `--provider` and `--target` are
-optional overrides. A provider interprets workflow syntax; a destination selects where execution
-happens. The current skeleton does not parse these proposed options or load `wsr.toml`.
+| Scope | Content | Authority |
+| --- | --- | --- |
+| Repository wsr.toml | Parameters, provider selection, workflows, defaults, runner references | Requests and reproducibility settings |
+| Repository pins | Exact provider/action/profile/package identities | Inputs to resolution, verified under trusted policy |
+| Custom runner manifest | Platform/tools/defaults and company-package references | Requests subject to owner source/package policy |
+| Trusted global policy | Grants, source trust, cache and device scheduling limits | Machine owner/administrator |
+| Invocation | Workflow/event/input selection and permitted overrides | Subject to trusted policy |
+| Generated state | Compiled models, resolved plans, run records | Local implementation state with access/retention rules |
 
-Repository setup discovers workflows, verifies/pins provider components, and reuses a shared local
-cache. Multiple providers can coexist. Explicit provider selection or an unambiguous workflow path
-takes precedence over the configured primary provider; conflicting or ambiguous selection is an
-error. Cached pins support offline use; upgrades are explicit. See D-008 through D-014 and D-023
-in [PLAN.md](../../PLAN.md).
+Normal precedence is explicit invocation over applicable repository defaults over built-ins.
+Trusted policy constrains the result. A repository may request lower resource use but cannot widen
+device limits or grants. Global max-jobs=0 means no configured count cap, with other admission
+checks still effective. Exact keys/locations and merge rules require specification.
 
-Repository-owned configuration may describe workflows and capability requests. Trusted owner or
-administrator policy authorizes grants; an untrusted workflow cannot widen that policy. An explicit
-broad-access profile is a policy exception, not a repository-controlled permission bypass.
+## Init versus run
 
-Configuration must not contain raw secret values or enable third-party providers/broad access
-without trusted authorization. CLI overrides also remain subject to that policy.
+Init discovers workflows/providers, preserves existing config and pins, and performs provider
+bootstrap under D-010. Proposed runner setup resolves/pins small manifests and stores references
+rather than copying full inventories into wsr.toml. Run bootstraps missing configuration/provider
+inputs when supported, then provisions only the selected invocation's required packages.
+Explicit prefetch/preparation is a future interface choice.
 
-Exact TOML keys and schema versioning, parameter binding, pin/lock schema and location,
-environment-variable overrides, policy location, grant vocabulary, wildcard scope/syntax,
-and credential provisioning remain open. No example here should be treated as a stable API.
-See [the security model](../SECURITY-MODEL.md).
+Both paths verify reused objects. Normal approved downloads are progress, and YAML edits alone
+produce no warning. Only blocked requirements/acquisition/enforcement produce actionable diagnostics.
+An explicit offline acquisition policy fails on missing inputs, with no new CLI syntax implied.
+
+## Proposed metadata layout
+
+The owner has requested a repository metadata home. A candidate layout keeps wsr.toml and a lockfile
+under version control while .wsr/state contains ignored compiled/planned/run data. Lockfile naming,
+location, JSON/TOML formats and access controls remain open. Downloaded immutable packages live in
+the shared host cache, not duplicated per repository. Raw secrets belong in credential provisioning.
+
+Nine jobs need nine job records, not necessarily nine profiles. Jobs can share a profile, matrices
+can expand target variants, and expressions may defer target resolution. Resolved plans reference
+profile identities and preserve invocation-specific bindings. Regenerate derived metadata when
+source/provider/compiler/configuration/input or relevant policy identities change.
+
+## Open decisions
+
+Specify schema versions, runner aliases/pins/inheritance, parameter binding, environment overrides,
+lockfile update rules, global config location, policy/grant vocabulary, credential injection,
+metadata recovery and daemon state ownership. TOML maintained profiles and JSON resolved manifests
+are format proposals. See [provisioning](../provisioning/README.md), [cache](../cache/README.md) and
+[policy](../policy/README.md).

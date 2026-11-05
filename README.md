@@ -1,8 +1,16 @@
 # wsr — workflow sandboxed runner
 
-WSR is a pre-alpha project for running and debugging CI locally, then reusing the same
-execution engine inside GitHub Actions. The WebAssembly Component Model is central to the
+WSR is a pre-alpha project for running and debugging CI locally, independently of GitHub
+scheduling or service availability when required inputs are cached. The WebAssembly Component Model is central to the
 planned deny-by-default security model; existing tools use a separately isolated system backend.
+
+```mermaid
+flowchart LR
+    W[Workflow] --> P[Validate and provision]
+    P --> E[Schedule and execute locally]
+    E --> R[Local result]
+    R -.-> G[Optional GitHub reporting]
+```
 
 ## Current status
 
@@ -19,7 +27,9 @@ part of the current audit or documentation reconciliation.
 ## Accepted product direction — planned
 
 - Run and debug a documented subset of GitHub Actions workflows locally first.
-- Reuse the engine inside GitHub Actions next; independent CI is a later possibility.
+- Reuse verified cached actions and tools, acquiring approved missing inputs on demand.
+- Execute cached jobs again; prior successful results are not a substitute for execution.
+- Add GitHub reporting, hosted reuse and attestations through optional integrations.
 - Compile provider input into a provider-neutral workflow model with source traceability.
 - Use signed Component Model provider plugins and explicit capability-based component execution.
 - Run ordinary commands through an isolated Linux system backend; reject execution when required
@@ -29,6 +39,13 @@ part of the current audit or documentation reconciliation.
 - Assume workloads may be malicious. Workflow requests do not authorize their own permissions.
 - Offer explicitly owner-authorized broad runner access as an exception to the default policy.
   Wildcard scope and syntax remain open; broader permissions do not establish full compatibility.
+
+Use Bun for compatible GHA JavaScript actions inside the isolated system backend; the provider
+adapter and provider-neutral core remain. See the [GHA design](crates/wsr-gha/README.md).
+
+Runner provisioning, scheduling/dispatch, enforcement, observability and evidence have separate
+[owning guides](docs/README.md). Normal YAML edits and downloads are progress; blocked requirements
+produce diagnostics. Global job concurrency defaults to no count cap, with policy/resource checks.
 
 These are design decisions, not available features. Concrete runtime versions, system backends,
 outer isolation, grant syntax, and the first tested compatibility subset remain unresolved.

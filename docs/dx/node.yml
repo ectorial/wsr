@@ -1,0 +1,29 @@
+# Reference workflow for the adjacent WSR DX guide; not a WSR compatibility result.
+# Stored outside .github/workflows so this repository does not execute it.
+# Supply the example project and explicit version variables described in the guide.
+# Review and pin action commit SHAs before using as an execution fixture.
+name: TypeScript CI
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ vars.BUN_VERSION }}
+      - name: Locked install
+        run: bun install --frozen-lockfile
+      - name: Type check
+        run: bun run typecheck
+      - name: Test
+        run: bun run test
+      - name: Bundle
+        run: bun run build
+      - name: Preview package
+        run: bun publish --dry-run

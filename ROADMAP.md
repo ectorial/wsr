@@ -1,5 +1,13 @@
 # wsr delivery roadmap
 
+```mermaid
+flowchart LR
+    I[Inspect] --> S[Enforce boundaries]
+    S --> L[Useful local CI]
+    L --> C[Cache and concurrent runs]
+    C --> R[Optional reporting]
+```
+
 This is a staged direction, not a release/version schedule. [PLAN.md](PLAN.md) owns decisions;
 [CHECKLIST.md](CHECKLIST.md) owns implementation status. Creating a crate or writing a design does
 not complete a runtime milestone. All execution milestones below remain planned.
@@ -42,26 +50,39 @@ execution; workflow edits cannot grant permissions to themselves. Native macOS/W
 
 ## 4. Deliver useful local CI
 
-Combine compilation, planning, both execution paths, job supervision, and results for a small tested
+Combine compilation, validation, verified tool provisioning, qualified execution paths, job supervision, and results for a small tested
 workflow. Expand dependencies, expressions, outputs, matrices, and actions only through named fixtures.
 Keep immutable content separate from secrets, mutable run state, and unredacted logs.
+Qualify Bun for a named GHA JavaScript subset, including lifecycle and state channels; prove workspace
+visibility across component and Bun/system steps. Follow the [GHA gates](crates/wsr-gha/docs/VALIDATION.md).
 
 **Gate:** users can inspect, run, and diagnose the supported subset; failure/skip/cancellation semantics
 are tested; effective grants and environment identity are visible. No full compatibility claim.
 
-## 5. Reuse the engine inside GitHub Actions
+## 5. Prepared execution and multi-repository coordination
 
-Define a wrapper contract for job/pipeline selection, outer scheduling, inputs, cancellation,
-credentials, reporting, and recursion prevention. Qualify the available execution boundary without
-assuming nested virtualization works everywhere.
+Prove verified cache hits without upstream calls, exact-pin acquisition on misses, retained pin
+roots, revoked/corrupt-object rejection, tool dependency closure and setup-action timing.
+Then define foreground/background ownership and implement device-wide admission across repositories.
+max-jobs=0 removes the count cap while other admission checks remain. Queue reasons and repository
+metrics must explain waits without cross-repository data leaks.
 
-**Gate:** the same engine executes the supported subset locally and in Actions; environment differences
-and security exceptions are reported; broad access does not expand GitHub token permissions.
+**Gate:** networking-disabled execution works with prepared inputs, missing objects fail precisely,
+normal YAML changes acquire approved inputs without warnings, and two repositories obey global
+limits with cleanup/recovery evidence. No previous successful test result substitutes for execution.
+
+## 6. Optional evidence publication and hosted reuse
+
+Define local evidence identities, signing trust and a configured connector outbox. Qualify any
+reuse of WSR inside GitHub Actions with its own wrapper/outer-boundary contract.
+
+**Gate:** reporting outages preserve completed local results, duplicate retries do not re-execute
+jobs, and receiver verification is explicit. Attestations alone do not satisfy required checks.
 
 ## Later possibilities
 
-Independent CI with a GitHub App, durable scheduling, workers, and Checks reporting comes after
-the local/Actions path. Remote/team cache, catalogs, more providers, native macOS/Windows jobs,
+Remote CI hosting with a GitHub App, durable workers and remote scheduling is later scope.
+Remote/team cache, more providers, native macOS/Windows jobs,
 and deployment workflows require separate evidence and decisions. No repositories or version
 numbers are reserved for them by this roadmap.
 

@@ -1,5 +1,12 @@
 # WSR CLI skeleton implementation plan
 
+```mermaid
+flowchart LR
+    A[Arguments] --> P[Typed parsing]
+    P --> H[Scaffold handler]
+    H --> D[Placeholder diagnostic]
+```
+
 Status: implemented in the local checkout on 2026-10-08 following user approval. This document
 records the scope and implementation plan for the completed skeleton slice. It supplements
 [the CLI guide](README.md) and does not replace the product decisions in [PLAN.md](../../PLAN.md)

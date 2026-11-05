@@ -41,62 +41,77 @@ verified boundary for malicious workloads. GitHub adapter code is not a deployed
 Inspect recovery in isolation before selecting reusable work. Preserve the original stash;
 do not apply it blindly over the current workspace or infer current support from prototype code.
 
-## Target architecture — accepted design, not implemented
+## Target architecture
 
-Repository setup starts with `wsr init`, which creates root `wsr.toml` for parameters, configured
-providers, the primary provider, and invocation defaults. GitHub Actions is the initial primary
-provider; execution defaults to the local path. Explicit invocation options override applicable
-repository settings without widening trusted authorization. See D-023 in [PLAN.md](PLAN.md)
-and [configuration](docs/config/README.md). The configuration generator/loader is not implemented.
+The local engine executes compiled workflows independently of GitHub's control plane. Verified
+cached inputs enable disconnected execution when the workload needs no external service. Approved
+cache misses use routine acquisition. Changed YAML triggers resolution, not a warning.
 
-| Boundary | Intended responsibility |
-| --- | --- |
-| CLI and integrations | Supply explicit inputs and present plans/results; local use needs no hosted controller |
-| Provider host | Discover, pin, verify, and instantiate signed provider components through versioned WIT |
-| Provider compiler | Parse source/defaults/expressions, retain provenance, classify compatibility, lower to canonical IR |
-| Planner and policy | Bind available inputs, analyze dependencies/platforms/capabilities, authorize grants, reject unsupported plans |
-| Execution core | Evaluate canonical expressions at their defined phases; manage jobs, steps, outputs, cancellation, and failures |
-| Job supervisor | Own workspace/tool/service lifetimes and explicit state transfer between isolated steps |
-| Component backend | Expose only authorized typed host interfaces and enforce resource/lifecycle limits |
-| System backend | Execute Linux tools with enforceable isolation and explicit grants; fail closed when requirements cannot be met |
-| Local content store | Share immutable verified content across repositories; keep secrets and mutable run state separate |
-| Results and evidence | Identify inputs, tools, policy, environment, effective grants, outcomes, and artifacts |
+```mermaid
+flowchart LR
+    I[Workflow inputs] --> P[Compile and validate]
+    P --> T[Provision tools]
+    T --> Q[Schedule jobs]
+    Q --> E[Dispatch and execute]
+    E --> R[Local results]
+    R -.-> C[Optional reporting]
+```
 
-The intended flow is source and explicit event inputs → provider compilation → canonical model
-and compatibility diagnostics → planning/policy → job supervision and selected backends → results.
-Provider components terminate at compilation: execution has no opaque provider-expression callbacks.
-Dynamic values are evaluated at the appropriate phase rather than all being known before execution.
+This is a responsibility map. Dynamic conditions/outputs are evaluated at their proper phases,
+and readiness/capacity is rechecked at dispatch. Policy applies to acquisition and execution;
+observability spans all phases. Exact APIs and serialization are still open.
 
-## Execution and trust
+| Owner | Contract and handoff | Guide |
+| --- | --- | --- |
+| Configuration/bootstrap | Explicit invocation, defaults and verified pins | [Configuration](docs/config/README.md) |
+| Provider compiler | Source semantics to canonical model, diagnostics and provenance | [Providers](docs/provider/README.md) |
+| Planner/validator | Valid structure, dynamic binding, platform/capability/tool requirements | [Planning](docs/planning/README.md) |
+| Provisioner | Verified dependency closure and private environment readiness | [Provisioning](docs/provisioning/README.md) |
+| Content store | Immutable verified objects, leases and atomic publication | [Cache](docs/cache/README.md) |
+| Trusted policy | Effective acquisition and execution grants | [Policy](docs/policy/README.md) |
+| Scheduler/dispatcher | Eligible job selection, global admission and supervisor launch | [Engine](docs/engine/README.md) |
+| Job supervisor | Step lifecycle, state/outputs, services, cancellation and cleanup | [Engine](docs/engine/README.md) |
+| Backend | Enforced platform/capabilities and bounded process/component execution | [Backends](docs/sandbox/README.md) |
+| Observability | Repository-scoped logs/resources and authorized device correlation | [Observability](docs/observability/README.md) |
+| Evidence | Local result/input/artifact identities and optional signing | [Evidence](docs/evidence/README.md) |
+| Connector | Optional external publication, status and retry | [Integrations](docs/sync/README.md) |
 
-The first deployment runs Linux jobs from macOS and Linux machines. Linux system execution on
-macOS needs a VM-backed Linux environment. The Linux backend, outer boundary, CPU architectures,
-images, concrete Component Model runtime, and WASI version are still open choices.
+## Workflow and environment compatibility
 
-Deny-by-default is the normal policy. A workload requests access; owner or administrator policy
-authorizes it; the chosen backend enforces grants and denials. The system assumes malicious code
-on a single-user machine. See [the security model](docs/SECURITY-MODEL.md).
+Signed provider components compile into the provider-neutral model. They terminate at compilation.
+The core evaluates translated expressions and handles job/step dependencies and outcomes. GHA-specific
+lowering/state semantics live in [wsr-gha](crates/wsr-gha/README.md). Bun is selected for qualified
+JavaScript actions, inside an enforced system boundary. QuickJS, automatic action recompilation and
+WASIX are unselected. A component mapping needs an explicitly compatible artifact.
 
-An explicit broad-access compatibility profile is accepted as a feature direction. Its wildcard
-scope, syntax, and activation granularity are not settled. It must never activate automatically
-when a permission check or backend fails, and must not claim the default profile's narrower protection.
+Runner profiles describe platform/ABI, defaults and available tools. Package catalogs describe exact
+sources, verification, dependency closure and activation. D-025 preflight preserves setup-action
+timing and effects. Complete discovery of arbitrary scripts is impossible through YAML parsing alone;
+supported dynamic requirements and produced-tool policy need explicit contracts.
 
-A job is a state/lifecycle boundary, while step environments have separate grants. Shared workspace,
-tools, services, and outputs need explicit contracts. Selecting a system backend for one step does
-not grant every step the same authority. No partially executed step is automatically replayed in a
-more permissive backend. Shared files may carry malicious state between steps.
+GHA labels are compatibility requirements, not interchangeable host labels. Initial execution scope
+remains Linux jobs from macOS/Linux hosts. CPU architecture coverage, Linux environment substrate,
+WASI/runtime and system outer isolation remain open. Avoiding Docker as a provisioning dependency is
+the product direction; workloads explicitly requesting container semantics still need a supported
+container path or a diagnostic. Linux system execution from macOS requires a compatible Linux boundary.
 
-## Compatibility and integration
+## Concurrency and state
 
-Compatibility is feature-specific: native, faithfully emulated, fallback-required, unsupported,
-or unknown. Provider compilation may lower one source construct into multiple canonical nodes;
-it must preserve source traceability and diagnose unrepresentable semantics. Cross-provider source
-translation is outside the design. No action is assumed convertible from JavaScript to Wasm.
+D-028 applies a global running-job count policy across repositories, default max-jobs=0 for no count
+cap. Resource and policy checks remain. Ready queue, blocked dependencies, provisioning and running
+work have distinct wait reasons. Background service/foreground ownership, queue fairness and crash
+recovery remain proposals to specify. No crate layout or daemon API is selected by these diagrams.
 
-Reusing the engine inside GitHub Actions follows useful local execution. Wrapper scheduling,
-cancellation, credentials, and recursion prevention remain open. Local and CI runs share engine
-semantics, not a guarantee of identical environments or outcomes.
+Jobs retain private mutable workspace/credentials/logs. Authorized state passes between steps through
+the supervisor. Step outputs feed job output expressions and dependent jobs at defined phases.
+Shared cache bytes do not grant cross-repository access or execution authority.
 
-A GitHub App, remote scheduler, and worker fleet are later possibilities. The organization profile
-generator is unrelated to them. No separate action catalog, registry, or service repository is
-required for the first local milestone.
+## Trust and result boundaries
+
+Trusted policy authorizes workflow requests and backends enforce denials. Missing enforcement blocks
+startup. The explicit broad-access profile requires owner selection; its scope and syntax remain open.
+No failed step is replayed automatically with wider permissions. See [security](docs/SECURITY-MODEL.md).
+
+Local results survive connector outages. Optional attestations bind signer claims to identities under
+an explicit verification policy. Signatures/containment do not establish truthful arbitrary tests.
+No execution or enforcement path is implemented by this documentation refactor.
