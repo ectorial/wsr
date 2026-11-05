@@ -1,5 +1,11 @@
 # Current workspace inventory
 
+```mermaid
+flowchart LR
+    C[Current crate inventory] --> D[Design responsibilities]
+    D --> T[Future behavior and tests]
+```
+
 These are existing crates, not approved boundaries for the redesign. Three library entry files
 contain Rust declarations; the other thirteen contain documentation only. Dependencies in manifests
 do not establish working subsystems. See [architecture](../ARCHITECTURE.md) and [decisions](../PLAN.md).
@@ -14,7 +20,7 @@ do not establish working subsystems. See [architecture](../ARCHITECTURE.md) and 
 | [wsr-engine](wsr-engine/src/lib.rs) | planning and execution engine placeholder |
 | [wsr-expr](wsr-expr/src/lib.rs) | expression evaluator placeholder |
 | [wsr-fs](wsr-fs/src/lib.rs) | filesystem helper placeholder |
-| [wsr-gha](wsr-gha/src/lib.rs) | GitHub Actions frontend placeholder |
+| [wsr-gha](wsr-gha/README.md) | GitHub Actions frontend placeholder; crate-local compatibility design |
 | [wsr-git](wsr-git/src/lib.rs) | hook integration placeholder |
 | [wsr-resolver](wsr-resolver/src/lib.rs) | action/artifact resolution placeholder |
 | [wsr-sandbox](wsr-sandbox/src/lib.rs) | component execution placeholder |

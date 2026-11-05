@@ -1,0 +1,22 @@
+# Reference workflow for the adjacent WSR DX guide; not a WSR compatibility result.
+# Stored outside .github/workflows so this repository does not execute it.
+# Supply the example project and explicit version variables described in the guide.
+# Review and pin action commit SHAs before using as an execution fixture.
+name: Java CI
+on:
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Verify and package
+        run: ./mvnw --batch-mode --no-transfer-progress verify

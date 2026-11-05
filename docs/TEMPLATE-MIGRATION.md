@@ -1,5 +1,12 @@
 # Template migration and repository tooling
 
+```mermaid
+flowchart LR
+    U[Template snapshot] --> R[Reviewed WSR adaptations]
+    R --> V[Tooling verification]
+    V --> P[Preserved recovery material]
+```
+
 WSR initially adopted a rendered snapshot of [carlosferreyra/rust-template at
 74d68f0](https://github.com/carlosferreyra/rust-template/tree/74d68f0daa4ab41c9c02a92b30b21372a10e2faa),
 adopted on October 7, 2026. The WSR baseline was

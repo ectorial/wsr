@@ -1,10 +1,18 @@
 # wsr redesign plan
 
-> Status: **architecture interview in progress — do not implement**
+```mermaid
+flowchart LR
+    D[Accepted decisions] --> S[Subsystem contracts]
+    S --> T[Behavioral evidence]
+    Q[Open questions] --> D
+```
+
+> Status: **pre-alpha design in progress; bounded Java E2E TDD implementation authorized**
 >
 > This document is the durable record of the design feedback loop. Confirmed decisions,
 > rejected alternatives, unresolved questions, and their consequences are recorded here as the
-> conversation progresses. It becomes implementation-ready only after the status above is changed.
+> conversation progresses. The [Java worker contract](docs/implementation/java-e2e.md) defines the
+> authorized implementation slice; unresolved architecture choices still require decisions.
 
 ## Documentation status and ownership
 
@@ -18,8 +26,9 @@ Use [ARCHITECTURE.md](ARCHITECTURE.md) for source inventory and target boundarie
 and [the security model](docs/SECURITY-MODEL.md) for the accepted trust contract and open exceptions.
 Organization docs summarize these records. Historical drafts do not override them.
 
-Documentation can be made consistent while design questions remain open. This does not authorize
-implementation, stash restoration, publication, or selection of an unresolved runtime/backend.
+Documentation can be made consistent while design questions remain open. The owner authorized the
+bounded Java E2E worker on November 1, 2026; this does not authorize stash restoration, publication,
+or silently selecting unresolved runtime/backend or policy contracts.
 
 ## 1. Purpose
 
@@ -245,7 +254,8 @@ requiring an MVP network protocol or distributed consistency model.
 
 **Decision:** the planner classifies workflow operations by execution requirements. Native
 WebAssembly execution is preferred. When semantics or dependencies cannot run there, `wsr` selects
-a compatible backend such as a JavaScript runtime or an OCI/container backend. Docker is avoided
+a compatible backend such as a JavaScript runtime or an OCI/container backend. D-024 selects Bun
+for compatible GHA JavaScript actions; this does not select the system isolation substrate. Docker is avoided
 when possible but remains available for workflows that genuinely require container semantics.
 
 The tier system is capability-based rather than provider-based: the same workflow may contain
@@ -290,20 +300,22 @@ userlands, but they do not provide faithful Windows or macOS execution. True cro
 require matching native hosts, virtual machines where legally and technically available, or later
 remote runners.
 
-### D-017 — Local execution followed by reuse inside GitHub Actions
+### D-017 — Independent local execution and optional integrations
 
-**Decision:** the first product solves running and debugging CI locally. The next integration
-reuses that execution engine inside GitHub Actions. Independent CI remains a later possibility,
-not a requirement for the first useful release.
+**Decision, refined November 5, 2026:** WSR owns local workflow execution without GitHub
+registration, scheduling, or control-plane availability. Existing GHA workflows are source inputs.
+With all required inputs cached and a workload that needs no external services, execution can
+proceed disconnected. Default approved acquisition fills missing cache objects as ordinary progress.
+YAML edits alone produce no warning or notification. D-027 owns exact cache/offline behavior.
 
-**Architectural consequence:** local execution must not require a hosted controller, GitHub App,
-worker fleet, or remote database. The Actions integration should invoke the same engine rather
-than introduce a second implementation of workflow semantics.
+Running the same engine inside GitHub Actions and publishing results to GitHub are optional
+integrations. Reporting outages must preserve local execution results. Remote CI hosting and
+worker fleets remain separate later scope. Attestation trust and publication are specified
+separately from execution under D-030.
 
-**Still unresolved:** the Actions wrapper's unit of execution (selected job or whole pipeline),
-ownership of scheduling and cancellation, input/context binding, credentials, reporting, and how
-it avoids recursively invoking its own wrapper workflow. Reusing the engine does not establish
-identical local and hosted environments or outcomes.
+This refines the earlier local-then-hosted delivery order. Local execution independence is the
+core requirement; GitHub reuse does not gate it. Wrapper selection, credentials, reporting,
+cancellation ownership and recursion prevention remain open integration contracts.
 
 ### D-018 — Component Model as a core security boundary
 
@@ -479,6 +491,154 @@ selected configuration format. This decision does not authorize restoring that p
 provider pin/lock schema and location, environment-variable overrides, trusted policy location,
 credential provisioning, and the CLI structure for inspecting or changing configuration.
 
+### D-024 — GHA compatibility through Bun
+
+**Decision (2026-11-01):** retain the provider adapter and provider-neutral core. GitHub Actions
+compatibility design lives in [wsr-gha](crates/wsr-gha/README.md). Use Bun as the intended runtime
+for compatible GHA JavaScript actions inside the separately isolated system backend. The provider
+lowers source semantics and explicit execution requirements; core planning, authorization, supervision,
+and backend enforcement remain shared. Provider compilation does not execute actions.
+
+**Execution model:** prefer compatible component artifacts where available; use Bun for qualified
+JavaScript actions and explicit shell/tool/container paths for their respective requirements. This
+is not a fixed three-tier ladder. QuickJS is not required. No native Node fallback is selected, and
+no JavaScript-to-Wasm conversion or universal Node compatibility is assumed. Backend selection
+precedes side effects; failures never trigger automatic replay with broader grants.
+
+**State:** D-016 remains authoritative. The provider owns GHA environment/output/action-state
+semantics; the supervisor owns shared workspace and resource lifetimes. No overlay/VFS mechanism
+is selected. Bun and descendants require system isolation; Bun is not a sandbox boundary.
+
+**Open:** Bun version and provisioning/integrity, initial API/action subset, optional executable
+bundling, lifecycle and command-protocol lowering, canonical requirements/extension admission,
+component artifact mapping, system/container substrate, and precise state/failure semantics.
+A selected runtime family does not settle its backend or prove compatibility.
+
+**Pre-alpha status:** all execution paths remain unimplemented. These documents may change by commit;
+they do not freeze APIs or serialized contracts. Record subsequent decisions here and update the
+crate-local contract and evidence together. See [GHA validation](crates/wsr-gha/docs/VALIDATION.md).
+
+### D-025 — Verified tool preflight before workflow execution
+
+**Decision:** after provider compilation, WSR inventories statically identifiable commands,
+action runtimes, declared tool versions and system/library dependencies for the selected job
+OS and CPU architecture. Before any workflow-controlled step executes, host provisioning
+resolves those requirements against supported tools, verifies eligible immutable cached
+packages, and fetches approved missing packages with their dependency closure. Downloads are
+staged, verified under trusted source/integrity policy and published atomically. The job receives
+a controlled tool view and PATH. Record exact package, dependency, target and verification identities.
+
+Known unsupported tools, incompatible versions/targets, unverifiable packages or denied
+acquisition reject the selected workflow invocation before execution, with source-linked
+diagnostics and remediation. Cache presence grants no execution authority. Cache provenance,
+allowed sources, retention and quotas are controlled separately from step execution grants.
+
+Preflight is an internal plan phase with visible progress/failures. It preserves original
+workflow step identities, ordering, conditions and outputs. Setup actions retain their declared
+effects and requested versions. Provider compilation remains free of workload execution.
+
+**Discovery limits:** arbitrary scripts and dynamic commands cannot be completely inventoried
+by parsing YAML alone. Unresolved external tool requirements need an explicit supported declaration
+or resolution contract before admission; the initial subset must reject unresolved requirements
+rather than claim complete discovery. Executables produced by workflow build/setup steps require
+an explicit execution policy and are not automatically unsupported catalog tools. No automatic
+installation/replay follows a failed side-effecting command. Exact interfaces remain open.
+
+**Initial admission boundary:** requirements dependent on unavailable job/step outputs are
+rejected before any workload executes unless all possible required tools/targets can be resolved
+and authorized in advance. Runtime selection among already admitted alternatives is allowed only
+under a defined supported contract. Staged admission that discovers new external requirements
+after earlier jobs execute is a future proposal, not the initial preflight guarantee.
+
+**Baseline proposal:** evaluate a pinned subset of uutils/coreutils as bundled runner tools,
+qualified per command against required GNU/GHA behavior. Shells, Git, curl and other tool families
+need separate provisioning. Bundled tools remain subject to execution policy. Package/catalog
+format, dependency resolver, baseline subset and packaging remain undecided.
+
+**GHA reference:** consult the [runner image index](https://github.com/actions/runner-images#available-images)
+and [Ubuntu 24.04 inventory](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md).
+Moving labels such as ubuntu-latest require recording the resolved image release and architecture.
+Inventory entries inform compatibility work; supported packages still require qualification.
+
+**Validation:** cover verified cache hits, approved misses, corrupt-package rejection, complete
+dependency resolution, target/version mismatches, and unsupported/unresolved-tool rejection
+before any workload step executes. Verify preservation of setup-action and step/output semantics.
+This decision is planned behavior; provisioning remains unimplemented.
+
+### D-026 — Repository observability and shared resource monitoring
+
+**Decision:** logs, events and attributed resource metrics carry repository/workflow/run/job/step
+identities and repository access boundaries. A separate device monitor measures shared capacity
+and pressure. Cross-repository correlation requires explicit owner visibility policy. Record
+resource budgets, queue waits and their admission reasons alongside CPU, RAM and available
+I/O/process measurements, with scope, units and sampling gaps. Separate observed contention
+from inferred causes and avoid double counting shared runtime/VM measurements.
+
+See [Observability](docs/observability/README.md) for collection diagrams, a synthetic two-repository
+resource timeline, privacy/retention requirements and acceptance gates. Storage, collectors,
+sampling, UI and export mechanisms remain open. This is planned behavior, not implementation.
+
+### D-027 — Cached execution and routine acquisition
+
+**Decision:** normal invocations reuse verified exact pinned objects without an upstream
+availability check. Approved missing providers, actions, tools and dependencies are fetched and
+verified automatically. Changed YAML invalidates affected derived plans and resolves new
+requirements through the same path. Downloads are progress; unsupported requirements, unavailable
+objects, acquisition failures, integrity failures or denied access are actionable diagnostics.
+Distinguish network/authentication/rate-limit failures from confirmed upstream unavailability.
+
+Offline execution reuses inputs and executes jobs again; it does not restore prior test success.
+When acquisition is disabled, a missing required object blocks admission with preparation guidance.
+Workload-required network services remain dependencies. Offline CLI syntax remains open.
+
+A matching verified cached action can execute after upstream deletion. Retained repository pins
+root objects for normal cache collection. Explicit forced removal may break future offline runs
+and must explain that consequence. Upgrades are explicit; never replace a missing pin silently.
+Known local revocations override cache eligibility. Any freshness requirement for remote revocation
+information is explicit policy, with offline freshness recorded. No continuous monitoring is required.
+
+### D-028 — Device scheduling and repository isolation
+
+**Decision:** ready jobs across repositories are subject to a global job-count policy. The owner
+selects max-jobs = 0 as the default meaning no configured count cap. A positive value bounds
+simultaneously active job slots. Dependency-blocked jobs are distinct from ready queued jobs.
+Platform, policy and resource admission still apply. Record queue reasons for observability.
+Completion/cancellation releases a slot after supervised cleanup; exact reservation and crash
+reconciliation contracts must be settled before implementation.
+
+Scheduling chooses eligible jobs; dispatch allocates a qualified environment and starts their
+supervisors. Shared cached packages do not imply shared mutable workspaces, credentials or logs.
+An optional per-user coordinator/daemon, foreground ownership, fairness, persistence, resource
+budget policy and IPC authentication remain proposals requiring contracts. Core workflow semantics
+must be shared between modes. This decision does not prescribe time-slicing or job preemption.
+
+### D-029 — Runner profiles, package catalogs and repository metadata
+
+**Direction:** separate runner environment descriptions from package acquisition metadata. A
+runner profile describes target platform/ABI, defaults, tools, environment and execution facilities.
+A package describes exact identity, sources, verification, dependencies and activation. Custom
+company profiles/tools remain subject to trusted policy. No automatic recompilation of actions is
+selected. uutils remains an evaluated baseline proposal under D-025.
+
+**Open schema proposals:** maintained TOML profiles, generated JSON resolved manifests, inheritance,
+profile references in wsr.toml and committed pins under .wsr with ignored local state. No field
+names, lockfile location or profile serialization are approved by these examples. Proposed init
+behavior resolves/pins small manifests; run provisions only required tools. D-010 provider
+bootstrap remains applicable, including uninitialized invocations. See the config and provisioning
+guides for responsibilities and outstanding decisions.
+
+### D-030 — Local evidence and optional attestations/reporting
+
+**Direction:** collect local results and input/environment/artifact identities independently of
+external publication. Signing/attestation and GitHub connectors are optional capabilities. Preserve
+local results during reporting outages and expose publication status separately from execution.
+Attestations bind a signer to claims; trust, truthful execution, key protection and verification
+require explicit contracts. Attestations do not automatically satisfy GitHub required checks.
+
+Attestation format, signer trust policy, key custody, queue/retry persistence, remote API mapping
+and receiver configuration remain open. Workloads cannot access signing keys or invent authoritative
+host evidence. Only explicit user-configured connectors may publish externally.
+
 ## 3. Superseded or unconfirmed prior claims
 
 The following ideas found in the existing repository are not requirements unless this plan later
@@ -500,7 +660,7 @@ accepts them explicitly:
 - Begin with user-visible compatibility and reliability, then derive internal boundaries.
 - Keep provider syntax outside the provider-neutral execution core.
 - Treat local execution as the first end-to-end milestone.
-- Reuse the local execution engine inside GitHub Actions before requiring independent CI.
+- Execute locally independently of GitHub; add hosted reuse and reporting through optional integrations.
 - Make the Component Model and explicit capability grants central to the security contract.
 - Reject system execution when the chosen backend cannot enforce the required restrictions.
 - Target Linux jobs from macOS and Linux development machines before native macOS/Windows jobs.
@@ -524,12 +684,12 @@ Questions are resolved in dependency order, one at a time:
 9. Remaining source representation and translation stages.
 10. Action compatibility taxonomy (`run`, JavaScript, composite, Docker, local, reusable workflow).
 11. ~~Tier selection timing and job-versus-step execution granularity.~~ Resolved by D-016.
-12. Execution substrate and concrete compatibility backends.
+12. Execution substrate and concrete compatibility backends (Bun selected for compatible GHA JavaScript actions by D-024; versions and isolation remain open).
 13. Local/cloud portability boundary and execution protocol.
 14. Workspace, filesystem, artifact, output, and service-container semantics.
 15. Capabilities, permissions, secrets, identity, and supply-chain trust.
-16. Scheduling, matrices, concurrency, cancellation, retry, and failure semantics.
-17. Observability, provenance, diagnostics, explainability, and compatibility reporting.
+16. Scheduling mechanisms, matrices, cancellation, retry and failure semantics (global count policy in D-028).
+17. Observability mechanisms and evidence/signing contracts (directions recorded in D-026 and D-030).
 18. Extensibility and versioning policy for providers, actions, IRs, protocols, and plugins.
 19. CLI/product workflows and migration from GitHub Actions or `act`.
 20. Crate/module boundaries derived from the accepted architecture.

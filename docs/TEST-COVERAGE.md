@@ -1,5 +1,12 @@
 # Behavioral test coverage
 
+```mermaid
+flowchart LR
+    S[Reviewed source scope] --> B[Behavioral tests]
+    B --> E[Observed revision and result]
+    E --> G[Limits and gaps]
+```
+
 Reviewed October 26, 2026 against base `faf418eb0afd4cc567ad9b69cd6414a88bde1c47`.
 This index records observed behavior, not feature completeness. The test/documentation
 change was prepared on `codex/test-coverage-index` in [PR #16](https://github.com/ectorial/wsr/pull/16);
@@ -74,3 +81,73 @@ CI is separate and must be checked on its PR before any merge. Auto-merge remain
 Next run: inspect live state and this branch/PR before changing branches; preserve dirty work.
 Keep useful passing regression work bounded while the translator contract is unsettled.
 Update this index only for material changes, and do not repeatedly notify the same blocker.
+
+
+## Java reference input preparation — November 2, 2026
+
+The [manual preparation checkpoint](implementation/java-progress.md#november-2-manual-preparation--downloaded-inputs-only)
+records a complete pinned `junit-jupiter-starter-maven` source subtree, upstream license/workflow,
+verified GitHub commit/tree/blob identities and SHA256 manifest under ignored
+`target/wsr-tests/java/manual-preparation-20261102/`. Original input commit:
+`junit-team/junit-examples@5bd6594a2336f1eff52527733ba28682a3215d83`.
+An explicitly derived manual Maven workflow is review input only; action metadata is captured,
+not qualified under Bun. Parent Astra orchestrated a requested Sol fixture/docs delegation;
+see the checkpoint for assignment verification limits and preserved branch/base.
+
+`cargo xtask ci` passed (exit 0); `git diff --check` passed. Raw logs/result records are in that
+ignored evidence directory. Read-only `docker info` failed (exit 1, absent desktop-linux daemon
+socket); no daemon was started. Native Java pass/fail, JAR/Surefire verification, WSR translation
+and execution, isolation and cache behavior remain unexecuted. Download/setup success is not
+behavioral red/green. Next command: `docker info`; qualification and exact image/JDK/Maven
+artifact verification must precede any upstream execution. No product behavior or test changed.
+
+
+## Linux Java reference prerequisites — November 3, 2026
+
+The [qualification checkpoint](implementation/java-progress.md#november-3-linux-reference-prerequisite-qualification)
+records an available Docker Desktop Linux ARM64 daemon and digest-pinned BellSoft JDK25 image.
+Ignored evidence `target/wsr-tests/java/linux-qualification-20261103/commands.json` preserves exact
+commands; image/container inspection, JDK hashes, probe/cleanup logs and CI results accompany it.
+Two disposable UID10001 containers verified bounded CPU/memory/PID settings, read-only root,
+zero capabilities, no-new-privileges/seccomp, no bind/volume/socket/credential mounts, denied
+outbound networking and fresh private tmpfs. Containers were removed; final filtered list empty.
+This is reference-environment prerequisite evidence, not a hostile-code security audit or WSR
+sandbox implementation. `cargo xtask ci` and `git diff --check` passed. Requested Sol delegation
+and runtime-verification limits are recorded in the checkpoint. Maven distribution/dependency
+verification, native pass/fail and JAR/Surefire evidence remain pending. No upstream Maven/script,
+WSR translation/execution, action/Bun, caching or product red/green behavior was exercised.
+
+
+## Maven reference inputs — November 4, 2026
+
+The [Maven preparation checkpoint](implementation/java-progress.md#november-4-maven-input-preparation--no-workload-execution)
+records exact Maven 3.10.0 ZIP acquisition, matching upstream SHA512/SHA1, and a valid detached
+signature against HTTPS-fetched official Maven KEYS (independent signer trust not established).
+Ignored `target/wsr-tests/java/maven-inputs-20261104/` retains input provenance, archive inventory,
+GPG command/results and the restricted dependency acquisition plan. No archive extraction,
+Maven/upstream script execution or dependency resolution occurred. Reuse of the qualified
+image-contained JDK is reference-only. Next prerequisite is qualification of restricted acquisition
+and container input delivery; native pass/fail and all Java/WSR product acceptance lanes remain pending.
+
+Validation for this slice: `cargo xtask ci` exit 0 (format, locked compilation/Clippy, workspace
+tests and strict docs); `git diff --check` passed. Logs/results remain in the ignored evidence root.
+This is repository regression evidence only; no Java behavioral red/green claim.
+
+## Java offline dependency preparation — November 4, 2026
+
+The [dependency checkpoint](implementation/java-progress.md#november-4-dependency-preparation--bounded-offline-discovery)
+qualifies validated source/Maven transfer and wrapper bootstrap inside the pinned Linux ARM64
+reference container. All fetched workload execution remained nonroot and network-none, with
+explicit private settings/repository and prior resource restrictions; no host Maven ran.
+Explicit fixed Central HTTPS acquisition retained 51 checksum-checked POM/JAR artifacts
+(2,745,759 bytes). This is a partial inventory, not a resolved dependency closure.
+
+Ignored `target/wsr-tests/java/dependency-preparation-20261104/` preserves exact scripts/argv,
+per-attempt failures, artifact URLs/hashes, delivery-integrity checks, runtime identities and cleanup.
+Wrapper `--version` passed; final offline `clean verify` exited 1 during resources-plugin descriptor
+resolution for maven-filtering 3.5.0 and plexus-utils 3.6.0. The checkpoint identifies their reviewed
+missing parents and exact resume command. Compilation, tests, native pass/fail, Surefire/JAR and
+all Java/WSR product acceptance lanes remain pending; setup failure is not behavioral red.
+
+`CARGO_NET_OFFLINE=true cargo xtask ci` and `git diff --check` passed. This is repository regression
+and reference-prerequisite evidence only.

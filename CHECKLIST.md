@@ -1,5 +1,12 @@
 # wsr implementation status
 
+```mermaid
+flowchart LR
+    D[Planned contract] --> T[Behavioral test]
+    T --> E[Observed evidence]
+    E --> C[Completion claim]
+```
+
 Product status was checked on October 8, 2026; validation foundation evidence was added on
 October 21, 2026; Rust dogfood guards and a native shell reference were added on
 October 25, 2026. This file counts implemented
@@ -23,19 +30,30 @@ for delivery gates.
 - [x] CI/release workflow definitions (their existence is not runtime feature coverage).
 - [x] Documentation distinguishes current scaffold, preserved prototype, accepted design, and proposals.
 
+Design reconciliation on November 1, 2026 added D-024 and [crate-local GHA docs](crates/wsr-gha/README.md).
+Bun is now the intended GHA JavaScript compatibility runtime; this adds no implementation evidence.
+
 ## Not implemented in the current checkout
 
 - [ ] Workflow parsing and functional `inspect`/planning commands.
 - [ ] Repository setup, configuration loading/generation, and provider bootstrap/pinning.
 - [ ] Signed Component Model provider execution and canonical expression lowering.
 - [ ] Workflow scheduling, expressions, matrices, outputs, and action resolution/execution.
+- [ ] Bun-backed GHA JavaScript execution, action lifecycle, and qualified API compatibility.
+- [ ] GHA environment/output/action-state channels and mixed component/system workspace tests.
 - [ ] Component host, capability enforcement, and runtime/resource limits.
 - [ ] Isolated Linux system execution on macOS and Linux hosts.
 - [ ] Default permission policy and owner-authorized broad-access profile.
 - [ ] Source snapshots, shared content store, artifacts, and structured execution evidence.
 - [ ] Job/step state management, cancellation, timeout cleanup, and failure semantics.
 - [ ] Engine reuse inside GitHub Actions.
-- [ ] Git hook management or daemon synchronization.
+- [ ] Global ready-job queue, max-jobs policy, dispatch and cross-repository coordination.
+- [ ] Background lifecycle, authenticated local control and crash reconciliation.
+- [ ] Verified runner/tool catalog provisioning and complete dependency closure.
+- [ ] Cached action retention, offline acquisition rules and revocation enforcement.
+- [ ] Repository-scoped telemetry and authorized shared resource correlation.
+- [ ] Local evidence bundles, optional signing and connector delivery.
+- [ ] Git hook management.
 - [ ] Independent CI service, GitHub App deployment, remote workers, and Checks writes.
 - [ ] Security/compatibility conformance suites or measured performance claims.
 

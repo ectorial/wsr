@@ -1,5 +1,12 @@
 # CLI
 
+```mermaid
+flowchart LR
+    U[Invocation] --> C[Configuration and pins]
+    C --> E[Local engine]
+    E --> R[Progress or actionable diagnostic]
+```
+
 ## Current scaffold
 
 [Typed argument definitions](../../crates/wsr-cli/src/lib.rs) use clap;
@@ -39,7 +46,8 @@ execution, isolation, or GitHub Actions compatibility.
 
 ## Accepted design and open interface
 
-Local inspection, execution, and debugging come first; GitHub Actions engine reuse follows.
+Local inspection, execution and debugging are independent of GitHub scheduling. Hosted reuse
+and reporting are optional integrations; cached inputs enable disconnected execution.
 Planned `wsr init` creates root `wsr.toml` for parameters, providers, and invocation defaults,
 with GitHub Actions as the primary provider and local execution as the default path. Normal
 commands use repository defaults; explicit provider/target options in the CLI proposal override

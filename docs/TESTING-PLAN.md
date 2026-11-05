@@ -1,5 +1,12 @@
 # WSR validation suite implementation plan
 
+```mermaid
+flowchart LR
+    C[Contract and fixture] --> R[Meaningful behavioral red]
+    R --> G[Minimum implementation and green]
+    G --> E[Regression and evidence]
+```
+
 Status: **foundation implemented; WSR inspection/execution/security cases remain planned**.
 
 The implemented slice includes validated case catalogs, owned Python pass/failure references,
@@ -339,10 +346,11 @@ CI gate. Standard Cargo discovery is sufficient; catalog registration is optiona
 Unsupported behavior must receive a precise diagnostic and must never become an implicit success.
 
 The corpus foundation is supporting tooling. Product progress is measured by real Rust
-behavior tests, then translation and execution of the canonical manual workflows. The first compelling execution
-demonstration is the tiny Python project's controlled failure, actionable diagnosis and repaired
-success, using the same example workflow locally and as a native GitHub reference. Pinned external
-cases then challenge assumptions that owned examples might miss.
+behavior tests, then translation and execution of the canonical manual workflows. The original first execution
+demonstration was the tiny Python project's controlled failure, diagnosis and repaired success.
+The owner now prioritizes the bounded [Java E2E worker](implementation/java-e2e.md); retain the Python
+references and regressions while developing that slice. Native references and actual WSR execution
+remain distinct. Pinned external cases challenge assumptions that owned examples might miss.
 
 ## 11. TDD and agent implementation contract
 
@@ -430,3 +438,16 @@ record; durable compatibility evidence follows section 9. Do not commit transien
 The handoff and completion record must let another agent reproduce validation without chat
 history. Passing the supplied tests is necessary; fulfilling the stated behavior and preserving
 the existing contract are also required. Tests cannot establish untested compatibility or security.
+
+## 12. Separated architecture acceptance lanes
+
+Planning/provider tests assert semantic lowering and diagnostics without workload side effects.
+Provisioning/cache tests assert exact identity, closure, approved misses, cached use without upstream
+calls, revocation/corruption and unsupported-tool admission. Engine tests assert ready/blocked
+states, global count/capacity admission and cancellation/recovery across repositories. Backend
+tests prove allowed and denied capabilities. Observability tests cover scoped resource attribution
+and queue reasons; evidence/connector tests cover claim trust, retained results and duplicate delivery.
+
+These are planned lanes, not observed coverage. Native references, compilation, WSR execution,
+isolation, reproducibility and publication are separate claims. D-025/D-027 dynamic-discovery limits
+must be tested rather than bypassed by guessed dependencies or permissive replay.
