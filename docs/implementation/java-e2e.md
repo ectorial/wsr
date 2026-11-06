@@ -1,5 +1,11 @@
 # Java E2E implementation worker
 
+> Status: **paused**. The owner stop recorded in the
+> [current checkpoint](java-progress.md#current-checkpoint--november-5-2026) supersedes the historical
+> authorization below. This document preserves the worker contract; it does not authorize resumption.
+> Before product work, obtain explicit resumption and reconcile the bounded behavior, architecture
+> and external worker prompt. Documentation cleanup does not change or restart any schedule.
+
 ```mermaid
 flowchart LR
     F[Pinned reference] --> N[Native pass and failure]
@@ -17,7 +23,7 @@ tutorial equivalence; any different native fixture/toolchain must be labelled as
 User stop/hold instructions in the owner session take precedence over automated implementation.
 The saved automation prompt is external to this document and has not been edited by the refactor.
 
-## Authorization and scope
+## Historical authorization and scope
 
 On November 1, 2026 the owner authorized replacing the scheduled test-preparation task with a
 Java E2E TDD worker. This is a bounded exception to the previous design-only implementation gate.

@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-gha"
-description = "GitHub Actions provider adapter: YAML parser, context builder, and trigger mapping"
+description = "GitHub Actions frontend scaffold; workflow parsing and translation are not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

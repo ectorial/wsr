@@ -1,7 +1,7 @@
 [package]
 name        = "wsr-bench"
 publish     = false
-description = "Benchmark suite for wsr: step startup time, expression evaluation, cache hit rates"
+description = "Dormant private benchmark scaffold; no benchmarks or measured results"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

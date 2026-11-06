@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-types"
-description = "Shared types, traits, and error definitions for wsr"
+description = "Early workflow types, legacy provider trait, and errors; not a stable canonical or plugin contract"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

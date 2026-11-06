@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-shell"
-description = "Shell step executor for run: directives (bash, sh, pwsh) within the wsr sandbox"
+description = "System command execution scaffold; execution and isolation are not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

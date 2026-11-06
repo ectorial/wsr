@@ -37,11 +37,20 @@ flowchart LR
 | [Testing plan](TESTING-PLAN.md) | Development and compatibility test strategy |
 | [Coverage index](TEST-COVERAGE.md) | Observed evidence and pending tests |
 | [Testing WSR](../tests/README.md) | Exact current commands and fixture conventions |
-| [Design refactor record](implementation/design-docs-refactor.md) | Audit, scope and reconciliation record |
-| [Java worker](implementation/java-e2e.md) | Authorized bounded TDD worker contract |
-| [Java progress](implementation/java-progress.md) | Historical reference/preparation evidence and next action |
 | [Template migration](TEMPLATE-MIGRATION.md) | Tooling provenance and recovery rules |
-| [Crates](../crates/README.md) | Source inventory |
+| [Crates](../crates/README.md) | Source inventory, maintenance dispositions and publication constraints |
+
+## Historical records and paused work
+
+These records remain at their existing paths to preserve links and evidence. They are not active
+specifications or permission to execute historical next-action commands.
+
+| Record | Status and authority |
+| --- | --- |
+| [CLI skeleton plan](cli/SKELETON-PLAN.md) | Completed implementation record; the [CLI guide](cli/README.md) owns current behavior. |
+| [Design refactor record](implementation/design-docs-refactor.md) | Historical audit and completed documentation separation; current contracts live in the ownership map above. |
+| [Java worker](implementation/java-e2e.md) | Paused worker contract; explicit resumption is required before implementation. |
+| [Java progress](implementation/java-progress.md) | Dated preparation evidence; its current checkpoint supersedes historical next actions. Machine-local artifacts are not clean-clone inputs. |
 
 ## Walkthroughs and proposals
 
@@ -53,3 +62,10 @@ Maintain one owner for each contract. PLAN records authority and status; detaile
 explanation. Preserve historical test/prototype evidence instead of relabelling it as implementation.
 When a decision changes, reconcile overview, subsystem, security, tests and affected walkthroughs.
 Organization summaries should link to this design without introducing separate runtime commitments.
+
+For cleanup, classify content as active, planned, historical, superseded or an archive candidate.
+Age or lack of implementation alone does not invalidate an accepted design. Preserve decisions,
+licenses, release history, native-reference evidence, migration backups and the prototype stash.
+Label historical records and remove them from active guidance before considering relocation;
+any later move must repair incoming links and preserve provenance. Do not duplicate subsystem
+contracts in a new cleanup roadmap. Package dispositions live in the crate inventory.

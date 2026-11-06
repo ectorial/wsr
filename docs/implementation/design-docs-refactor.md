@@ -1,5 +1,9 @@
 # Design documentation separation audit and refactor plan
 
+> Status: **historical audit and completed documentation-refactor record**. The current disposition
+> and validation record below preserve the outcome. Earlier findings and proposed sequences are
+> not a new work queue or authority over [PLAN.md](../../PLAN.md) and the subsystem guides.
+
 ```mermaid
 flowchart LR
     A[Audit] --> O[Assign document owners]
