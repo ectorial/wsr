@@ -7,7 +7,7 @@ flowchart LR
     O --> N[Eligible downstream evaluation]
 ```
 
-**Planned contract, not an implemented VFS.** [D-016](../../../PLAN.md#d-016--job-supervisor-with-least-privilege-per-step-environments)
+**Planned contract, not an implemented VFS.** [D-016](../../context/decisions.md#d-016--job-supervisor-with-least-privilege-per-step-environments)
 assigns state ownership to the job supervisor. GHA-specific channel interpretation belongs to this
 provider; shared storage, views, grants, and lifecycle enforcement belong to the core and backends.
 
@@ -54,4 +54,4 @@ No overlay filesystem, VFS, mount manager, snapshot transfer, or shared scratch 
 
 A minimal implementation may use explicit shared workspace views with private per-step scratch if
 it satisfies the required semantics and security tests. This is an option, not a selected mechanism.
-See [validation](VALIDATION.md) for the mixed-backend acceptance scenario.
+See [validation](validation.md) for the mixed-backend acceptance scenario.

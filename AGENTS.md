@@ -6,16 +6,21 @@ existing local work.
 
 ## Read the project before changing it
 
+Start with [docs/context/README.md](docs/context/README.md) for reading order, document authority,
+worker holds and task-specific context. [docs/README.md](docs/README.md) is the complete navigation hub.
+Root PLAN, ARCHITECTURE, ROADMAP and CHECKLIST files are compatibility redirects; edit their
+canonical owners under `docs/context/`.
+
 - [README.md](README.md) describes current support. This is a pre-alpha CLI/types scaffold;
   workflow execution and security enforcement are not implemented. Compilation and publication
   do not prove those capabilities work.
-- [PLAN.md](PLAN.md) owns accepted decisions, proposals, and open questions.
-  [ARCHITECTURE.md](ARCHITECTURE.md) describes current and target boundaries.
-- [ROADMAP.md](ROADMAP.md) owns delivery gates; [CHECKLIST.md](CHECKLIST.md) records implementation
+- [Decisions](docs/context/decisions.md) owns accepted decisions, proposals, and open questions.
+  [Architecture](docs/context/architecture.md) describes current and target boundaries.
+- [Roadmap](docs/context/roadmap.md) owns delivery gates; [Implementation status](docs/context/status.md) records implementation
   evidence. Update completion claims only when working behavior and verification justify them.
 - [crates/README.md](crates/README.md) inventories existing crates; placeholder names do not
   prescribe the future design. [docs/README.md](docs/README.md) indexes subsystem documentation.
-- [docs/TEMPLATE-MIGRATION.md](docs/TEMPLATE-MIGRATION.md) records the imported tooling snapshot,
+- [Tooling migration](docs/development/template-migration.md) records the imported tooling snapshot,
   WSR-specific changes, and recovery rules. Template updates require a reviewed merge;
   there is no automatic synchronization.
 
@@ -60,7 +65,7 @@ then real CLI/engine execution tests as execution is delivered. Native GitHub or
 reference success does not establish WSR support. Keep translation free of workload execution.
 Catalog IDs are optional supporting inventory; do not require INS-001 or catalog work
 before ordinary feature tests. See [Testing WSR](tests/README.md) and the existing
-[TDD contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract).
+[TDD contract](docs/testing/strategy.md#11-tdd-and-agent-implementation-contract).
 
 ## Development command reference
 
@@ -68,7 +73,7 @@ The [validation corpus](tests/README.md) separates required native references an
 from planned WSR behavior. `cargo xtask corpus` runs the offline foundation; `--list` inventories
 cases, `--case ID` explicitly selects one, and `--prepare fastapi|uv` fetches pinned bare sources
 without executing them. Ordinary Cargo tests require Python 3.11+ and include the foundation.
-For agent feature work, follow [the TDD handoff contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract):
+For agent feature work, follow [the TDD handoff contract](docs/testing/strategy.md#11-tdd-and-agent-implementation-contract):
 observe the intended red failure, implement one behavior, preserve assertions, then report green
 and regression evidence. Planned cases and source preparation are not product compatibility proof.
 

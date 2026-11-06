@@ -63,7 +63,7 @@ Build coverage incrementally:
 
 Stages 2 and 3 are not implemented yet. Do not invent a translator API, stable CLI
 invocation or expected IR schema here. Settle the narrow behavior when implementing
-its test, following [the TDD contract](../docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract).
+its test, following [the TDD contract](../docs/testing/strategy.md#11-tdd-and-agent-implementation-contract).
 A passing YAML/reference check is never evidence that WSR translated or ran a workflow.
 
 ## Supporting corpus checks
@@ -143,5 +143,5 @@ help identify edge cases, but they do not mandate development order. Resolve onl
 interface or architecture decisions needed for that behavior; unrelated future runtime
 choices need not block independent unit or translation tests.
 
-Follow the [TDD handoff contract](../docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract)
+Follow the [TDD handoff contract](../docs/testing/strategy.md#11-tdd-and-agent-implementation-contract)
 for exact commands, the intended red failure, scope and regression evidence.

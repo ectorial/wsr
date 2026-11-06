@@ -40,6 +40,6 @@ the supervisor validates exported state. Define policy-change handling for activ
 implementation; never imply retroactive revocation from a cached authorization result.
 
 No automatic more-permissive retry follows partial execution. Cancellation must stop descendants
-and revoke private resources. [Security model](../SECURITY-MODEL.md) owns threat assumptions and
+and revoke private resources. [Security model](../security/README.md) owns threat assumptions and
 residual risks. Test both permitted and denied operations, custom-source restrictions, secrets,
 cross-repository isolation and missing-enforcement rejection.

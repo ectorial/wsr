@@ -41,7 +41,7 @@ part of the current audit or documentation reconciliation.
   Wildcard scope and syntax remain open; broader permissions do not establish full compatibility.
 
 Use Bun for compatible GHA JavaScript actions inside the isolated system backend; the provider
-adapter and provider-neutral core remain. See the [GHA design](crates/wsr-gha/README.md).
+adapter and provider-neutral core remain. See the [GHA design](docs/provider/gha/README.md).
 
 Runner provisioning, scheduling/dispatch, enforcement, observability and evidence have separate
 [owning guides](docs/README.md). Normal YAML edits and downloads are progress; blocked requirements
@@ -61,7 +61,7 @@ cargo xtask test
 cargo xtask ci
 ```
 
-The workspace uses the [rust-template tooling snapshot](docs/TEMPLATE-MIGRATION.md), with sixteen
+The workspace uses the [rust-template tooling snapshot](docs/development/template-migration.md), with sixteen
 product crates and private `tools/xtask` automation. Product crates declare Rust 1.85 as their minimum
 version and the development toolchain tracks stable. Future runtime/toolchain choices remain open. No installer or schema
 URL is advertised as a working onboarding path.
@@ -74,13 +74,14 @@ shared GHA-to-IR and execution test inputs as those capabilities are implemented
 
 | Document | Responsibility |
 | --- | --- |
-| [PLAN.md](PLAN.md) | Authoritative accepted decisions, proposals, and open questions |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Current scaffold and target component boundaries |
-| [ROADMAP.md](ROADMAP.md) | Delivery order and completion gates, without release-date promises |
-| [CHECKLIST.md](CHECKLIST.md) | Evidence-based implementation accounting |
-| [Security model](docs/SECURITY-MODEL.md) | Planned security contract and its limits |
+| [Project context](docs/context/README.md) | Reading order, authority and task-specific guides for contributors and agents |
+| [Decisions](docs/context/decisions.md) | Authoritative accepted decisions, proposals, and open questions |
+| [Architecture](docs/context/architecture.md) | Current scaffold and target component boundaries |
+| [Roadmap](docs/context/roadmap.md) | Delivery order and completion gates, without release-date promises |
+| [Implementation status](docs/context/status.md) | Evidence-based implementation accounting |
+| [Security model](docs/security/README.md) | Planned security contract and its limits |
 | [Documentation index](docs/README.md) | Subsystem guides and documentation maintenance rules |
-| [Template migration](docs/TEMPLATE-MIGRATION.md) | Tooling provenance, local commands, and update/recovery rules |
+| [Template migration](docs/development/template-migration.md) | Tooling provenance, local commands, and update/recovery rules |
 | [Crate inventory](crates/README.md) | Existing workspace contents, not a required future layout |
 
 The [organization repository](https://github.com/ectorial/.github) owns the profile and governance.

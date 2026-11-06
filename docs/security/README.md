@@ -9,9 +9,9 @@ flowchart LR
 
 ## Status
 
-This is an accepted design summary, not implemented enforcement. [PLAN.md](../PLAN.md), especially
+This is an accepted design summary, not implemented enforcement. [PLAN.md](../context/decisions.md), especially
 D-018 through D-022, owns decisions. The current checkout has no working sandbox. Report software
-vulnerabilities through [SECURITY.md](../SECURITY.md).
+vulnerabilities through [SECURITY.md](../../SECURITY.md).
 
 ## Threat model and authority
 
@@ -45,7 +45,7 @@ steps retain their own grants. Shared files can carry malicious state across tho
 Bun is the intended GHA JavaScript compatibility runtime inside this system boundary. Neither Bun
 nor a bundled Bun executable supplies Wasm containment. Descendants, filesystem views, network,
 credentials, and cleanup must remain governed by the system contract. Runtime incompatibility does
-not authorize wider grants or automatic replay. See [D-024](../PLAN.md#d-024--gha-compatibility-through-bun).
+not authorize wider grants or automatic replay. See [D-024](../context/decisions.md#d-024--gha-compatibility-through-bun).
 
 ## Broad-access compatibility exception
 
@@ -78,11 +78,11 @@ Primary mechanism references: [Component Model](https://component-model.bytecode
 
 ## Acquisition, cache and evidence
 
-[Trusted policy](policy/README.md) separates acquisition, execution, cache, scheduling, telemetry
-and reporting authority. [Cache](cache/README.md) preserves verified pinned objects without mandatory
+[Trusted policy](../policy/README.md) separates acquisition, execution, cache, scheduling, telemetry
+and reporting authority. [Cache](../cache/README.md) preserves verified pinned objects without mandatory
 upstream checks. Known local revocation still blocks use. Offline revocation freshness is explicit
 policy rather than an implied real-time guarantee.
 
 Package staging/extraction, shared-object leases and controlled tool views must resist poisoning
-and cross-run modification. [Evidence](evidence/README.md) keeps signing authority outside workloads.
+and cross-run modification. [Evidence](../evidence/README.md) keeps signing authority outside workloads.
 A signed claim requires receiver trust/verification and cannot establish truthful arbitrary tests.

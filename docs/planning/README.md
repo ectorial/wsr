@@ -58,5 +58,5 @@ partial plan. Reuse derived plans only when all relevant source, provider, compi
 input and policy identities match.
 
 Test cycles/references, invalid expressions, unsupported features, no workload side effects,
-dynamic output timing and accurate rejection locations. See [testing](../TESTING-PLAN.md) and
+dynamic output timing and accurate rejection locations. See [testing](../testing/strategy.md) and
 [engine](../engine/README.md).

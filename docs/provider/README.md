@@ -29,13 +29,13 @@ Planned `wsr init` creates root `wsr.toml` with GitHub Actions as the primary pr
 That configuration can declare multiple providers and their defaults; an explicit invocation or
 unambiguous workflow path can select another provider. A conflict or remaining ambiguity is an
 error. A provider compiles source syntax; hosted execution administration belongs to a separate
-integration adapter. See [configuration](../config/README.md) and D-023 in [PLAN.md](../../PLAN.md).
+integration adapter. See [configuration](../config/README.md) and D-023 in [PLAN.md](../context/decisions.md).
 
-GitHub Actions is first. Its [crate-local design](../../crates/wsr-gha/README.md) owns action
+GitHub Actions is first. Its [GHA provider design](gha/README.md) owns action
 compatibility, Bun qualification, lifecycle lowering, and GHA state-channel semantics. Bun is selected
 for compatible JavaScript actions in the isolated system backend; provider compilation does not invoke it.
 The packaging of runtime compatibility helpers and canonical extension admission remain open.
 
 Other provider frontends are a design extension path with no approved
 release schedule. Cross-provider source translation is outside scope. Broader grants do not
-implement absent semantics or APIs. See [PLAN.md](../../PLAN.md) and [ROADMAP.md](../../ROADMAP.md).
+implement absent semantics or APIs. See [PLAN.md](../context/decisions.md) and [ROADMAP.md](../context/roadmap.md).

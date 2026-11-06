@@ -40,7 +40,7 @@ integrity. `--list` inventories cases, `--case ID` selects one, and `--prepare f
 fetches verified bare Git source without checking out or executing workloads. This is a WSR-owned
 extension, not an imported template capability; preserve it during future tooling merges.
 Ordinary Cargo tests now include the corpus bridge and require Python 3.11+ and Git. See
-[the corpus guide](../tests/README.md). Passing scaffold/native-reference checks does not verify
+[the corpus guide](../../tests/README.md). Passing scaffold/native-reference checks does not verify
 WSR workflow execution or isolation.
 
 Tooling inherits the template's workspace lint policy. Product crates do not yet inherit that
@@ -51,7 +51,7 @@ Enabling it is a separate focused change. Product sources and CLI help remain th
 
 Start behavior as a module, then extract a project-prefixed crate when it owns a coherent
 responsibility and a useful testable seam. Existing placeholder crates do not dictate future
-architecture. [PLAN.md](../PLAN.md) still owns those decisions.
+architecture. [PLAN.md](../context/decisions.md) still owns those decisions.
 
 ```sh
 cargo xtask add <semantic-name> --dry-run
@@ -163,7 +163,7 @@ cargo xtask release publish --execute
 It delegates to cargo-release's workspace publish phase, defaults to a dry run, and skips
 versions already on the registry. Registry errors, including retry times, are returned without
 automatic waiting. Rerun the publisher to resume; preparation would bump versions again.
-Publication does not push commits or tags. See [the release procedure](../CONTRIBUTING.md#publish-a-workspace-release).
+Publication does not push commits or tags. See [the release procedure](../../CONTRIBUTING.md#publish-a-workspace-release).
 
 The CLI and its fourteen supporting crates were published at version 0.0.3, and a fresh
 registry installation was verified. Internal dependencies retain versioned declarations.
@@ -180,7 +180,7 @@ backup's `PROGRESS.md`; backups are not committed as product files.
 
 The original stash remains `daee0885832df55a9a872037d3ce6741b9e6e72a`. Its prototype code and
 older `crates/xtask` tooling were not applied. Restore only selected product work in an isolated
-recovery checkout after reconciling it with [the architecture](../ARCHITECTURE.md). Keep old root
+recovery checkout after reconciling it with [the architecture](../context/architecture.md). Keep old root
 manifests, automation, and documents from overwriting the template migration or current decisions.
 
 WSR keeps technical decisions/status in its existing documents; the organization's `.github`

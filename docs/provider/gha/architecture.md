@@ -1,6 +1,6 @@
 # GHA execution architecture
 
-**Accepted design, not implemented.** [D-024](../../../PLAN.md#d-024--gha-compatibility-through-bun)
+**Accepted design, not implemented.** [D-024](../../context/decisions.md#d-024--gha-compatibility-through-bun)
 selects Bun for compatible JavaScript actions and keeps the provider-neutral core. Concrete contracts
 listed as open below require decisions and tests before implementation; no stable Rust API is proposed.
 
@@ -56,4 +56,4 @@ All paths above are unimplemented. Before delivery, settle canonical execution r
 extension admission, Bun version/provisioning/integrity, action resolution and lifecycle lowering,
 command-protocol placement, system isolation, workspace semantics, and platform coverage. Bun executable
 bundling is a separate open optimization, not a prerequisite or an accepted substitute for runtime
-qualification. See [compatibility](COMPATIBILITY.md), [state](STATE.md), and [validation](VALIDATION.md).
+qualification. See [compatibility](compatibility.md), [state](state.md), and [validation](validation.md).

@@ -31,7 +31,7 @@ not grant access. Help text can be inspected with `cargo run -p wsr -- --help`.
 
 ## Skeleton implementation and verification
 
-[The CLI skeleton plan](SKELETON-PLAN.md) records the implemented slice, using uv's
+[The CLI skeleton plan](../archive/cli-skeleton.md) records the implemented slice, using uv's
 argument/application separation as a reference. It retains the existing commands, adds typed
 arguments and CLI contract tests, and gives each operational leaf consistent unimplemented
 output. The final product interface remains open.
@@ -52,7 +52,7 @@ Planned `wsr init` creates root `wsr.toml` for parameters, providers, and invoca
 with GitHub Actions as the primary provider and local execution as the default path. Normal
 commands use repository defaults; explicit provider/target options in the CLI proposal override
 them. Multiple providers remain supported. See [configuration](../config/README.md) and D-023
-in [PLAN.md](../../PLAN.md). These settings and proposed flags are not implemented by the skeleton.
+in [PLAN.md](../context/decisions.md). These settings and proposed flags are not implemented by the skeleton.
 
 Final command structure, selection, event binding, and output formats are not settled.
 A planning-only path must not execute repository commands. Effective permissions and unsupported
@@ -62,4 +62,4 @@ requirements must be visible before execution.
 syntax for an explicit broad-access profile, not an implemented option. There is no `actions`
 subcommand. Hooks/daemon behavior is not the primary product commitment.
 
-See [PLAN.md](../../PLAN.md) and [the security model](../SECURITY-MODEL.md).
+See [PLAN.md](../context/decisions.md) and [the security model](../security/README.md).
