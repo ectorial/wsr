@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-client"
-description = "HTTP client for fetching actions and Wasm components, with SHA pinning"
+description = "Artifact acquisition scaffold; fetching and identity verification are not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

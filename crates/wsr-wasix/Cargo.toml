@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-wasix"
-description = "Tier 2 sandbox: Wasmer + WASIX for POSIX-compatible workloads (transitional layer)"
+description = "Legacy compatibility-backend scaffold; WASIX is not selected"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-cache"
-description = "Content-addressed Wasm module cache keyed by SHA-256 digest"
+description = "Verified content-store scaffold; storage and cache operations are not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

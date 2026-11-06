@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-expr"
-description = "Provider-agnostic ${{ }} expression evaluator for wsr workflow definitions"
+description = "Workflow expression scaffold; evaluation is not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

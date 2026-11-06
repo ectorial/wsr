@@ -11,6 +11,11 @@ starting a new execution feature or changing architecture so maintainers can con
 scope and unresolved design choices. Never include credentials in issues or test fixtures;
 report vulnerabilities through [SECURITY.md](SECURITY.md).
 
+Consult the [crate maintenance dispositions](crates/README.md#maintenance-dispositions--november-6-2026)
+before choosing placeholder implementation work. Dormant/archive-candidate packages remain preserved;
+their existence does not prescribe a new subsystem. Published APIs, dependency migrations and release
+participation require explicit review. Historical worker instructions do not override a later stop.
+
 ## How to contribute
 
 1. **Fork** the repository and clone your fork locally.

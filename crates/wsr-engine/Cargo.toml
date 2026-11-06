@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-engine"
-description = "Job DAG scheduler, step orchestrator, matrix expansion, and outputs propagation"
+description = "Workflow planning and execution scaffold; scheduling and execution are not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

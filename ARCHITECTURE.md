@@ -24,7 +24,9 @@ The implementation checklist is [CHECKLIST.md](CHECKLIST.md).
 
 Current source names such as `Vault` and `Workshop` are legacy scaffold identifiers. They do not
 select production runtimes. Existing dependency edges and crate boundaries are inventory, not
-requirements for the redesign. Package/help descriptions may still reflect the legacy scaffold.
+requirements for the redesign. The [crate maintenance dispositions](crates/README.md#maintenance-dispositions--november-6-2026)
+identify planned pivots, dormant placeholders and archive candidates. Published package descriptions
+and dependencies can differ from this checkout; cleanup does not rewrite existing releases.
 
 ## Preserved prototype
 

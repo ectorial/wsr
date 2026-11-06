@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-resolver"
-description = "Action reference resolver: maps uses: refs to Wasm components and assigns execution tier"
+description = "Action and artifact resolution scaffold; resolution and backend selection are not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

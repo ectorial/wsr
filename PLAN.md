@@ -7,12 +7,13 @@ flowchart LR
     Q[Open questions] --> D
 ```
 
-> Status: **pre-alpha design in progress; bounded Java E2E TDD implementation authorized**
+> Status: **pre-alpha design in progress; Java E2E implementation paused**
 >
 > This document is the durable record of the design feedback loop. Confirmed decisions,
 > rejected alternatives, unresolved questions, and their consequences are recorded here as the
-> conversation progresses. The [Java worker contract](docs/implementation/java-e2e.md) defines the
-> authorized implementation slice; unresolved architecture choices still require decisions.
+> conversation progresses. The [Java worker contract](docs/implementation/java-e2e.md) records the
+> historical bounded slice; implementation requires explicit resumption. Unresolved architecture
+> choices still require decisions.
 
 ## Documentation status and ownership
 
@@ -29,6 +30,10 @@ Organization docs summarize these records. Historical drafts do not override the
 Documentation can be made consistent while design questions remain open. The owner authorized the
 bounded Java E2E worker on November 1, 2026; this does not authorize stash restoration, publication,
 or silently selecting unresolved runtime/backend or policy contracts.
+The later owner stop recorded in the [November 5 checkpoint](docs/implementation/java-progress.md#current-checkpoint--november-5-2026)
+takes precedence. Documentation and metadata sanitization does not resume that worker.
+The [crate inventory](crates/README.md#maintenance-dispositions--november-6-2026) records maintenance
+dispositions and publication constraints without selecting new product interfaces or deleting packages.
 
 ## 1. Purpose
 

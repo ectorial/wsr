@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-sandbox"
-description = "Tier 1 sandbox: Wasmtime + WASI Preview 3, one isolated instance per step"
+description = "Component execution scaffold; runtime and WASI version remain open"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

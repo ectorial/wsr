@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-fs"
-description = "Filesystem utilities, VFS abstraction, and atomic write helpers for wsr"
+description = "Filesystem helper scaffold; no VFS or atomic writes implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true
