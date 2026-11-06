@@ -8,7 +8,7 @@ flowchart LR
 
 These are existing crates, not approved boundaries for the redesign. Three library entry files
 contain Rust declarations; the other thirteen contain documentation only. Dependencies in manifests
-do not establish working subsystems. See [architecture](../ARCHITECTURE.md) and [decisions](../PLAN.md).
+do not establish working subsystems. See [architecture](../docs/context/architecture.md) and [decisions](../docs/context/decisions.md).
 
 | Crate | Current contents |
 | --- | --- |
@@ -20,7 +20,7 @@ do not establish working subsystems. See [architecture](../ARCHITECTURE.md) and 
 | [wsr-engine](wsr-engine/src/lib.rs) | planning and execution engine placeholder |
 | [wsr-expr](wsr-expr/src/lib.rs) | expression evaluator placeholder |
 | [wsr-fs](wsr-fs/src/lib.rs) | filesystem helper placeholder |
-| [wsr-gha](wsr-gha/README.md) | GitHub Actions frontend placeholder; crate-local compatibility design |
+| [wsr-gha](../docs/provider/gha/README.md) | GitHub Actions frontend placeholder; centralized compatibility design |
 | [wsr-git](wsr-git/src/lib.rs) | hook integration placeholder |
 | [wsr-resolver](wsr-resolver/src/lib.rs) | action/artifact resolution placeholder |
 | [wsr-sandbox](wsr-sandbox/src/lib.rs) | component execution placeholder |
@@ -40,7 +40,7 @@ validated ownership and dependencies. Do not add a crate/provider by following o
 instructions or assuming that the current trait is the accepted plugin ABI.
 
 Repository automation lives outside this product inventory in private `tools/xtask`. It is not
-a runtime subsystem. See [the template migration record](../docs/TEMPLATE-MIGRATION.md).
+a runtime subsystem. See [the template migration record](../docs/development/template-migration.md).
 
 ## Maintenance dispositions — November 6, 2026
 

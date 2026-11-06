@@ -67,7 +67,7 @@ A step output becomes available according to provider-lowered publication rules.
 expressions consume step results; dependent jobs consume published job outputs through the core.
 A string containing an artifact path does not transfer its bytes. File/artifact transfer requires
 explicit mechanisms and authorization. GHA channel semantics are owned by
-[the provider state guide](../../crates/wsr-gha/docs/STATE.md).
+[the provider state guide](../provider/gha/state.md).
 
 Define failed-step writes, output validation/timing, cancellation, timeout, cleanup ordering,
 concurrent state access and crash atomicity before implementation. Never replay a partially executed

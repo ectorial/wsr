@@ -9,7 +9,7 @@ flowchart LR
 
 Status: implemented in the local checkout on 2026-10-08 following user approval. This document
 records the scope and implementation plan for the completed skeleton slice. It supplements
-[the CLI guide](README.md) and does not replace the product decisions in [PLAN.md](../../PLAN.md)
+[the CLI guide](../cli/README.md) and does not replace the product decisions in [PLAN.md](../context/decisions.md)
 or settle the final product interface. See the verification record below.
 
 ## Goal and scope

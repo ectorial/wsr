@@ -72,7 +72,7 @@ start by installing/running arbitrary upstream build scripts on the host.
 Record run time/branch/revision and dirty-work ownership; selected source/action/tool identities;
 current behavior and prerequisite decisions; exact commands; observed red/green/regression evidence;
 raw-result locations; changes made; blockers; next action. Keep implementation evidence indexed in
-`docs/TEST-COVERAGE.md`; this file tracks worker continuity, not duplicate coverage claims.
+`docs/testing/coverage.md`; this file tracks worker continuity, not duplicate coverage claims.
 
 ## November 2 prerequisite checkpoint
 

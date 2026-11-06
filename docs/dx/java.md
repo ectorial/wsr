@@ -9,8 +9,8 @@ Read this like a screen-recorded tutorial: first see the workflow you recognize,
 WSR would do on a Mac. **A is recommended for this example; B is an alternative.** Recommendations
 are walkthrough assumptions, not new accepted decisions. Change them as implementation evidence arrives.
 
-The [decision record](../../PLAN.md), [GHA contract](../../crates/wsr-gha/README.md), and
-[implementation checklist](../../CHECKLIST.md) remain authoritative. The provider adapter compiles
+The [decision record](../context/decisions.md), [GHA contract](../provider/gha/README.md), and
+[implementation checklist](../context/status.md) remain authoritative. The provider adapter compiles
 GHA syntax; the core plans and supervises execution. Bun is selected for compatible JavaScript
 actions, but none of the actions below has been qualified under WSR. Inspection must reject an
 unqualified action rather than pretend that Node compatibility or wider permissions solves it.
@@ -18,7 +18,7 @@ unqualified action rather than pretend that Node compatibility or wider permissi
 
 ## Shared lifecycle
 
-This walkthrough uses the [architecture](../../ARCHITECTURE.md) and
+This walkthrough uses the [architecture](../context/architecture.md) and
 [provisioning contract](../provisioning/README.md). Tool preflight resolves/verifies packages;
 setup actions still control activation and effects at their original step positions. Normal
 YAML edits and approved downloads produce progress. Actionable reports concern blocked execution.

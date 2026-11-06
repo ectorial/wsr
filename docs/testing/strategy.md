@@ -11,18 +11,18 @@ Status: **foundation implemented; WSR inspection/execution/security cases remain
 
 The implemented slice includes validated case catalogs, owned Python pass/failure references,
 committed FastAPI/uv workflow and license snapshots, explicit pinned bare-source preparation,
-and a Cargo integration test for the offline foundation. See [the corpus guide](../tests/README.md)
-for actual commands and [native reference evidence](../tests/reference-runs.md) for observed runs.
+and a Cargo integration test for the offline foundation. See [the corpus guide](../../tests/README.md)
+for actual commands and [native reference evidence](../../tests/reference-runs.md) for observed runs.
 Later phases below remain proposals, not implemented capabilities.
 
 This plan defines how tests will guide WSR development. It does not approve unresolved product
-architecture or change the design status in [PLAN.md](../PLAN.md). [ROADMAP.md](../ROADMAP.md)
-owns delivery gates; [CHECKLIST.md](../CHECKLIST.md) records implemented behavior.
+architecture or change the design status in [PLAN.md](../context/decisions.md). [ROADMAP.md](../context/roadmap.md)
+owns delivery gates; [CHECKLIST.md](../context/status.md) records implemented behavior.
 
 ## Development entrypoint: Rust tests and manual workflows
 
 Use ordinary Cargo unit tests in source files and integration tests in each owning
-crate's `tests/` directory. [Testing WSR](../tests/README.md) gives the implemented
+crate's `tests/` directory. [Testing WSR](../../tests/README.md) gives the implemented
 commands and layout. There is no mandatory case-ID or catalog-registration step.
 The INS/EXE inventory below is supporting planning material, not a prescribed task
 queue or a prerequisite for starting TDD.
@@ -348,7 +348,7 @@ Unsupported behavior must receive a precise diagnostic and must never become an 
 The corpus foundation is supporting tooling. Product progress is measured by real Rust
 behavior tests, then translation and execution of the canonical manual workflows. The original first execution
 demonstration was the tiny Python project's controlled failure, diagnosis and repaired success.
-The owner now prioritizes the bounded [Java E2E worker](implementation/java-e2e.md); retain the Python
+The owner now prioritizes the bounded [Java E2E worker](../implementation/java-e2e.md); retain the Python
 references and regressions while developing that slice. Native references and actual WSR execution
 remain distinct. Pinned external cases challenge assumptions that owned examples might miss.
 

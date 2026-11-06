@@ -9,7 +9,7 @@ flowchart LR
 
 **Planned tests, not completed coverage.** Existing `workflow_examples.rs` checks input contracts and
 native shell behavior only. The CLI placeholder tests establish no GHA translation, Bun execution,
-workspace consistency, or isolation. See the [current checklist](../../../CHECKLIST.md).
+workspace consistency, or isolation. See the [current checklist](../../context/status.md).
 
 ## Required evidence
 
@@ -35,6 +35,6 @@ semantics and controlled native references where appropriate. Reference success 
 4. Connect both backends through the supervisor and prove mixed workspace visibility and isolation.
 5. Expand action categories and APIs only through explicit fixtures and diagnostic coverage.
 
-Use ordinary owning-crate Rust tests and the existing [testing contract](../../../docs/TESTING-PLAN.md).
+Use ordinary owning-crate Rust tests and the existing [testing contract](../../testing/strategy.md).
 This document does not invent callable APIs, approve implementation of unresolved contracts, or mark
 planned cases as passing. Update the compatibility matrix and checklist when implementation evidence exists.

@@ -2,7 +2,7 @@
 
 > Status: **historical audit and completed documentation-refactor record**. The current disposition
 > and validation record below preserve the outcome. Earlier findings and proposed sequences are
-> not a new work queue or authority over [PLAN.md](../../PLAN.md) and the subsystem guides.
+> not a new work queue or authority over [PLAN.md](../context/decisions.md) and the subsystem guides.
 
 ```mermaid
 flowchart LR

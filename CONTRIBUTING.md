@@ -5,7 +5,7 @@ Thank you for your interest in contributing!
 ## Scope and choosing work
 
 WSR is pre-alpha: operational CLI commands are placeholders. Start with the
-[README](README.md), [roadmap](ROADMAP.md), and [testing guide](tests/README.md).
+[README](README.md), [roadmap](docs/context/roadmap.md), and [testing guide](tests/README.md).
 Bug fixes, tests, and documentation improvements are welcome. Open an issue before
 starting a new execution feature or changing architecture so maintainers can confirm
 scope and unresolved design choices. Never include credentials in issues or test fixtures;
@@ -64,7 +64,7 @@ credentials, or upstream source downloads are needed for this baseline. Use
 
 Before opening a PR, run `cargo xtask ci` and `git diff --check`, explain the
 behavior changed and validation results, and update affected documentation. Feature
-work should follow the [TDD contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract).
+work should follow the [TDD contract](docs/testing/strategy.md#11-tdd-and-agent-implementation-contract).
 Maintainers review scope, behavior, and CI before merging; a green build alone does
 not prove workflow compatibility or security enforcement.
 
@@ -91,8 +91,8 @@ Open an issue or reach out at eduferreyraok@gmail.com.
 
 ## Documentation and design changes
 
-Use [PLAN.md](PLAN.md) for accepted decisions and open proposals, [CHECKLIST.md](CHECKLIST.md)
-for implementation accounting, and [ROADMAP.md](ROADMAP.md) for delivery gates. The architecture
+Use [PLAN.md](docs/context/decisions.md) for accepted decisions and open proposals, [CHECKLIST.md](docs/context/status.md)
+for implementation accounting, and [ROADMAP.md](docs/context/roadmap.md) for delivery gates. The architecture
 interview is not implementation-ready; documentation reconciliation does not resolve open choices.
 
 Distinguish current scaffold, preserved prototype, accepted design, and open proposals. Do not mark
@@ -113,7 +113,7 @@ from the upstream Git tag matching `dist-workspace.toml`, keeping release genera
 Sync does not rewrite dependency requirements or the product MSRV. Refresh Rustup itself with
 `rustup self update`.
 Existing CI and documentation files are user-owned; merge updates rather than rerunning their
-scaffolds over them. See [the migration record](docs/TEMPLATE-MIGRATION.md) for provenance,
+scaffolds over them. See [the migration record](docs/development/template-migration.md) for provenance,
 release exceptions, and future update rules. Hosted jobs use `cargo xtask ci --job` with `format`,
 `lint`, `docs`, or `test` so each check runs once. Ordinary `cargo xtask ci` still runs them all.
 Run `python3 scripts/test-tooling.py` after building xtask to verify job isolation, dist compatibility,
@@ -180,5 +180,5 @@ Use `cargo xtask corpus` for the offline native-reference/snapshot baseline,
 `cargo xtask corpus --list` for case inventory, and `cargo xtask corpus --prepare fastapi` (or `uv`) only when you
 explicitly need pinned upstream Git objects. Normal tests do not fetch sources or execute upstream
 workloads. WSR product inspection/execution/security cases remain planned. Follow
-[the corpus guide](tests/README.md) and [TDD handoff contract](docs/TESTING-PLAN.md#11-tdd-and-agent-implementation-contract)
+[the corpus guide](tests/README.md) and [TDD handoff contract](docs/testing/strategy.md#11-tdd-and-agent-implementation-contract)
 when implementing a feature from a validation case.

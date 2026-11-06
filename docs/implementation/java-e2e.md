@@ -42,8 +42,8 @@ for test/documentation PRs is unchanged, but do not disguise product changes as 
 ## Target and reference hierarchy
 
 Use [Java DX](../dx/java.md) and [its YAML](../dx/java.yml) as the intended experience, not execution
-proof. Follow [PLAN.md](../../PLAN.md), the [GHA contract](../../crates/wsr-gha/README.md), and the
-[TDD contract](../TESTING-PLAN.md#11-tdd-and-agent-implementation-contract). Upstream action/tool
+proof. Follow [PLAN.md](../context/decisions.md), the [GHA contract](../provider/gha/README.md), and the
+[TDD contract](../testing/strategy.md#11-tdd-and-agent-implementation-contract). Upstream action/tool
 semantics and observed native behavior establish reference outcomes; synthetic tutorial logs do not.
 Do not implement an output imitation or special-case fixture names in product code.
 
@@ -86,7 +86,7 @@ A local Maven command is a native tool reference, not a complete native GHA work
    accept generic placeholder output as sufficient red, or write a speculative disabled suite.
 5. Run focused tests, relevant regressions and `git diff --check`. Before claiming a completed slice,
    run `cargo xtask ci`; report environmental failures and unexecuted lanes honestly.
-6. Update progress and link behavior/tests/results in `docs/TEST-COVERAGE.md`; update implementation
+6. Update progress and link behavior/tests/results in `docs/testing/coverage.md`; update implementation
    claims only when proven. Preserve the exact next command and branch for interrupted work.
 
 One bounded behavior per invocation is the default, not a requirement to manufacture a commit.
