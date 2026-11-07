@@ -1,0 +1,11 @@
+name: Step identity example
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: compile
+        name: Compile sources
+        run: touch executed
+      - id: upload
+        uses: ./unopened-action
+      - run: echo unnamed

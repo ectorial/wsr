@@ -29,6 +29,8 @@ pub struct JobSummary {
 /// A step's source summary; it contains no executable script.
 #[derive(Debug)]
 pub struct StepSummary {
+    /// Optional explicit source identifier; inspection never generates an ID.
+    pub id: Option<String>,
     /// Optional display name.
     pub name: Option<String>,
     /// Source operation classification.

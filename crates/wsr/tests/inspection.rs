@@ -394,3 +394,102 @@ fn inspect_deep_dependency_chain_uses_bounded_graph_traversal() {
         count - 1
     );
 }
+
+#[test]
+fn inspect_explicit_step_identities_preserve_names_kinds_and_order() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = include_str!("../../../tests/fixtures/inspection/step-identities.yml");
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: Step identity example\nInspection only; execution compatibility is not assessed.\nJob: build\n  Runner: ubuntu-latest\n  Step 1 [compile]: run (Compile sources)\n  Step 2 [upload]: uses ./unopened-action\n  Step 3: run\n"
+    );
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        source
+    );
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+    assert!(!directory.path().join("executed").exists());
+}
+
+#[test]
+fn inspect_rejects_invalid_step_identities_before_rendering() {
+    let directory = tempfile::tempdir().unwrap();
+    for (value, diagnostic) in [
+        ("''".to_owned(), "expected a nonempty string"),
+        ("'bad id'".to_owned(), "invalid step identifier"),
+        ("'1build'".to_owned(), "invalid step identifier"),
+        ("'__internal'".to_owned(), "invalid step identifier"),
+        ("'compile.out'".to_owned(), "invalid step identifier"),
+        ("éclair".to_owned(), "invalid step identifier"),
+        ("x".repeat(100), "invalid step identifier"),
+        ("'${{ inputs.id }}'".to_owned(), "expression is unevaluated"),
+        ("null".to_owned(), "expected a string"),
+        ("42".to_owned(), "expected a string"),
+        ("true".to_owned(), "expected a string"),
+        ("[]".to_owned(), "expected a string"),
+        ("{}".to_owned(), "expected a string"),
+    ] {
+        let source = dependency_workflow(&[("build", "")]).replace(
+            "      - run:",
+            &format!("      - id: {value}\n        run:"),
+        );
+        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{value}: {output:?}");
+        assert!(output.stdout.is_empty());
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains("ci.yml:")
+                && error.contains("jobs.build.steps")
+                && error.contains(diagnostic),
+            "{value}: {error}"
+        );
+    }
+}
+
+#[test]
+fn inspect_rejects_duplicate_explicit_step_ids_with_both_locations() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = include_str!("../../../tests/fixtures/inspection/step-identities.yml")
+        .replace("id: upload", "id: compile");
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty());
+    let error = String::from_utf8(output.stderr).unwrap();
+    for expected in [
+        "ci.yml:",
+        "jobs.build.steps[2].id",
+        "duplicate step identifier 'compile'",
+        "first declared at jobs.build.steps[1].id",
+    ] {
+        assert!(error.contains(expected), "{error}");
+    }
+}
+
+#[test]
+fn inspect_step_ids_preserve_case_allow_cross_job_reuse_and_accept_length_boundary() {
+    let directory = tempfile::tempdir().unwrap();
+    let longest = "x".repeat(99);
+    let source = format!(
+        "jobs:\n  first:\n    runs-on: linux\n    steps:\n      - id: Build\n        run: echo first\n      - id: build\n        run: echo second\n      - id: {longest}\n        run: echo longest\n      - id: _valid-1\n        run: echo valid\n  second:\n    needs: first\n    runs-on: linux\n    steps:\n      - id: Build\n        run: echo reused\n"
+    );
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    let summary = String::from_utf8(output.stdout).unwrap();
+    for expected in [
+        "  Step 1 [Build]: run",
+        "  Step 2 [build]: run",
+        &format!("  Step 3 [{longest}]: run"),
+        "  Step 4 [_valid-1]: run",
+        "Job: second\n  Runner: linux\n  Needs: first\n  Step 1 [Build]: run",
+    ] {
+        assert!(summary.contains(expected), "{summary}");
+    }
+}

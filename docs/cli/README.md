@@ -41,7 +41,7 @@ Current supported subset:
   reported, never evaluated. Absence of `on` is accepted for inspection fragments.
 - A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
 - Job `name`, a nonempty string `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
-- Step `name` and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
+- Step `name`, optional explicit `id`, and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
   in the summary; action references are reported verbatim, never resolved, fetched or opened.
 
 Names are optional strings (null is treated as absent). Required strings retain their YAML type;
@@ -55,10 +55,24 @@ YAML decoding errors include available line/column information and structural co
 checks identify a field path (step indices are one-based). Dynamic values are explicitly unevaluated.
 Clap invocation errors retain exit code 2. The output is pre-alpha, not a frozen machine protocol.
 
-Other trigger forms, step ids, runner label arrays, matrices, conditions, environment,
+Other trigger forms, runner label arrays, matrices, conditions, environment,
 permissions, defaults, services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection and canonical dogfood fixtures remain pending.
+
+### Explicit step identities
+
+An explicit `steps[].id` is retained in the source summary and displayed as
+`Step 1 [compile]: run (Compile sources)` or `Step 2 [upload]: uses owner/action@v1`.
+Steps without IDs retain their previous output; inspection never generates an ID or changes step
+order. IDs do not resolve outputs or expressions, select steps, or establish runtime identities.
+
+An ID must be a nonempty string of fewer than 100 ASCII identifier characters: a letter or
+underscore first, then letters, digits, underscores or hyphens. The `__` prefix is reserved.
+Explicit null/non-string values and expressions fail. Duplicate IDs within one job fail with
+both the first and repeated structural step locations; exact spelling is used for comparison.
+Case variants and reuse across different jobs are accepted. Semantic diagnostic indices are
+one-based. Validation completes before stdout is rendered; existing graph checks remain in force.
 
 ### Static dependency inspection
 

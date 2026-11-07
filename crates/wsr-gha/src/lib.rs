@@ -37,6 +37,8 @@ struct Job {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Step {
+    #[serde(default, deserialize_with = "present_string")]
+    id: Option<String>,
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
     #[serde(default, deserialize_with = "present_string")]
@@ -83,8 +85,31 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
         check_literal(job.name.as_deref(), &format!("jobs.{id}.name"))?;
         check_required(&job.runner, &format!("jobs.{id}.runs-on"))?;
         let mut steps = Vec::new();
+        let mut step_ids = BTreeMap::new();
         for (index, step) in job.steps.into_iter().enumerate() {
             let location = format!("jobs.{id}.steps[{}]", index + 1);
+            if let Some(step_id) = &step.id {
+                let field = format!("{location}.id");
+                check_required(step_id, &field)?;
+                if step_id.len() >= 100
+                    || step_id.starts_with("__")
+                    || !step_id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+                    || !step_id
+                        .chars()
+                        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+                {
+                    anyhow::bail!(
+                        "{field}: invalid step identifier '{}'; expected fewer than 100 ASCII identifier characters and no '__' prefix",
+                        step_id.escape_debug()
+                    );
+                }
+                if let Some(first) = step_ids.insert(step_id.clone(), index + 1) {
+                    anyhow::bail!(
+                        "{field}: duplicate step identifier '{}'; first declared at jobs.{id}.steps[{first}].id",
+                        step_id.escape_debug()
+                    );
+                }
+            }
             check_literal(step.name.as_deref(), &format!("{location}.name"))?;
             if let Some(script) = &step.run {
                 check_required(script, &format!("{location}.run"))?;
@@ -101,6 +126,7 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
                 ),
             };
             steps.push(StepSummary {
+                id: step.id,
                 name: step.name,
                 kind,
             });
