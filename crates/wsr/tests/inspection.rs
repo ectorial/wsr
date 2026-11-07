@@ -493,3 +493,86 @@ fn inspect_step_ids_preserve_case_allow_cross_job_reuse_and_accept_length_bounda
         assert!(summary.contains(expected), "{summary}");
     }
 }
+
+#[test]
+fn inspect_runner_label_lists_preserve_steps_dependencies_and_sentinels() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = include_str!("../../../tests/fixtures/inspection/runner-labels.yml");
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("wsr.toml"), "sentinel").unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: build\n  Runner labels: [\"self-hosted\", \"linux\", \"x64\"]\n  Step 1 [compile]: run\n  Step 2: uses ./unopened-action\nJob: test\n  Runner: ubuntu-latest\n  Needs: build\n  Step 1: run\n"
+    );
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        source
+    );
+    assert_eq!(
+        fs::read_to_string(directory.path().join("wsr.toml")).unwrap(),
+        "sentinel"
+    );
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 2);
+    assert!(!directory.path().join("executed").exists());
+}
+
+#[test]
+fn inspect_runner_labels_reject_empty_invalid_and_dynamic_values() {
+    let directory = tempfile::tempdir().unwrap();
+    for (value, diagnostic) in [
+        ("[]", "runs-on: expected at least one label"),
+        ("[linux, ' ']", "runs-on[2]: expected a nonempty string"),
+        (
+            "[linux, '${{ matrix.os }}']",
+            "runs-on[2]: expression is unevaluated",
+        ),
+        ("'${{ matrix.os }}'", "runs-on: expression is unevaluated"),
+        ("null", "runs-on: expected a string or list of strings"),
+        ("42", "runs-on: expected a string or list of strings"),
+        ("true", "runs-on: expected a string or list of strings"),
+        ("[linux, 42]", "runs-on[2]: expected a string label"),
+        ("[linux, true]", "runs-on[2]: expected a string label"),
+        ("[linux, null]", "runs-on[2]: expected a string label"),
+        ("[linux, [x64]]", "runs-on[2]: expected a string label"),
+        ("[linux, {}]", "runs-on[2]: expected a string label"),
+        ("{group: fleet}", "unsupported runner-selector mapping"),
+    ] {
+        let source = format!(
+            "jobs:\n  build:\n    runs-on: {value}\n    steps:\n      - run: touch executed\n"
+        );
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{value}: {output:?}");
+        assert!(output.stdout.is_empty());
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains("ci.yml:") && error.contains("jobs.build") && error.contains(diagnostic),
+            "{value}: {error}"
+        );
+        assert_eq!(
+            fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+            source
+        );
+        assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+}
+
+#[test]
+fn inspect_runner_labels_quote_boundaries_preserve_case_order_and_repetitions() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(directory.path().join("ci.yml"), "jobs:\n  build:\n    runs-on: ['Linux', 'a,b', 'Linux', \"line\\nbreak\", 'quote\"label']\n    steps:\n      - run: echo hello\n  single:\n    runs-on: [linux]\n    steps:\n      - run: echo hello\n").unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    let summary = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        summary.contains(
+            "Runner labels: [\"Linux\", \"a,b\", \"Linux\", \"line\\nbreak\", \"quote\\\"label\"]"
+        ),
+        "{summary}"
+    );
+    assert!(summary.contains("Runner labels: [\"linux\"]"), "{summary}");
+}

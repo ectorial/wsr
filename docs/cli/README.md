@@ -40,7 +40,7 @@ Current supported subset:
 - Optional literal workflow `name` and optional `on: workflow_dispatch` string; the trigger is
   reported, never evaluated. Absence of `on` is accepted for inspection fragments.
 - A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
-- Job `name`, a nonempty string `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
+- Job `name`, a nonempty literal string or string-list `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
 - Step `name`, optional explicit `id`, and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
   in the summary; action references are reported verbatim, never resolved, fetched or opened.
 
@@ -55,10 +55,23 @@ YAML decoding errors include available line/column information and structural co
 checks identify a field path (step indices are one-based). Dynamic values are explicitly unevaluated.
 Clap invocation errors retain exit code 2. The output is pre-alpha, not a frozen machine protocol.
 
-Other trigger forms, runner label arrays, matrices, conditions, environment,
+Other trigger forms, runner-group objects, matrices, conditions, environment,
 permissions, defaults, services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection and canonical dogfood fixtures remain pending.
+
+### Literal runner labels
+
+`runs-on` accepts a nonempty scalar string or nonempty list of nonempty strings.
+Scalars retain `Runner: ubuntu-latest`; lists render as
+`Runner labels: ["self-hosted", "linux", "x64"]`, including quoted/escaped labels.
+Source form, order, exact spelling and repetitions are preserved; a one-element list stays a list.
+No runner is discovered, selected or provisioned, and labels do not establish platform support.
+
+Null/non-string values, nested lists, empty lists and blank members fail before stdout.
+Runner-selector mappings are explicitly unsupported. Expressions are unevaluated and rejected,
+including inside lists. Semantic diagnostics identify `jobs.build.runs-on[2]` for a second label;
+decoding errors retain available source context. No normalization or label resolution occurs.
 
 ### Explicit step identities
 

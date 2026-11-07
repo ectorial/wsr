@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use wsr_types::inspection::StepSummaryKind;
+use wsr_types::inspection::{RunnerRequirement, StepSummaryKind};
 
 pub fn run(file: &Path) -> anyhow::Result<()> {
     let raw = std::fs::read(file)
@@ -24,7 +24,17 @@ pub fn run(file: &Path) -> anyhow::Result<()> {
         if let Some(name) = job.name {
             print!(" ({})", name.escape_debug());
         }
-        println!("\n  Runner: {}", job.runner.escape_debug());
+        match job.runner {
+            RunnerRequirement::Label(label) => println!("\n  Runner: {}", label.escape_debug()),
+            RunnerRequirement::Labels(labels) => println!(
+                "\n  Runner labels: [{}]",
+                labels
+                    .iter()
+                    .map(|label| format!("{label:?}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        }
         if !job.needs.is_empty() {
             println!(
                 "  Needs: {}",

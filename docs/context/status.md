@@ -15,6 +15,9 @@ for delivery gates.
 
 ## Present in the current checkout
 
+- [x] Literal scalar/list runner requirements in inspection: source form/order/spelling retained,
+  quoted list output, strict shape/member validation and unevaluated-expression diagnostics.
+  See [runner-label contract](../cli/README.md#literal-runner-labels). No runner resolution or execution.
 - [x] Explicit step identities in static inspection: source preservation/rendering, strict identifier
   rules, per-job duplicate diagnostics, and no-ID/cross-job/case/boundary regressions. See
   [step ID contract](../cli/README.md#explicit-step-identities). This does not bind step outputs

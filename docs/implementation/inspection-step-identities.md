@@ -1,7 +1,8 @@
 # Next inspection iteration: explicit step identities
 
-Status: **owner-authorized; implemented locally, PR integration pending**. The owner authorized
-implementation after reviewing this plan; completion evidence is recorded in the worker checkpoint.
+Status: **delivered**. PR #24 merged as `b22b339`; all four required checks passed on
+`586821a`. The merged binary reproduced the captured new output; local main was clean.
+The 17 inspection tests and `cargo xtask ci` passed before integration. No reset was consumed.
 Baseline: PR #22 is merged on `main` as `c04243e`; static job dependencies are delivered.
 The owner requested this next plan after reviewing the old/new dependency-inspection behavior.
 

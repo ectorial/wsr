@@ -1,35 +1,24 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — explicit step-identity iteration
+## Current checkpoint — literal runner-label iteration
 
-PR #22 is merged as `c04243e`; the static dependency iteration is complete. Older pending-merge
-wording below is historical. The owner authorized the [step-identity iteration](inspection-step-identities.md).
-Current branch: `feat/inspect-step-identities`, based on `c04243e`.
+Baseline `b22b339` matched origin/main; 5 CLI and 17 inspection tests passed. Owner authorized
+continuation of the runner-label plan. Branch: `feat/inspect-runner-labels`; the existing plan
+and checkpoint edits are owned work included in this slice. No unfinished feature PR existed;
+unrelated Dependabot PR #23 was left untouched.
 
-Implemented: optional strict-string step IDs in the source model and `StepSummary`; rendering
-as `Step N [id]: kind`; ASCII syntax/length/reserved-prefix validation; exact per-job duplicate
-checks with first/repeated routes. Case and cross-job reuse are preserved. No-ID output and all
-job dependency checks remain unchanged. No generic symbol table, synthetic IDs, output binding,
-new dependency, hooks, toolchain or schedule changes. The existing proposed-plan edits are owned
-work and belong in this feature PR.
+Implemented strict scalar/list runner requirements, source-summary variants, quoted list output,
+indexed validation and explicit unsupported mapping diagnostics. Scalar output is unchanged.
+Observed red/green: valid list rejected by old decoder, then empty list accepted before validation.
+Focused suite: 20 inspection + 5 CLI tests, plus one source-summary integration test.
+`cargo xtask ci` and `git diff --check` passed. Next: finish review, push/create feature
+PR and merge only the verified head after required hosted checks and no unresolved review findings.
 
-Evidence: baseline 13 inspection + 5 CLI tests passed. Observed red/green for ID display,
-invalid IDs and duplicate IDs. The completed suite has 17 inspection tests, including malformed
-input, expressions, 99/100 length boundaries, case/scope behavior and non-execution sentinels.
-`cargo xtask ci` passed. Next: review/push the complete feature PR, satisfy hosted checks, and
-merge its verified head. Do not begin another feature before integration.
-
-A rough token-cost planning range was communicated before implementation; it is not a verified
-usage-budget conversion. No reset credit was consumed or automatic redemption enabled. Keep
-account usage management outside the WSR product and do not infer a live remaining allowance
-from this checkpoint. Preserve exact owned work/test/PR state on interruption.
-
-Baseline/new binary comparison confirmed the fixture changes from unknown-field `id` (exit 1)
-to ordered `Step 1 [compile]`, `Step 2 [upload]`, and ID-free `Step 3` output (exit 0).
-After merge, confirm this evidence against the merged binary.
-Record the merged revision alongside the next feature, not through a docs-only follow-up.
-Runner selectors, richer triggers/inputs, expressions and canonical dogfood integration remain
-pending; do not mark the inspection milestone complete or resume the paused Java worker.
+No labels are resolved or runners provisioned; no commands/actions are executed or loaded.
+No reset consumed; rough estimate remains 10k–20k additional tokens, not measured account usage.
+No schedule/tooling/dependency changes. Runner-group objects, richer triggers/inputs, expression
+support and canonical dogfood integration remain pending. The milestone is incomplete and the
+Java worker remains paused. Prior PR #24 merged as `b22b339`; older sections below are historical.
 
 ## Bootstrap — November 6, 2026
 

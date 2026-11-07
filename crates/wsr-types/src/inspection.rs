@@ -19,7 +19,7 @@ pub struct JobSummary {
     /// Optional display name.
     pub name: Option<String>,
     /// Literal runner requirement, not a resolved environment.
-    pub runner: String,
+    pub runner: RunnerRequirement,
     /// Static source dependency identifiers, retaining declared order and repetitions.
     pub needs: Vec<String>,
     /// Steps in source order.
@@ -44,4 +44,13 @@ pub enum StepSummaryKind {
     Run,
     /// An unresolved action reference; inspection never fetches or opens it.
     Uses(String),
+}
+
+/// Literal source requirement, not a selected or provisioned runner.
+#[derive(Debug, PartialEq, Eq)]
+pub enum RunnerRequirement {
+    /// One source label in scalar form.
+    Label(String),
+    /// Source list, retaining order, spelling and repetitions.
+    Labels(Vec<String>),
 }
