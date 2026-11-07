@@ -197,3 +197,15 @@ then passed after their corresponding checks. The old unknown-field assertion fo
 replaced by a semantic unknown-target assertion. All other existing inspection and placeholder
 assertions remain. `cargo xtask ci` passes with 13 inspection acceptance tests; this is static
 source/graph evidence, not execution, security enforcement or complete GHA compatibility.
+
+## Explicit step-identity iteration
+
+The real CLI acceptance suite now has 17 inspection tests. New red/green checks first observed
+unknown `id` rejection, then acceptance of invalid/duplicate IDs, and passed after decoding,
+validation and duplicate checks were implemented. Tests verify IDs on run/uses steps, unchanged
+unidentified-step output/order, malformed types, expressions, syntax/reserved-prefix rejection,
+99/100-character boundaries, same-job duplicate locations, cross-job reuse and case preservation.
+The shared `tests/fixtures/inspection/step-identities.yml` includes a malicious command and an
+unopened local action reference; source bytes/file inventory remain unchanged. Existing graph,
+CLI parser and remaining-placeholder regressions still pass. `cargo xtask ci` passed. This is
+static source/identity evidence, not output binding, expression evaluation or execution support.

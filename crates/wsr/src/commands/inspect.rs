@@ -36,7 +36,11 @@ pub fn run(file: &Path) -> anyhow::Result<()> {
             );
         }
         for (index, step) in job.steps.into_iter().enumerate() {
-            print!("  Step {}: ", index + 1);
+            print!("  Step {}", index + 1);
+            if let Some(id) = step.id {
+                print!(" [{}]", id.escape_debug());
+            }
+            print!(": ");
             match step.kind {
                 StepSummaryKind::Run => print!("run"),
                 StepSummaryKind::Uses(reference) => print!("uses {}", reference.escape_debug()),

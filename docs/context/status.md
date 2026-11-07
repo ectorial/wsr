@@ -15,6 +15,11 @@ for delivery gates.
 
 ## Present in the current checkout
 
+- [x] Explicit step identities in static inspection: source preservation/rendering, strict identifier
+  rules, per-job duplicate diagnostics, and no-ID/cross-job/case/boundary regressions. See
+  [step ID contract](../cli/README.md#explicit-step-identities). This does not bind step outputs
+  or evaluate expressions.
+
 - [x] Static job-dependency inspection: scalar/list `needs`, deterministic edge summaries,
   unknown-reference/self-cycle/multi-job-cycle diagnostics, and valid DAG/repeated-edge/deep-chain
   tests. See [dependency contract](../cli/README.md#static-dependency-inspection). This does not

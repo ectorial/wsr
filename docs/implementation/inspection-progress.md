@@ -1,32 +1,35 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — static dependency iteration
+## Current checkpoint — explicit step-identity iteration
 
-The first source-inspection feature is merged through PR #21 at `f70ebf4`. The owner subsequently
-authorized the [static dependency iteration](inspection-next.md), including PR creation and merge
-after acceptance/regression and hosted checks pass. Historical pending-merge and prerequisite-decision
-wording below does not override these completed actions or the D-031 resolution.
+PR #22 is merged as `c04243e`; the static dependency iteration is complete. Older pending-merge
+wording below is historical. The owner authorized the [step-identity iteration](inspection-step-identities.md).
+Current branch: `feat/inspect-step-identities`, based on `c04243e`.
 
-Current branch: `feat/inspect-static-dependencies`, based on `f70ebf4`. Implemented static `needs`
-decoding (missing/scalar/list), ordered summary edges, unknown-target checks, self-cycle errors and
-an explicit-stack cycle detector. The source model retains scalar/list shape for diagnostic routes;
-`JobSummary` gains dependency identifiers. No new dependencies, runtime sidecar, global configuration
-or hooks were introduced. Include the previously requested modeling guide and iteration plan in
-this feature PR; those local documentation edits are owned work, not unrelated changes.
+Implemented: optional strict-string step IDs in the source model and `StepSummary`; rendering
+as `Step N [id]: kind`; ASCII syntax/length/reserved-prefix validation; exact per-job duplicate
+checks with first/repeated routes. Case and cross-job reuse are preserved. No-ID output and all
+job dependency checks remain unchanged. No generic symbol table, synthetic IDs, output binding,
+new dependency, hooks, toolchain or schedule changes. The existing proposed-plan edits are owned
+work and belong in this feature PR.
 
-Local evidence: baseline 5 CLI + 4 inspection tests passed. Observed intended red/green for accepted
-`needs`, unknown targets, self-cycles and multi-job cycles. The completed suite has 13 inspection
-tests including DAGs, repeated edges, malformed/dynamic input, unchanged sentinels and a 4,096-job
-chain. Full `cargo xtask ci` passed. Hosted checks and merge are the next required delivery step;
-no later feature may begin while this PR remains unintegrated.
+Evidence: baseline 13 inspection + 5 CLI tests passed. Observed red/green for ID display,
+invalid IDs and duplicate IDs. The completed suite has 17 inspection tests, including malformed
+input, expressions, 99/100 length boundaries, case/scope behavior and non-execution sentinels.
+`cargo xtask ci` passed. Next: review/push the complete feature PR, satisfy hosted checks, and
+merge its verified head. Do not begin another feature before integration.
 
-For the final user report, compare the saved baseline binary with the merged binary on the same
-shared fixture, separately explaining CLI behavior and parser/model changes. The baseline rejects
-`needs`; the new version displays edges and diagnoses invalid graphs. Record the actual PR/merge
-revision in the next checkpoint update alongside future feature work, rather than opening a
-standalone documentation-only follow-up. Step IDs, runner label forms, richer triggers/expressions
-and canonical dogfood integration remain pending. The inspection milestone is not yet complete,
-and the schedule must not be paused as complete. The Java worker remains paused.
+A rough token-cost planning range was communicated before implementation; it is not a verified
+usage-budget conversion. No reset credit was consumed or automatic redemption enabled. Keep
+account usage management outside the WSR product and do not infer a live remaining allowance
+from this checkpoint. Preserve exact owned work/test/PR state on interruption.
+
+Baseline/new binary comparison confirmed the fixture changes from unknown-field `id` (exit 1)
+to ordered `Step 1 [compile]`, `Step 2 [upload]`, and ID-free `Step 3` output (exit 0).
+After merge, confirm this evidence against the merged binary.
+Record the merged revision alongside the next feature, not through a docs-only follow-up.
+Runner selectors, richer triggers/inputs, expressions and canonical dogfood integration remain
+pending; do not mark the inspection milestone complete or resume the paused Java worker.
 
 ## Bootstrap — November 6, 2026
 
