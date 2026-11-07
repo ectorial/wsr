@@ -10,6 +10,7 @@ use wsr_types::inspection::{
     JobSummary, RunnerRequirement, StepSummary, StepSummaryKind, WorkflowSummary,
 };
 
+mod dispatch;
 mod needs;
 use needs::Needs;
 
@@ -18,8 +19,8 @@ use needs::Needs;
 struct Workflow {
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
-    #[serde(rename = "on", default, deserialize_with = "present_string")]
-    trigger: Option<String>,
+    #[serde(rename = "on", default, deserialize_with = "dispatch::deserialize")]
+    trigger: Option<wsr_types::inspection::ManualTrigger>,
     #[serde(deserialize_with = "unique_jobs")]
     jobs: BTreeMap<String, Job>,
 }
@@ -59,14 +60,6 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
         anyhow::bail!("jobs: expected at least one job");
     }
     check_literal(workflow.name.as_deref(), "name")?;
-    if let Some(trigger) = &workflow.trigger {
-        check_literal(Some(trigger), "on")?;
-        if trigger != "workflow_dispatch" {
-            anyhow::bail!(
-                "on: unsupported trigger; only the literal workflow_dispatch is inspected yet"
-            );
-        }
-    }
     needs::validate(&workflow.jobs)?;
     let mut jobs = Vec::new();
     for (id, job) in workflow.jobs {

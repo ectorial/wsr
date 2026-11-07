@@ -37,7 +37,7 @@ source summary, not executable IR or a signed Component compilation result.
 
 Current supported subset:
 
-- Optional literal workflow `name` and optional `on: workflow_dispatch` string; the trigger is
+- Optional literal workflow `name` and optional scalar/mapping manual trigger; the trigger is
   reported, never evaluated. Absence of `on` is accepted for inspection fragments.
 - A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
 - Job `name`, a nonempty literal string or string-list `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
@@ -59,6 +59,39 @@ Other trigger forms, runner-group objects, matrices, conditions, environment,
 permissions, defaults, services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection and canonical dogfood fixtures remain pending.
+
+### Manual-trigger input declarations
+
+`on: workflow_dispatch`, `on: {workflow_dispatch: null}`, an empty dispatch mapping,
+and a dispatch mapping with `inputs` are supported. Other events and event sequences remain
+explicitly unsupported. Missing `on`, null dispatch bodies, absent inputs and empty input mappings
+remain distinct in the source summary, though the trigger-only CLI line is the same.
+
+Inputs display in identifier order, with only explicitly declared description/type/required/default/
+options metadata. Types are string, boolean, number, choice and environment; omission is preserved.
+Defaults retain string/boolean/number kind and render as `Default: "pass" (not applied)`.
+Numbers are rendered from the YAML number value; original numeric lexemes are not retained.
+Choices render quoted options in declared order, including repetitions. Text is escaped.
+Inspection neither supplies values nor prompts for required inputs, selects environments, applies
+defaults or evaluates expressions.
+
+Declarations require unique string identifiers beginning with an ASCII letter/underscore, followed
+by letters/digits/underscores/hyphens. Metadata types are strict: no scalar coercion. Null metadata,
+unknown fields, duplicate keys and expressions fail before stdout. Choice declarations require
+nonempty options; options on other types (including omitted type) fail. Boolean defaults must be
+booleans; string/choice/environment defaults must be strings. Omitted type uses the string rule
+for validation but is not inserted into the summary. Numeric-type defaults retain any supported
+scalar, matching the pinned schema/converter's validation boundary; this does not certify numeric
+input compatibility. Choice defaults are not checked for membership in options by this subset.
+
+Diagnostics identify the file and structural route, such as
+`on.workflow_dispatch.inputs.mode.options[2]`. YAML duplicate-key/parse errors retain available
+source context; semantic checks do not introduce exact source spans. The pinned official schema
+and converter references and intentional source-preservation differences are recorded in the
+[iteration record](../implementation/inspection-dispatch-inputs.md).
+
+The canonical example workflows still contain unsupported fields outside these declarations.
+Their manual reference runs are not evidence of WSR execution support.
 
 ### Literal runner labels
 

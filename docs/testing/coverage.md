@@ -219,3 +219,15 @@ control characters, strict types, indexed blank/expression diagnostics, unsuppor
 steps/needs integration and unchanged source/config sentinels. A GHA public-API integration test
 checks scalar versus list source-summary variants independently of rendering. Existing tests remain.
 These establish source inspection only, not runner matching, provisioning or execution.
+
+## Manual-trigger input iteration
+
+25 real CLI inspection tests (plus 5 CLI regressions) and two new public parser-summary tests
+cover dispatch mappings/input declarations. Observed red/green: mapping rejected by old string-only
+parser; missing choice options accepted before cross-field checks; malformed identifiers accepted
+before validation. New cases include five types/omitted type, strict typed defaults, options,
+empty/null declaration states, deterministic input order, duplicate keys, expressions, unknown
+metadata/events, indexed diagnostics, escaped text and unchanged repository/source sentinels.
+No existing assertions were removed. Source summaries retain declaration states independently of
+rendering. Numeric defaults are preserved rather than dropped; this is not complete input validation
+or event binding. Existing examples still require other source fields before end-to-end acceptance.

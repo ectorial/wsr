@@ -1,0 +1,17 @@
+name: Manual input example
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Choose the reference outcome
+        type: choice
+        options: [pass, fail]
+        default: pass
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - id: compile
+        run: touch executed
+      - uses: ./unopened-action

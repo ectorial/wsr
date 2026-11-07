@@ -576,3 +576,284 @@ fn inspect_runner_labels_quote_boundaries_preserve_case_order_and_repetitions() 
     );
     assert!(summary.contains("Runner labels: [\"linux\"]"), "{summary}");
 }
+
+#[test]
+fn inspect_manual_input_declarations_without_applying_or_executing_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = include_str!("../../../tests/fixtures/inspection/dispatch-inputs.yml");
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("wsr.toml"), "sentinel").unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: Manual input example\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\n  Input: mode\n    Type: choice\n    Description: Choose the reference outcome\n    Required: true\n    Default: \"pass\" (not applied)\n    Options: [\"pass\", \"fail\"]\nJob: build\n  Runner: ubuntu-latest\n  Step 1 [compile]: run\n  Step 2: uses ./unopened-action\n"
+    );
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        source
+    );
+    assert_eq!(
+        fs::read_to_string(directory.path().join("wsr.toml")).unwrap(),
+        "sentinel"
+    );
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 2);
+    assert!(!directory.path().join("executed").exists());
+}
+
+fn dispatch_workflow(declaration: &str) -> String {
+    format!(
+        "on:\n  workflow_dispatch:\n    inputs:\n      value:\n{declaration}\njobs:\n  build:\n    runs-on: linux\n    steps:\n      - run: touch executed\n"
+    )
+}
+
+#[test]
+fn inspect_dispatch_enforces_choice_options_and_default_types() {
+    let directory = tempfile::tempdir().unwrap();
+    for (fields, diagnostic) in [
+        (
+            "        type: choice",
+            "options: expected at least one option for choice input",
+        ),
+        (
+            "        type: choice\n        options: []",
+            "options: expected at least one option for choice input",
+        ),
+        (
+            "        options: [a]",
+            "options: only supported for choice input",
+        ),
+        (
+            "        type: boolean\n        default: 'false'",
+            "default: expected a boolean for boolean input",
+        ),
+        (
+            "        type: string\n        default: true",
+            "default: expected a string for string, choice or environment input",
+        ),
+        (
+            "        type: environment\n        default: 42",
+            "default: expected a string for string, choice or environment input",
+        ),
+        (
+            "        default: 42",
+            "default: expected a string for string, choice or environment input",
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), dispatch_workflow(fields)).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{fields}: {output:?}");
+        assert!(output.stdout.is_empty());
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains("ci.yml:")
+                && error.contains("on.workflow_dispatch.inputs.value")
+                && error.contains(diagnostic),
+            "{error}"
+        );
+    }
+}
+
+#[test]
+fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
+    let directory = tempfile::tempdir().unwrap();
+    for (fields, diagnostic) in [
+        ("        description: 42", ".description: expected a string"),
+        (
+            "        description: null",
+            ".description: expected a string",
+        ),
+        ("        required: 'true'", ".required: expected a boolean"),
+        ("        required: null", ".required: expected a boolean"),
+        ("        type: object", ".type: unsupported input type"),
+        ("        type: []", ".type: expected a string"),
+        (
+            "        default: null",
+            ".default: expected a string, boolean or number",
+        ),
+        (
+            "        default: []",
+            ".default: expected a string, boolean or number",
+        ),
+        (
+            "        default: {}",
+            ".default: expected a string, boolean or number",
+        ),
+        (
+            "        type: choice\n        options: a",
+            ".options: expected a string list",
+        ),
+        (
+            "        type: choice\n        options: [a, false]",
+            ".options[2]: expected a string",
+        ),
+        (
+            "        type: choice\n        options: [a, null]",
+            ".options[2]: expected a string",
+        ),
+        (
+            "        description: '${{ inputs.mode }}'",
+            ".description: expression is unevaluated",
+        ),
+        (
+            "        default: '${{ secrets.VALUE }}'",
+            ".default: expression is unevaluated",
+        ),
+        (
+            "        type: '${{ inputs.type }}'",
+            ".type: expression is unevaluated",
+        ),
+        (
+            "        type: choice\n        options: [a, '${{ inputs.mode }}']",
+            ".options[2]: expression is unevaluated",
+        ),
+        (
+            "        unexpected: true",
+            ".unexpected: unsupported field or event",
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), dispatch_workflow(fields)).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{fields}: {output:?}");
+        assert!(output.stdout.is_empty());
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains("ci.yml:")
+                && error.contains("on.workflow_dispatch.inputs.value")
+                && error.contains(diagnostic),
+            "{error}"
+        );
+        assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+    for (trigger, diagnostic) in [
+        ("null", "on: expected a mapping"),
+        ("[]", "on: expected a mapping"),
+        ("{}", "on: expected workflow_dispatch entry"),
+        ("{push: null}", "on.push: unsupported field or event"),
+        (
+            "{workflow_dispatch: {unexpected: true}}",
+            "on.workflow_dispatch.unexpected",
+        ),
+        (
+            "{workflow_dispatch: []}",
+            "on.workflow_dispatch: expected a mapping",
+        ),
+        (
+            "{workflow_dispatch: {inputs: null}}",
+            "on.workflow_dispatch.inputs: expected a mapping",
+        ),
+        (
+            "{workflow_dispatch: {inputs: {value: null}}}",
+            "on.workflow_dispatch.inputs.value: expected a mapping",
+        ),
+        (
+            "{workflow_dispatch: {inputs: {42: {}}}}",
+            "inputs identifier: expected a string",
+        ),
+        (
+            "{workflow_dispatch: {inputs: {'': {}}}}",
+            "inputs identifier: expected a nonempty string",
+        ),
+        (
+            "{workflow_dispatch: {inputs: {value: {}, value: {}}}}",
+            "duplicate",
+        ),
+        (
+            "{workflow_dispatch: {inputs: {value: {type: string, type: boolean}}}}",
+            "duplicate",
+        ),
+        (
+            "{workflow_dispatch: null, workflow_dispatch: {}}",
+            "duplicate",
+        ),
+    ] {
+        let source = format!("on: {trigger}\n{}", dependency_workflow(&[("build", "")]));
+        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{trigger}: {output:?}");
+        assert!(output.stdout.is_empty());
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains("ci.yml:") && error.contains(diagnostic),
+            "{trigger}: {error}"
+        );
+    }
+}
+
+#[test]
+fn inspect_dispatch_preserves_empty_declarations_types_and_deterministic_order() {
+    let directory = tempfile::tempdir().unwrap();
+    for trigger in [
+        "workflow_dispatch",
+        "{workflow_dispatch: null}",
+        "{workflow_dispatch: {}}",
+        "{workflow_dispatch: {inputs: {}}}",
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            format!("on: {trigger}\n{}", dependency_workflow(&[("build", "")])),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(0), "{trigger}: {output:?}");
+        assert!(output.stderr.is_empty());
+        let summary = String::from_utf8(output.stdout).unwrap();
+        assert!(
+            summary.contains("Trigger: workflow_dispatch (not evaluated)\nJob: build"),
+            "{summary}"
+        );
+    }
+    let source = "on:\n  workflow_dispatch:\n    inputs:\n      z_string:\n        type: string\n        default: '42'\n        required: false\n      d_environment:\n        type: environment\n        default: production\n      c_number:\n        type: number\n        default: 42\n      b_boolean:\n        type: boolean\n        default: false\n      a_omitted:\n        description: \"line\\nbreak\"\n      e_choice:\n        type: choice\n        options: ['a,b', a, a]\n        default: other\n";
+    fs::write(
+        directory.path().join("ci.yml"),
+        format!("{source}{}", dependency_workflow(&[("build", "")])),
+    )
+    .unwrap();
+    let first = inspect(directory.path(), "ci.yml");
+    assert_eq!(first.status.code(), Some(0), "{first:?}");
+    assert!(first.stderr.is_empty());
+    let second = inspect(directory.path(), "ci.yml");
+    assert_eq!(first.stdout, second.stdout);
+    let summary = String::from_utf8(first.stdout).unwrap();
+    for expected in [
+        "Input: a_omitted\n    Description: line\\nbreak\n  Input: b_boolean",
+        "Type: boolean\n    Default: false (not applied)",
+        "Type: number\n    Default: 42 (not applied)",
+        "Type: environment\n    Default: \"production\" (not applied)",
+        "Options: [\"a,b\", \"a\", \"a\"]",
+        "Type: string\n    Required: false\n    Default: \"42\" (not applied)",
+    ] {
+        assert!(summary.contains(expected), "{summary}");
+    }
+}
+
+#[test]
+fn inspect_dispatch_identifiers_and_dynamic_required_are_diagnosed() {
+    let directory = tempfile::tempdir().unwrap();
+    for (key, fields, diagnostic) in [
+        ("bad id", "{}", "invalid input identifier"),
+        ("1input", "{}", "invalid input identifier"),
+        (
+            "valid",
+            "{required: '${{ inputs.flag }}'}",
+            "required: expression is unevaluated",
+        ),
+    ] {
+        let source = format!(
+            "on: {{workflow_dispatch: {{inputs: {{'{key}': {fields}}}}}}}\n{}",
+            dependency_workflow(&[("build", "")])
+        );
+        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{output:?}");
+        assert!(output.stdout.is_empty());
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains("ci.yml:")
+                && error.contains("on.workflow_dispatch.inputs")
+                && error.contains(diagnostic),
+            "{error}"
+        );
+    }
+}

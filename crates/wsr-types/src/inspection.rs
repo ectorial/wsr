@@ -6,7 +6,7 @@ pub struct WorkflowSummary {
     /// Optional source display name.
     pub name: Option<String>,
     /// Optional static trigger name, not an evaluated invocation event.
-    pub trigger: Option<String>,
+    pub trigger: Option<ManualTrigger>,
     /// Jobs in deterministic identifier order.
     pub jobs: Vec<JobSummary>,
 }
@@ -53,4 +53,63 @@ pub enum RunnerRequirement {
     Label(String),
     /// Source list, retaining order, spelling and repetitions.
     Labels(Vec<String>),
+}
+
+/// Source form of the supported manual trigger, never an invocation.
+#[derive(Debug, PartialEq, Eq)]
+pub enum ManualTrigger {
+    /// Scalar `workflow_dispatch`.
+    Scalar,
+    /// Mapping entry; None retains an explicitly null dispatch body.
+    Mapping(Option<DispatchBody>),
+}
+
+/// Declared manual-trigger configuration.
+#[derive(Debug, PartialEq, Eq)]
+pub struct DispatchBody {
+    /// None means no inputs field; Some(empty) means an explicitly empty mapping.
+    pub inputs: Option<Vec<DispatchInput>>,
+}
+
+/// One input declaration, without bound values or applied defaults.
+#[derive(Debug, PartialEq, Eq)]
+pub struct DispatchInput {
+    /// Exact source identifier.
+    pub id: String,
+    /// Explicit description.
+    pub description: Option<String>,
+    /// Explicit type, retaining omission rather than injecting a default.
+    pub input_type: Option<DispatchInputType>,
+    /// Explicit required flag, not enforced by inspection.
+    pub required: Option<bool>,
+    /// Explicit scalar default, never applied.
+    pub default: Option<InputDefault>,
+    /// Explicit options in source order.
+    pub options: Option<Vec<String>>,
+}
+
+/// Supported declared manual-input types.
+#[derive(Debug, PartialEq, Eq)]
+pub enum DispatchInputType {
+    /// String declaration.
+    String,
+    /// Boolean declaration.
+    Boolean,
+    /// Number declaration.
+    Number,
+    /// Choice declaration.
+    Choice,
+    /// Environment declaration; no environment lookup occurs.
+    Environment,
+}
+
+/// A typed scalar declaration, not an evaluated input value.
+#[derive(Debug, PartialEq, Eq)]
+pub enum InputDefault {
+    /// Literal string.
+    String(String),
+    /// Literal boolean.
+    Boolean(bool),
+    /// YAML number represented as text, without conversion to a string default.
+    Number(String),
 }
