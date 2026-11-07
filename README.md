@@ -15,9 +15,10 @@ flowchart LR
 ## Current status
 
 The checked-out implementation is a Rust workspace and CLI scaffold. Typed argument parsing,
-help/version, shared types, and CLI contract tests exist. All eleven operational command paths
-report “not implemented yet” on stderr and exit with code 1. This checkout
-does not parse or execute workflows, enforce permissions, install hooks, or run components.
+help/version, shared types, and CLI contract tests exist. `wsr inspect <file>` now reports a
+[small static GHA source subset](docs/cli/README.md#static-workflow-inspection) without executing it.
+The other ten operational paths remain placeholders. Workflow execution, permission enforcement,
+hook installation and Component providers are not implemented.
 
 Substantial unpublished prototype code is preserved in a local July 29 stash. It includes
 inspection/planning, source snapshots, a development command backend, and GitHub adapter work.

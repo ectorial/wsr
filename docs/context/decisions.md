@@ -644,6 +644,24 @@ Attestation format, signer trust policy, key custody, queue/retry persistence, r
 and receiver configuration remain open. Workloads cannot access signing keys or invent authoritative
 host evidence. Only explicit user-configured connectors may publish externally.
 
+### D-031 — Temporary built-in compiler for local inspection
+
+**Decision (November 6, 2026):** the owner authorized option 1 of the inspection prerequisite
+review: temporarily link the GHA compiler into the host for explicit local-file inspection.
+This is a scoped exception to the Component-only activation path in D-007/D-009/D-010, not a
+replacement of the target architecture. It does not authorize workflow execution or resuming
+the paused Java worker.
+
+Keep parsing and validation in `wsr-gha`, provider-neutral source summaries in `wsr-types`, and
+file IO/rendering in the CLI host. Do not reinterpret legacy `WorkflowIR` as the accepted model.
+These summaries are not executable plans or a stable serialized protocol. Reject unsupported
+inputs explicitly; do not infer execution compatibility from a successful inspection.
+
+The compiler and its acceptance fixtures must be reusable when packaged as a signed Component.
+Component migration still requires WIT, trust, identity/pinning and resource-limit contracts.
+Inspection through this temporary path does not load repository configuration, bootstrap providers,
+fetch actions/tools, execute repository commands or mutate repository state.
+
 ## 3. Superseded or unconfirmed prior claims
 
 The following ideas found in the existing repository are not requirements unless this plan later

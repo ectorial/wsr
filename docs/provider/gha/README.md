@@ -7,12 +7,13 @@ flowchart LR
     C --> E[Shared WSR engine]
 ```
 
-**Current scaffold:** the `wsr-gha` library contains documentation only. Its tests validate example
-inputs and native shell references; they do not translate or execute workflows through WSR.
+**Current implementation:** `wsr-gha` inspects a [small static source subset](../../cli/README.md#static-workflow-inspection)
+through the temporary built-in path authorized by D-031. CLI tests exercise real source inspection;
+example guards still establish only input/native-reference contracts, not execution support.
 
 **Accepted design:** retain the provider adapter and lower GitHub Actions semantics into the
 provider-neutral execution model. Use Bun for compatible GHA JavaScript actions inside the isolated
-system backend. No GHA parser, Bun integration, component executor, or state bridge is implemented.
+system backend. General GHA semantic lowering, Bun integration, Component providers and state bridges remain unimplemented.
 
 ## Documentation ownership
 

@@ -13,13 +13,14 @@ The implementation checklist is [CHECKLIST.md](status.md).
 - [The binary](../../crates/wsr/src/bin/wsr.rs) forwards OS-string arguments to
   [the application entrypoint](../../crates/wsr/src/lib.rs), which owns parsing, diagnostics,
   exit codes, and [command dispatch](../../crates/wsr/src/commands/mod.rs).
-- Eight handler modules cover eleven operational leaf paths. Each immediately reports
-  `error: wsr <command>: not implemented yet` on stderr and exits with code 1.
+- Eight handler modules cover eleven operational leaf paths. Static inspection reads an explicit
+  workflow file through the temporary built-in frontend (D-031); the other ten paths remain stubs.
 - Parser/executable contract tests cover help/version, arguments, placeholders, and unchanged
   repository sentinels. They do not establish workflow execution or isolation.
 - [wsr-types](../../crates/wsr-types/src/lib.rs) contains early serializable types, a provider trait,
   and errors. These do not establish a complete workflow compatibility model or stable protocol.
-- The remaining thirteen library entry files contain documentation only. There is no component
+- `wsr-gha` implements the built-in static source summary; the remaining twelve library entry files
+  contain documentation only. There is no component
   runtime, scheduler, expression evaluator, action resolver, or sandbox enforcement implementation.
 
 Current source names such as `Vault` and `Workshop` are legacy scaffold identifiers. They do not

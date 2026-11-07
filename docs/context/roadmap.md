@@ -29,7 +29,7 @@ source diagnostics, a minimal canonical model, and plan validation. Classify unk
 behavior instead of silently discarding it. Define evaluation phases for dynamic expressions.
 
 **Gate:** representative fixtures produce expected diagnostics and plans; invalid plans are rejected;
-inspection executes no repository-controlled commands. The current `inspect` handler is still a stub.
+inspection executes no repository-controlled commands. The current `inspect` handler supports only the D-031 static source summary; this full compilation/planning gate remains unmet.
 
 ## 2. Prove component security
 

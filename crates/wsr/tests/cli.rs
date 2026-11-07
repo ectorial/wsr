@@ -8,7 +8,6 @@ const LEAVES: &[(&[&str], &str)] = &[
     (&["run"], "run"),
     (&["daemon"], "daemon"),
     (&["list"], "list"),
-    (&["inspect", "workflow.yml"], "inspect"),
     (&["cache", "list"], "cache list"),
     (&["cache", "verify"], "cache verify"),
     (&["cache", "purge"], "cache purge"),
@@ -35,7 +34,7 @@ fn assert_placeholder(output: &Output, command: &str) {
 }
 
 #[test]
-fn smoke_every_operational_subcommand_has_the_same_placeholder_contract() {
+fn smoke_remaining_operational_subcommands_have_the_same_placeholder_contract() {
     let directory = tempfile::tempdir().unwrap();
     for (args, command) in LEAVES {
         assert_placeholder(&invoke(args, directory.path()), command);
@@ -47,7 +46,6 @@ fn valid_options_and_nonexistent_paths_still_reach_placeholders() {
     let directory = tempfile::tempdir().unwrap();
     for (args, command) in [
         (&["run", "missing.yml"][..], "run"),
-        (&["inspect", "missing.yml"][..], "inspect"),
         (&["run", "--dry-run", "--yes", "--format", "gha"][..], "run"),
         (
             &[
@@ -85,7 +83,7 @@ fn help_and_version_succeed_without_operational_output() {
         .iter()
         .map(|(_, path)| path.split(' ').collect())
         .collect();
-    paths.extend([vec!["cache"], vec!["hook"]]);
+    paths.extend([vec!["cache"], vec!["hook"], vec!["inspect"]]);
     for mut args in paths {
         args.push("--help");
         let output = invoke(&args, directory.path());
@@ -93,7 +91,11 @@ fn help_and_version_succeed_without_operational_output() {
         assert!(output.stderr.is_empty());
         let help = String::from_utf8(output.stdout).unwrap();
         assert!(help.contains("Usage:"), "{args:?}");
-        assert!(help.contains("not implemented yet"), "{args:?}");
+        if args == ["inspect", "--help"] {
+            assert!(help.contains("static workflow"), "{args:?}");
+        } else {
+            assert!(help.contains("not implemented yet"), "{args:?}");
+        }
         if args == ["run", "--help"] {
             for flag in ["--event", "--dry-run", "--verbose", "--yes", "--format"] {
                 assert!(help.contains(flag), "missing {flag} in run help");
@@ -190,4 +192,11 @@ fn operational_commands_leave_repository_sentinels_untouched() {
         snapshot(root, root, &mut after);
         assert_eq!(before, after, "files changed by {args:?}");
     }
+    let output = invoke(&["inspect", "workflow.yml"], root);
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("wsr inspect: workflow.yml:"));
+    let mut after = BTreeMap::new();
+    snapshot(root, root, &mut after);
+    assert_eq!(before, after, "files changed by failed inspection");
 }

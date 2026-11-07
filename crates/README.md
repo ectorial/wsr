@@ -6,13 +6,13 @@ flowchart LR
     D --> T[Future behavior and tests]
 ```
 
-These are existing crates, not approved boundaries for the redesign. Three library entry files
-contain Rust declarations; the other thirteen contain documentation only. Dependencies in manifests
+These are existing crates, not approved boundaries for the redesign. Four library entry files
+contain Rust declarations; the other twelve contain documentation only. Dependencies in manifests
 do not establish working subsystems. See [architecture](../docs/context/architecture.md) and [decisions](../docs/context/decisions.md).
 
 | Crate | Current contents |
 | --- | --- |
-| [wsr](wsr/src/lib.rs) | Thin executable, process entrypoint, eight stub handler modules, and executable contract tests |
+| [wsr](wsr/src/lib.rs) | Thin executable, static inspection handler, seven stub handlers, and executable contract tests |
 | [wsr-bench](wsr-bench/src/lib.rs) | benchmark placeholder; no measured results |
 | [wsr-cache](wsr-cache/src/lib.rs) | content-store placeholder |
 | [wsr-cli](wsr-cli/src/lib.rs) | Typed clap argument definitions and parser contract tests |
@@ -20,7 +20,7 @@ do not establish working subsystems. See [architecture](../docs/context/architec
 | [wsr-engine](wsr-engine/src/lib.rs) | planning and execution engine placeholder |
 | [wsr-expr](wsr-expr/src/lib.rs) | expression evaluator placeholder |
 | [wsr-fs](wsr-fs/src/lib.rs) | filesystem helper placeholder |
-| [wsr-gha](../docs/provider/gha/README.md) | GitHub Actions frontend placeholder; centralized compatibility design |
+| [wsr-gha](../docs/provider/gha/README.md) | Built-in static source inspection; Component frontend remains planned |
 | [wsr-git](wsr-git/src/lib.rs) | hook integration placeholder |
 | [wsr-resolver](wsr-resolver/src/lib.rs) | action/artifact resolution placeholder |
 | [wsr-sandbox](wsr-sandbox/src/lib.rs) | component execution placeholder |
@@ -30,8 +30,9 @@ do not establish working subsystems. See [architecture](../docs/context/architec
 | [wsr-wasix](wsr-wasix/src/lib.rs) | legacy compatibility-backend placeholder; WASIX is not selected |
 
 The binary forwards OS-string arguments to `wsr::main`, which parses the `wsr-cli` schema and
-dispatches to eight unimplemented handler modules covering eleven operational leaf paths.
-Each leaf writes `error: wsr <command>: not implemented yet` to stderr and exits with code 1.
+dispatches to eight handler modules covering eleven operational leaf paths. Inspection reads the
+explicit local file and reports a static subset; the other ten leaves retain placeholder errors.
+See [the inspection contract](../docs/cli/README.md#static-workflow-inspection).
 `wsr-types` exposes early/legacy models, not a complete stable workflow or plugin contract.
 
 The target design uses signed Component Model provider plugins through WIT, a provider-neutral

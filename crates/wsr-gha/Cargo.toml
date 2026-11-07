@@ -1,6 +1,6 @@
 [package]
 name        = "wsr-gha"
-description = "GitHub Actions frontend scaffold; workflow parsing and translation are not implemented"
+description = "Static GitHub Actions source inspection; workflow execution and Component providers are not implemented"
 version.workspace    = true
 edition.workspace    = true
 rust-version.workspace = true

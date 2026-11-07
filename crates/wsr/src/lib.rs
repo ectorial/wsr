@@ -1,6 +1,6 @@
 //! Binary library root for wsr.
 //!
-//! Argument parsing, help/version, dispatch, and placeholder diagnostics are implemented.
+//! Argument parsing, help/version, dispatch, and static workflow inspection are implemented.
 //! Workflow execution is not implemented.
 //!
 //! `crates/wsr` is the entry point to the wsr command-line interface.
@@ -28,8 +28,8 @@
 //!     lib.rs          ← parsing, diagnostics, and process exit status
 //! ```
 //!
-//! CLI argument types live in `wsr-cli`. This crate dispatches to placeholders without
-//! loading configuration, discovering repositories, or initializing execution subsystems.
+//! CLI argument types live in `wsr-cli`. Inspection reads the explicit source file; other
+//! operational handlers remain placeholders. No execution subsystems are initialized.
 
 use std::ffi::OsString;
 use std::process::ExitCode;

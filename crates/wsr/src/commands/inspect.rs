@@ -1,5 +1,41 @@
 use std::path::Path;
 
-pub fn run(_file: &Path) -> anyhow::Result<()> {
-    super::not_implemented("inspect")
+use wsr_types::inspection::StepSummaryKind;
+
+pub fn run(file: &Path) -> anyhow::Result<()> {
+    let raw = std::fs::read(file)
+        .map_err(|error| anyhow::anyhow!("wsr inspect: {}: {error}", file.display()))?;
+    let summary = wsr_gha::inspect(&raw)
+        .map_err(|error| anyhow::anyhow!("wsr inspect: {}: {error}", file.display()))?;
+    println!(
+        "Workflow: {}",
+        summary
+            .name
+            .as_deref()
+            .unwrap_or("(unnamed)")
+            .escape_debug()
+    );
+    println!("Inspection only; execution compatibility is not assessed.");
+    if let Some(trigger) = summary.trigger {
+        println!("Trigger: {} (not evaluated)", trigger.escape_debug());
+    }
+    for job in summary.jobs {
+        print!("Job: {}", job.id.escape_debug());
+        if let Some(name) = job.name {
+            print!(" ({})", name.escape_debug());
+        }
+        println!("\n  Runner: {}", job.runner.escape_debug());
+        for (index, step) in job.steps.into_iter().enumerate() {
+            print!("  Step {}: ", index + 1);
+            match step.kind {
+                StepSummaryKind::Run => print!("run"),
+                StepSummaryKind::Uses(reference) => print!("uses {}", reference.escape_debug()),
+            }
+            if let Some(name) = step.name {
+                print!(" ({})", name.escape_debug());
+            }
+            println!();
+        }
+    }
+    Ok(())
 }

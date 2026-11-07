@@ -10,6 +10,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+pub mod inspection;
+
 /// Early serializable workflow model in the scaffold.
 ///
 /// No provider compiler is implemented, and this model does not cover all source semantics.

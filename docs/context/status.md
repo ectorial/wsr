@@ -15,6 +15,12 @@ for delivery gates.
 
 ## Present in the current checkout
 
+- [x] November 6: real CLI static source inspection under D-031, with deterministic job/step
+  summaries, file/YAML/shape diagnostics, unsupported-field and expression rejection, and malicious
+  command/sentinel tests. See [CLI contract](../cli/README.md#static-workflow-inspection) and
+  [worker checkpoint](../implementation/inspection-progress.md). This is the first bounded slice,
+  not the complete inspection milestone or an execution compatibility claim.
+
 - [x] Standard Cargo TDD guidance and manual-only shell/Python dogfood workflows.
   `cargo test -p wsr-gha --test workflow_examples --locked` validates example trigger
   contracts and the shell workflow's native pass/fail script. It does not test GHA-to-IR
@@ -35,7 +41,8 @@ Bun is now the intended GHA JavaScript compatibility runtime; this adds no imple
 
 ## Not implemented in the current checkout
 
-- [ ] Workflow parsing and functional `inspect`/planning commands.
+- [ ] Complete inspection milestone: dependency graphs, broader source diagnostics and canonical dogfood fixtures.
+- [ ] Functional planning and executable canonical workflow compilation.
 - [ ] Repository setup, configuration loading/generation, and provider bootstrap/pinning.
 - [ ] Signed Component Model provider execution and canonical expression lowering.
 - [ ] Workflow scheduling, expressions, matrices, outputs, and action resolution/execution.
@@ -57,7 +64,8 @@ Bun is now the intended GHA JavaScript compatibility runtime; this adds no imple
 - [ ] Independent CI service, GitHub App deployment, remote workers, and Checks writes.
 - [ ] Security/compatibility conformance suites or measured performance claims.
 
-All eleven operational command paths report “not implemented yet” and exit with code 1.
+Ten operational command paths still report “not implemented yet” and exit with code 1.
+`inspect` supports the [documented static subset](../cli/README.md#static-workflow-inspection); it does not prove execution support.
 See the [CLI verification record](../archive/cli-skeleton.md#verification-record--2026-10-08).
 Help and argument parsing do not
 establish command functionality. Green scaffold CI is not proof of workflow execution or containment.

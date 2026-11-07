@@ -655,6 +655,8 @@ dependencies = [
  "clap",
  "tempfile",
  "wsr-cli",
+ "wsr-gha",
+ "wsr-types",
 ]
 
 [[package]]

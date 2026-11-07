@@ -43,6 +43,22 @@ checked with `cargo test -p <name> --locked`, but an empty passing suite establi
 only build compatibility. No execution, resolution, filesystem, security, or performance
 claim follows. All are included in the workspace baseline below.
 
+## November 6 static inspection slice
+
+`cargo test -p wsr --test inspection --locked` exercises the real binary against temporary source
+files: static summaries, deterministic job order and source step order, unreadable/malformed YAML,
+invalid/unsupported fields, duplicate identifiers, and unevaluated-expression rejection. A malicious
+`run` script does not execute; an action reference is not opened; repository sentinels and the
+file inventory remain unchanged. Remaining placeholder assertions continue in `tests/cli.rs`;
+inspection assertions are replaced by actual behavior, not removed without coverage.
+
+Observed red: the first acceptance test failed on `error: wsr inspect: not implemented yet`.
+Subsequent red/green checks exposed dynamic runner acceptance, empty jobs, and missing manual-trigger
+support. Focused tests and `cargo xtask ci` passed after implementation. The October audit table
+above remains dated evidence; its eleven-placeholder and GHA-scaffold observations no longer
+represent this revision. See [supported subset](../cli/README.md#static-workflow-inspection).
+This is not full GHA lowering, executable canonical IR, Component-provider or workload execution evidence.
+
 ## Repository tooling and areas not reviewed
 
 Private `tools/xtask` has two parser unit tests in [cli.rs](../../tools/xtask/src/cli.rs),
