@@ -181,3 +181,19 @@ all Java/WSR product acceptance lanes remain pending; setup failure is not behav
 
 `CARGO_NET_OFFLINE=true cargo xtask ci` and `git diff --check` passed. This is repository regression
 and reference-prerequisite evidence only.
+
+## Static dependency-inspection iteration
+
+Real-binary acceptance tests in `crates/wsr/tests/inspection.rs` now cover scalar/list `needs`,
+no-edge output preservation, empty lists, forward references, chains, diamonds, disconnected jobs,
+repeated edges, unknown targets, self-cycles and longer cycles. A cycle's downstream dependents
+are excluded from its reported path. Malformed types and expressions fail explicitly before stdout.
+A 4,096-job chain exercises nonrecursive traversal; hostile scripts/local action references and
+repository/config/hook/cache sentinels verify that graph validation does not execute or acquire inputs.
+
+Observed red/green: the shared valid fixture first failed on unknown `needs`; missing-target,
+self-cycle and longer-cycle tests each failed because invalid graphs initially returned success,
+then passed after their corresponding checks. The old unknown-field assertion for `needs` is
+replaced by a semantic unknown-target assertion. All other existing inspection and placeholder
+assertions remain. `cargo xtask ci` passes with 13 inspection acceptance tests; this is static
+source/graph evidence, not execution, security enforcement or complete GHA compatibility.

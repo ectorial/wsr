@@ -15,6 +15,11 @@ for delivery gates.
 
 ## Present in the current checkout
 
+- [x] Static job-dependency inspection: scalar/list `needs`, deterministic edge summaries,
+  unknown-reference/self-cycle/multi-job-cycle diagnostics, and valid DAG/repeated-edge/deep-chain
+  tests. See [dependency contract](../cli/README.md#static-dependency-inspection). This does not
+  implement scheduling or complete the inspection milestone.
+
 - [x] November 6: real CLI static source inspection under D-031, with deterministic job/step
   summaries, file/YAML/shape diagnostics, unsupported-field and expression rejection, and malicious
   command/sentinel tests. See [CLI contract](../cli/README.md#static-workflow-inspection) and
@@ -41,7 +46,7 @@ Bun is now the intended GHA JavaScript compatibility runtime; this adds no imple
 
 ## Not implemented in the current checkout
 
-- [ ] Complete inspection milestone: dependency graphs, broader source diagnostics and canonical dogfood fixtures.
+- [ ] Complete inspection milestone: richer source forms/diagnostics and canonical dogfood fixtures.
 - [ ] Functional planning and executable canonical workflow compilation.
 - [ ] Repository setup, configuration loading/generation, and provider bootstrap/pinning.
 - [ ] Signed Component Model provider execution and canonical expression lowering.

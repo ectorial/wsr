@@ -40,7 +40,7 @@ Current supported subset:
 - Optional literal workflow `name` and optional `on: workflow_dispatch` string; the trigger is
   reported, never evaluated. Absence of `on` is accepted for inspection fragments.
 - A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
-- Job `name`, a nonempty string `runs-on` requirement, and a nonempty ordered `steps` sequence.
+- Job `name`, a nonempty string `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
 - Step `name` and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
   in the summary; action references are reported verbatim, never resolved, fetched or opened.
 
@@ -55,10 +55,29 @@ YAML decoding errors include available line/column information and structural co
 checks identify a field path (step indices are one-based). Dynamic values are explicitly unevaluated.
 Clap invocation errors retain exit code 2. The output is pre-alpha, not a frozen machine protocol.
 
-Other trigger forms, step ids, runner label arrays, `needs`, matrices, conditions, environment,
+Other trigger forms, step ids, runner label arrays, matrices, conditions, environment,
 permissions, defaults, services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
-Broader inspection, graph validation and canonical dogfood fixtures remain pending.
+Broader inspection and canonical dogfood fixtures remain pending.
+
+### Static dependency inspection
+
+`needs` accepts one literal job identifier or a list of identifiers. Omission and `[]` mean no
+edges. A nonempty dependency list renders after the job's runner line as `Needs: build, test`.
+Declared dependency order and repetitions are preserved. Job display order remains lexicographic,
+not an execution schedule. See the [shared fixture](../../tests/fixtures/inspection/static-needs.yml).
+
+All targets must name jobs in this workflow, using exact identifiers. Forward references, valid
+diamonds, repeated edges and disconnected jobs are supported. Unknown targets are checked before
+cycle detection. Self-dependencies and longer cycles fail with explicit diagnostics; a downstream
+job blocked by a cycle is not reported as a cycle member. Validation uses an explicit traversal
+stack rather than recursive calls, including a tested 4,096-job chain.
+
+Malformed types, null, empty identifiers and expressions in `needs` fail before any stdout summary.
+Semantic diagnostics use routes such as `jobs.test.needs` or `jobs.test.needs[2]` (one-based list
+index). YAML decoding errors may report the enclosing job route plus the field/index in the error
+message and line/column. Successful static validation does not establish scheduling, conditions,
+matrix expansion, skipped-job behavior or workflow execution.
 
 Inspection does not read `wsr.toml`, discover repositories, install providers, execute commands,
 fetch tools/actions or mutate repository state. [CLI acceptance tests](../../crates/wsr/tests/inspection.rs)

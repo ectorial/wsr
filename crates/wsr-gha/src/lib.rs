@@ -8,6 +8,9 @@ use std::collections::BTreeMap;
 use serde::Deserialize;
 use wsr_types::inspection::{JobSummary, StepSummary, StepSummaryKind, WorkflowSummary};
 
+mod needs;
+use needs::Needs;
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Workflow {
@@ -26,6 +29,8 @@ struct Job {
     name: Option<String>,
     #[serde(rename = "runs-on", deserialize_with = "string")]
     runner: String,
+    #[serde(default)]
+    needs: Needs,
     steps: Vec<Step>,
 }
 
@@ -58,6 +63,7 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
             );
         }
     }
+    needs::validate(&workflow.jobs)?;
     let mut jobs = Vec::new();
     for (id, job) in workflow.jobs {
         if job.steps.is_empty() {
@@ -103,6 +109,7 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
             id,
             name: job.name,
             runner: job.runner,
+            needs: job.needs.into_values(),
             steps,
         });
     }
