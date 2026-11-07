@@ -1,6 +1,8 @@
 use std::path::Path;
 
-use wsr_types::inspection::{RunnerRequirement, StepSummaryKind};
+use wsr_types::inspection::{
+    DispatchInputType, InputDefault, ManualTrigger, RunnerRequirement, StepSummaryKind,
+};
 
 pub fn run(file: &Path) -> anyhow::Result<()> {
     let raw = std::fs::read(file)
@@ -17,7 +19,46 @@ pub fn run(file: &Path) -> anyhow::Result<()> {
     );
     println!("Inspection only; execution compatibility is not assessed.");
     if let Some(trigger) = summary.trigger {
-        println!("Trigger: {} (not evaluated)", trigger.escape_debug());
+        println!("Trigger: workflow_dispatch (not evaluated)");
+        if let ManualTrigger::Mapping(Some(body)) = trigger {
+            for input in body.inputs.into_iter().flatten() {
+                println!("  Input: {}", input.id.escape_debug());
+                if let Some(kind) = input.input_type {
+                    let name = match kind {
+                        DispatchInputType::String => "string",
+                        DispatchInputType::Boolean => "boolean",
+                        DispatchInputType::Number => "number",
+                        DispatchInputType::Choice => "choice",
+                        DispatchInputType::Environment => "environment",
+                    };
+                    println!("    Type: {name}");
+                }
+                if let Some(description) = input.description {
+                    println!("    Description: {}", description.escape_debug());
+                }
+                if let Some(required) = input.required {
+                    println!("    Required: {required}");
+                }
+                if let Some(default) = input.default {
+                    let value = match default {
+                        InputDefault::String(value) => format!("{value:?}"),
+                        InputDefault::Boolean(value) => value.to_string(),
+                        InputDefault::Number(value) => value,
+                    };
+                    println!("    Default: {value} (not applied)");
+                }
+                if let Some(options) = input.options {
+                    println!(
+                        "    Options: [{}]",
+                        options
+                            .iter()
+                            .map(|v| format!("{v:?}"))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                }
+            }
+        }
     }
     for job in summary.jobs {
         print!("Job: {}", job.id.escape_debug());

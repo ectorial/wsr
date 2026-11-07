@@ -1,24 +1,26 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — literal runner-label iteration
+## Current checkpoint — manual dispatch input iteration
 
-Baseline `b22b339` matched origin/main; 5 CLI and 17 inspection tests passed. Owner authorized
-continuation of the runner-label plan. Branch: `feat/inspect-runner-labels`; the existing plan
-and checkpoint edits are owned work included in this slice. No unfinished feature PR existed;
-unrelated Dependabot PR #23 was left untouched.
+Baseline `91fd3d5` matched origin/main; 5 CLI and 20 inspection tests passed. No unfinished
+feature PR; unrelated Dependabot #23 left untouched. Owner authorized next iteration and reported
+a manual usage reset. Branch `feat/inspect-dispatch-inputs`; previous plan/checkpoint edits are
+owned work included with the feature. No further reset action or usage assumption was made.
 
-Implemented strict scalar/list runner requirements, source-summary variants, quoted list output,
-indexed validation and explicit unsupported mapping diagnostics. Scalar output is unchanged.
-Observed red/green: valid list rejected by old decoder, then empty list accepted before validation.
-Focused suite: 20 inspection + 5 CLI tests, plus one source-summary integration test.
-`cargo xtask ci` and `git diff --check` passed. Next: finish review, push/create feature
-PR and merge only the verified head after required hosted checks and no unresolved review findings.
+Implemented scalar/mapping manual trigger declarations, distinct source-presence states, typed
+input metadata/defaults, deterministic rendering and strict validation. No input binding or default
+application. Pinned schema/converter boundary is recorded in the [iteration](inspection-dispatch-inputs.md).
+Observed red/green: mapping support, choice options/default validation and identifier validation.
+Focused green: 25 CLI inspection tests + 5 CLI regressions and two new public parser-summary tests.
+`cargo xtask ci`, local Markdown targets and `git diff --check` passed. Next: finish review, push/create
+feature PR, satisfy required hosted checks and merge the verified head with no unresolved findings.
+Then provide the owner a DX before/after report including parser changes and evidence limits.
 
-No labels are resolved or runners provisioned; no commands/actions are executed or loaded.
-No reset consumed; rough estimate remains 10k–20k additional tokens, not measured account usage.
-No schedule/tooling/dependency changes. Runner-group objects, richer triggers/inputs, expression
-support and canonical dogfood integration remain pending. The milestone is incomplete and the
-Java worker remains paused. Prior PR #24 merged as `b22b339`; older sections below are historical.
+No execution, provider activation, action acquisition, environment lookup or repository mutation.
+No dependencies/tooling/schedules changed. Canonical example workflows still have unsupported
+run-name, permissions, timeout, shell/environment, action inputs and working-directory fields.
+Full milestone acceptance and final audit remain pending; Java worker stays paused. Prior runner
+labels delivered in PR #25 as `91fd3d5`. Older checkpoint sections below are historical.
 
 ## Bootstrap — November 6, 2026
 

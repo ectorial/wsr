@@ -15,6 +15,10 @@ for delivery gates.
 
 ## Present in the current checkout
 
+- [x] Manual-trigger mappings and input declarations in inspection: typed metadata/defaults,
+  deterministic reports, explicit unsupported/dynamic diagnostics and distinct declaration states.
+  See [manual-input contract](../cli/README.md#manual-trigger-input-declarations). No input binding,
+  default application or expression evaluation; full example-workflow inspection remains pending.
 - [x] Literal scalar/list runner requirements in inspection: source form/order/spelling retained,
   quoted list output, strict shape/member validation and unevaluated-expression diagnostics.
   See [runner-label contract](../cli/README.md#literal-runner-labels). No runner resolution or execution.

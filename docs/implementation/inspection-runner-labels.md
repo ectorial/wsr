@@ -1,6 +1,7 @@
 # Next inspection iteration: literal runner-label lists
 
-Status: **owner-authorized; implementation complete locally, integration pending**. Baseline: PR #24 merged as `b22b339` on `main`;
+Status: **delivered**. PR #25 merged as `91fd3d5` after all four required checks passed
+on `722b164`, with no review findings. The merged CLI fixture was verified; local main was clean. Baseline: PR #24 merged as `b22b339` on `main`;
 explicit step identities are delivered. The owner instructed continuation; schedule settings remain unchanged.
 
 ## Outcome and scope
