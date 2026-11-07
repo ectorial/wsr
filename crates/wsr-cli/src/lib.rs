@@ -1,6 +1,7 @@
 //! Command-line interface definitions for wsr.
 //!
-//! Typed arguments, help, and version reporting are implemented. Operational commands are stubs.
+//! Typed arguments, help, and version reporting are implemented. Inspection supports a static subset;
+//! other operational commands are stubs.
 //!
 //! This crate owns the clap schema: the top-level [`Cli`] struct, every
 //! subcommand enum, and all argument types. It is a library — it contains no
@@ -34,7 +35,7 @@ pub use run::{OutputFormat, RunArgs};
 #[command(
     name = "wsr",
     about = "A pre-alpha local CI CLI scaffold",
-    after_help = "Operational commands are not implemented yet. Options describe planned behavior only.",
+    after_help = "Inspect supports static workflow summaries. Other operational commands are not implemented yet.",
     version,
     arg_required_else_help = true
 )]
@@ -58,7 +59,7 @@ pub enum Cmd {
     /// List workflows (not implemented yet)
     List,
 
-    /// Inspect a workflow file (not implemented yet)
+    /// Inspect a static workflow file without executing it
     Inspect {
         /// Path to the workflow file
         #[arg(value_hint = ValueHint::FilePath)]

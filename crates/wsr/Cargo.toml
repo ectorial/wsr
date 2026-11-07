@@ -19,6 +19,8 @@ path = "src/bin/wsr.rs"
 anyhow.workspace      = true
 clap.workspace        = true
 wsr-cli.workspace     = true
+wsr-gha.workspace     = true
+wsr-types.workspace   = true
 
 [dev-dependencies]
 tempfile.workspace = true

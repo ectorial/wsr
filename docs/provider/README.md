@@ -9,9 +9,11 @@ flowchart LR
 
 ## Current scaffold
 
-[wsr-gha](../../crates/wsr-gha/src/lib.rs) is documentation-only. The existing
-[WorkflowProvider trait](../../crates/wsr-types/src/lib.rs) is a legacy scaffold interface;
-there is no functional GHA frontend in this checkout. Prototype parsing/inspection is preserved locally.
+[wsr-gha](../../crates/wsr-gha/src/lib.rs) provides a temporary built-in static inspection compiler
+under D-031. It returns provider-neutral source summaries, not executable canonical IR.
+[Supported inputs and diagnostics](../cli/README.md#static-workflow-inspection) are bounded explicitly.
+The existing [WorkflowProvider trait](../../crates/wsr-types/src/lib.rs) remains legacy; signed
+Component provider execution and full GHA lowering are not implemented.
 
 ## Accepted compilation boundary — planned
 

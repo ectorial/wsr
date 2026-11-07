@@ -5,6 +5,8 @@ Moving or indexing these documents does not resume the worker or create a schedu
 
 | Document | Owns |
 | --- | --- |
+| [Inspection checkpoint](inspection-progress.md) | Current autonomous inspection work, readiness evidence and next action |
+| [Proposed beta dependencies](beta-dependencies.md) | Feature prerequisites and proposed beta gates; only inspection is currently authorized |
 | [Java E2E contract](java-e2e.md) | Historical authorized scope, prerequisites, bounded TDD loop and acceptance gates |
 | [Java progress](java-progress.md) | Current hold, pinned source identities, dated preparation evidence and remaining work |
 

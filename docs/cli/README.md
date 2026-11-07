@@ -14,11 +14,11 @@ flowchart LR
 `list`, `inspect`, `cache`, `hook`, and `status`. These cover eleven operational leaf paths,
 including `cache list/verify/purge` and `hook install/remove`.
 
-Every operational leaf writes `error: wsr <command>: not implemented yet` followed by a newline
+The ten remaining placeholder leaves write `error: wsr <command>: not implemented yet` followed by a newline
 to stderr, leaves stdout empty, and exits with code 1. The command name includes the nested
-leaf, such as `wsr cache verify`. No workflow file is opened, and no configuration, hook, cache,
-service, provider, or execution backend is initialized. Supplied nonexistent paths reach the
-same placeholder.
+leaf, such as `wsr cache verify`. Those placeholders open no workflow file and initialize no configuration, hook, cache,
+service, provider, or execution backend. Supplied nonexistent paths reach the same placeholder.
+`inspect` instead implements the bounded source-inspection contract below.
 
 Help and root version reporting exit with code 0 and write to stdout. Invalid syntax, omitted
 required arguments, and bare `wsr`, `wsr cache`, or `wsr hook` exit with code 2 and write Clap
@@ -29,6 +29,42 @@ Workflow paths are `PathBuf` values, and `--format` accepts only `human` (defaul
 These are parsed arguments, not implemented execution/planning/reporting behavior. `--yes` does
 not grant access. Help text can be inspected with `cargo run -p wsr -- --help`.
 
+## Static workflow inspection
+
+`cargo run -p wsr -- inspect path/to/workflow.yml` reads only the explicit local UTF-8 YAML
+source. The temporary built-in GHA compiler is authorized by D-031. It returns a provider-neutral
+source summary, not executable IR or a signed Component compilation result.
+
+Current supported subset:
+
+- Optional literal workflow `name` and optional `on: workflow_dispatch` string; the trigger is
+  reported, never evaluated. Absence of `on` is accepted for inspection fragments.
+- A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
+- Job `name`, a nonempty string `runs-on` requirement, and a nonempty ordered `steps` sequence.
+- Step `name` and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
+  in the summary; action references are reported verbatim, never resolved, fetched or opened.
+
+Names are optional strings (null is treated as absent). Required strings retain their YAML type;
+numbers and booleans are rejected. Display values escape control characters. Each successful report
+states that execution compatibility is not assessed; runner names do not establish environment support.
+
+Success exits 0 and writes a deterministic human-readable summary to stdout, with empty stderr.
+Unreadable/malformed source, invalid supported shapes, unknown fields and expressions in inspected
+strings exit 1, leave stdout empty and write a diagnostic to stderr. Diagnostics identify the file;
+YAML decoding errors include available line/column information and structural context. Semantic
+checks identify a field path (step indices are one-based). Dynamic values are explicitly unevaluated.
+Clap invocation errors retain exit code 2. The output is pre-alpha, not a frozen machine protocol.
+
+Other trigger forms, step ids, runner label arrays, `needs`, matrices, conditions, environment,
+permissions, defaults, services and other GHA constructs are rejected explicitly in this first slice.
+The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
+Broader inspection, graph validation and canonical dogfood fixtures remain pending.
+
+Inspection does not read `wsr.toml`, discover repositories, install providers, execute commands,
+fetch tools/actions or mutate repository state. [CLI acceptance tests](../../crates/wsr/tests/inspection.rs)
+verify real file handling, deterministic output, ordered steps, diagnostics, and malicious command
+and sentinel behavior. This proves source inspection, not security enforcement for future execution.
+
 ## Skeleton implementation and verification
 
 [The CLI skeleton plan](../archive/cli-skeleton.md) records the implemented slice, using uv's
@@ -38,9 +74,9 @@ output. The final product interface remains open.
 
 [Parser tests](../../crates/wsr-cli/tests/cli.rs) verify the command graph, options/defaults,
 required inputs, format validation, and OS-string paths.
-[Executable tests](../../crates/wsr/tests/cli.rs) run every leaf, check help/version and error
+[Executable tests](../../crates/wsr/tests/cli.rs) run every remaining placeholder leaf, check help/version and error
 codes, exercise nonexistent paths, and compare repository sentinels before/after invocation.
-The smoke contract runs with `cargo xtask test smoke_every_operational_subcommand`; complete
+The smoke contract runs with `cargo xtask test smoke_remaining_operational_subcommands`; complete
 standard verification uses `cargo xtask ci`. These checks validate the skeleton, not workflow
 execution, isolation, or GitHub Actions compatibility.
 

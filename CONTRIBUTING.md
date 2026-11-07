@@ -4,7 +4,7 @@ Thank you for your interest in contributing!
 
 ## Scope and choosing work
 
-WSR is pre-alpha: operational CLI commands are placeholders. Start with the
+WSR is pre-alpha: inspection supports a small static source subset; other operational commands remain placeholders. Start with the
 [README](README.md), [roadmap](docs/context/roadmap.md), and [testing guide](tests/README.md).
 Bug fixes, tests, and documentation improvements are welcome. Open an issue before
 starting a new execution feature or changing architecture so maintainers can confirm
