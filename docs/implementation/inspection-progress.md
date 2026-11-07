@@ -1,5 +1,33 @@
 # Workflow inspection worker checkpoint
 
+## Current checkpoint — static dependency iteration
+
+The first source-inspection feature is merged through PR #21 at `f70ebf4`. The owner subsequently
+authorized the [static dependency iteration](inspection-next.md), including PR creation and merge
+after acceptance/regression and hosted checks pass. Historical pending-merge and prerequisite-decision
+wording below does not override these completed actions or the D-031 resolution.
+
+Current branch: `feat/inspect-static-dependencies`, based on `f70ebf4`. Implemented static `needs`
+decoding (missing/scalar/list), ordered summary edges, unknown-target checks, self-cycle errors and
+an explicit-stack cycle detector. The source model retains scalar/list shape for diagnostic routes;
+`JobSummary` gains dependency identifiers. No new dependencies, runtime sidecar, global configuration
+or hooks were introduced. Include the previously requested modeling guide and iteration plan in
+this feature PR; those local documentation edits are owned work, not unrelated changes.
+
+Local evidence: baseline 5 CLI + 4 inspection tests passed. Observed intended red/green for accepted
+`needs`, unknown targets, self-cycles and multi-job cycles. The completed suite has 13 inspection
+tests including DAGs, repeated edges, malformed/dynamic input, unchanged sentinels and a 4,096-job
+chain. Full `cargo xtask ci` passed. Hosted checks and merge are the next required delivery step;
+no later feature may begin while this PR remains unintegrated.
+
+For the final user report, compare the saved baseline binary with the merged binary on the same
+shared fixture, separately explaining CLI behavior and parser/model changes. The baseline rejects
+`needs`; the new version displays edges and diagnoses invalid graphs. Record the actual PR/merge
+revision in the next checkpoint update alongside future feature work, rather than opening a
+standalone documentation-only follow-up. Step IDs, runner label forms, richer triggers/expressions
+and canonical dogfood integration remain pending. The inspection milestone is not yet complete,
+and the schedule must not be paused as complete. The Java worker remains paused.
+
 ## Bootstrap — November 6, 2026
 
 Owner authorized a one-off run of the saved workflow-inspection schedule, readiness setup and

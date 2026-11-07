@@ -20,6 +20,8 @@ pub struct JobSummary {
     pub name: Option<String>,
     /// Literal runner requirement, not a resolved environment.
     pub runner: String,
+    /// Static source dependency identifiers, retaining declared order and repetitions.
+    pub needs: Vec<String>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }

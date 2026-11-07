@@ -25,6 +25,16 @@ pub fn run(file: &Path) -> anyhow::Result<()> {
             print!(" ({})", name.escape_debug());
         }
         println!("\n  Runner: {}", job.runner.escape_debug());
+        if !job.needs.is_empty() {
+            println!(
+                "  Needs: {}",
+                job.needs
+                    .iter()
+                    .map(|id| id.escape_debug().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+        }
         for (index, step) in job.steps.into_iter().enumerate() {
             print!("  Step {}: ", index + 1);
             match step.kind {

@@ -77,7 +77,7 @@ fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
         ),
         (
             "jobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello\n    needs: build",
-            "unknown field `needs`",
+            "jobs.test.needs: unknown job 'build'",
         ),
         ("jobs: [", "line 1"),
         (
@@ -132,5 +132,265 @@ fn inspect_manual_workflow_is_deterministic_and_preserves_step_order() {
     assert_eq!(
         String::from_utf8(first.stdout).unwrap(),
         "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: alpha\n  Runner: ubuntu-latest\n  Step 1: run\nJob: zebra\n  Runner: linux\n  Step 1: uses owner/action@v1\n  Step 2: run\n"
+    );
+}
+
+#[test]
+fn inspect_static_dependencies() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("ci.yml"),
+        include_str!("../../../tests/fixtures/inspection/static-needs.yml"),
+    )
+    .unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: Dependency example\nInspection only; execution compatibility is not assessed.\nJob: build\n  Runner: ubuntu-latest\n  Step 1: run\nJob: package\n  Runner: ubuntu-latest\n  Needs: build, test\n  Step 1: run\nJob: test\n  Runner: ubuntu-latest\n  Needs: build\n  Step 1: run\n"
+    );
+}
+
+fn dependency_workflow(jobs: &[(&str, &str)]) -> String {
+    let mut source = String::from("jobs:\n");
+    for (id, needs) in jobs {
+        source.push_str(&format!(
+            "  {id}:\n    runs-on: linux\n{needs}    steps:\n      - run: touch executed\n"
+        ));
+    }
+    source
+}
+
+#[test]
+fn inspect_unknown_dependencies_fail_before_rendering() {
+    let directory = tempfile::tempdir().unwrap();
+    for (needs, route) in [
+        ("    needs: missing\n", "jobs.test.needs"),
+        ("    needs: [build, missing]\n", "jobs.test.needs[2]"),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            dependency_workflow(&[("build", ""), ("test", needs)]),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{output:?}");
+        assert!(output.stdout.is_empty());
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains("ci.yml:")
+                && error.contains(route)
+                && error.contains("unknown job 'missing'"),
+            "{error}"
+        );
+    }
+}
+
+#[test]
+fn inspect_rejects_self_dependencies() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("ci.yml"),
+        dependency_workflow(&[("build", "    needs: build\n")]),
+    )
+    .unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty());
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("jobs.build.needs: job 'build' depends on itself")
+    );
+}
+
+#[test]
+fn inspect_cycle_diagnostic_excludes_blocked_downstream_jobs() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("ci.yml"),
+        dependency_workflow(&[
+            ("downstream", "    needs: one\n"),
+            ("one", "    needs: two\n"),
+            ("two", "    needs: [three]\n"),
+            ("three", "    needs: one\n"),
+        ]),
+    )
+    .unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty());
+    let error = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        error.contains("jobs.three.needs: dependency cycle: one -> two -> three -> one"),
+        "{error}"
+    );
+    assert!(!error.contains("downstream"), "{error}");
+}
+
+#[test]
+fn inspect_dependencies_allow_diamonds_repeated_edges_forward_references_and_empty_lists() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("ci.yml"),
+        dependency_workflow(&[
+            ("package", "    needs: [test, build, test]\n"),
+            ("test", "    needs: [build]\n"),
+            ("build", "    needs: last\n"),
+            ("last", "    needs: []\n"),
+            ("disconnected", ""),
+        ]),
+    )
+    .unwrap();
+    let first = inspect(directory.path(), "ci.yml");
+    let second = inspect(directory.path(), "ci.yml");
+    assert_eq!(first.status.code(), Some(0), "{first:?}");
+    assert!(first.stderr.is_empty());
+    assert_eq!(first.stdout, second.stdout);
+    let summary = String::from_utf8(first.stdout).unwrap();
+    assert!(summary.contains("Job: package\n  Runner: linux\n  Needs: test, build, test\n"));
+    assert!(summary.contains("Job: last\n  Runner: linux\n  Step 1: run\n"));
+    assert!(summary.contains("Job: disconnected\n  Runner: linux\n  Step 1: run\n"));
+    assert!(!directory.path().join("executed").exists());
+}
+
+#[test]
+fn inspect_unknown_dependencies_take_precedence_over_cycles() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("ci.yml"),
+        dependency_workflow(&[
+            ("cycle", "    needs: cycle\n"),
+            ("test", "    needs: [missing]\n"),
+        ]),
+    )
+    .unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    let error = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        error.contains("jobs.test.needs[1]: unknown job 'missing'"),
+        "{error}"
+    );
+    assert!(
+        !error.contains("depends on itself") && !error.contains("dependency cycle:"),
+        "{error}"
+    );
+}
+
+#[test]
+fn inspect_rejects_malformed_and_dynamic_dependencies() {
+    let directory = tempfile::tempdir().unwrap();
+    for (value, diagnostic) in [
+        ("null", "expected a string or a sequence of strings"),
+        ("42", "expected a string or a sequence of strings"),
+        ("false", "expected a string or a sequence of strings"),
+        ("{job: build}", "expected a string or a sequence of strings"),
+        ("[build, 42]", "needs[2]: expected a string"),
+        ("[null]", "needs[1]: expected a string"),
+        ("''", "jobs.test.needs: expected a nonempty string"),
+        (
+            "[build, '  ']",
+            "jobs.test.needs[2]: expected a nonempty string",
+        ),
+        (
+            "'${{ inputs.job }}'",
+            "jobs.test.needs: expression is unevaluated",
+        ),
+        (
+            "[build, '${{ inputs.job }}']",
+            "jobs.test.needs[2]: expression is unevaluated",
+        ),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            dependency_workflow(&[("build", ""), ("test", &format!("    needs: {value}\n"))]),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{value}: {output:?}");
+        assert!(output.stdout.is_empty());
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            // YAML decoding errors locate the enclosing job and name the needs field in
+            // the custom decoder message; semantic diagnostics use the full field route.
+            error.contains("ci.yml:")
+                && error.contains("jobs.test")
+                && error.contains("needs")
+                && error.contains(diagnostic),
+            "{value}: {error}"
+        );
+    }
+}
+
+#[test]
+fn inspect_dependency_validation_does_not_execute_or_modify_repository_inputs() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    let sentinels = [
+        ("wsr.toml", "invalid configuration sentinel"),
+        (".git/hooks/pre-push", "#!/bin/sh\ntouch hook-executed\n"),
+        (".wsr/cache/entry", "cache sentinel"),
+    ];
+    for (file, contents) in sentinels {
+        let path = root.join(file);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, contents).unwrap();
+    }
+    for (needs, status) in [("    needs: build\n", 0), ("    needs: test\n", 1)] {
+        let source = dependency_workflow(&[("build", ""), ("test", needs)]).replace(
+            "      - run: touch executed",
+            "      - run: touch executed\n      - uses: ./unopened-action",
+        );
+        fs::write(root.join("ci.yml"), &source).unwrap();
+        let output = inspect(root, "ci.yml");
+        assert_eq!(output.status.code(), Some(status), "{output:?}");
+        assert_eq!(fs::read_to_string(root.join("ci.yml")).unwrap(), source);
+        for (file, contents) in sentinels {
+            assert_eq!(fs::read_to_string(root.join(file)).unwrap(), contents);
+        }
+        assert_eq!(fs::read_dir(root).unwrap().count(), 4);
+        assert_eq!(fs::read_dir(root.join(".git/hooks")).unwrap().count(), 1);
+        assert_eq!(fs::read_dir(root.join(".wsr/cache")).unwrap().count(), 1);
+        assert!(!root.join("executed").exists());
+        assert!(!root.join("hook-executed").exists());
+    }
+}
+
+#[test]
+fn inspect_deep_dependency_chain_uses_bounded_graph_traversal() {
+    let directory = tempfile::tempdir().unwrap();
+    let count = 4096;
+    let mut source = String::from("jobs:\n");
+    for index in 0..count {
+        let needs = if index + 1 < count {
+            format!("    needs: job_{}\n", index + 1)
+        } else {
+            String::new()
+        };
+        source.push_str(&format!(
+            "  job_{index}:\n    runs-on: linux\n{needs}    steps:\n      - run: echo hello\n"
+        ));
+    }
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    let summary = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(
+        summary
+            .lines()
+            .filter(|line| line.starts_with("Job: "))
+            .count(),
+        count
+    );
+    assert_eq!(
+        summary
+            .lines()
+            .filter(|line| line.starts_with("  Needs: "))
+            .count(),
+        count - 1
     );
 }

@@ -28,6 +28,7 @@ revision; they do not freeze APIs, schemas, crate boundaries, or compatibility a
 | [Compatibility](compatibility.md) | Action categories, Bun qualification, and unsupported behavior |
 | [State](state.md) | GHA state channels mapped to shared supervisor contracts |
 | [Validation](validation.md) | Evidence required before advertising support |
+| [Frontend modeling references](../../../crates/wsr-gha/docs/frontend-modeling.md) | Crate-local upstream modeling patterns, proposed WSR adaptations and acceptance obligations |
 
 The generic [provider contract](../README.md) remains authoritative for all providers.
 The [implementation checklist](../../context/status.md) records delivered behavior. Design approval does
