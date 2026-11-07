@@ -7,6 +7,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | --- | --- |
 | [Inspection checkpoint](inspection-progress.md) | Current autonomous inspection work, readiness evidence and next action |
 | [Next inspection iteration](inspection-next.md) | Authorized static dependency-inspection slice and acceptance gates; current delivery evidence lives in the checkpoint |
+| [Runner-label iteration](inspection-runner-labels.md) | Authorized literal runner-list slice, acceptance gates and token estimate |
 | [Step identity iteration](inspection-step-identities.md) | Authorized explicit step-ID inspection slice and usage-aware continuity considerations |
 | [Proposed beta dependencies](beta-dependencies.md) | Feature prerequisites and proposed beta gates; only inspection is currently authorized |
 | [Java E2E contract](java-e2e.md) | Historical authorized scope, prerequisites, bounded TDD loop and acceptance gates |

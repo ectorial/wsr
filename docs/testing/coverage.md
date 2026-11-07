@@ -209,3 +209,13 @@ The shared `tests/fixtures/inspection/step-identities.yml` includes a malicious 
 unopened local action reference; source bytes/file inventory remain unchanged. Existing graph,
 CLI parser and remaining-placeholder regressions still pass. `cargo xtask ci` passed. This is
 static source/identity evidence, not output binding, expression evaluation or execution support.
+
+## Literal runner-label iteration
+
+The real CLI suite now has 20 inspection tests. Observed red: a valid list failed with the old
+string-only decoder; after list support, an empty list incorrectly succeeded. Both went green.
+New assertions cover scalar/list output, ordered/repeated/case-sensitive labels, quoting and
+control characters, strict types, indexed blank/expression diagnostics, unsupported mappings,
+steps/needs integration and unchanged source/config sentinels. A GHA public-API integration test
+checks scalar versus list source-summary variants independently of rendering. Existing tests remain.
+These establish source inspection only, not runner matching, provisioning or execution.

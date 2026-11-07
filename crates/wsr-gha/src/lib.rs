@@ -6,7 +6,9 @@
 use std::collections::BTreeMap;
 
 use serde::Deserialize;
-use wsr_types::inspection::{JobSummary, StepSummary, StepSummaryKind, WorkflowSummary};
+use wsr_types::inspection::{
+    JobSummary, RunnerRequirement, StepSummary, StepSummaryKind, WorkflowSummary,
+};
 
 mod needs;
 use needs::Needs;
@@ -27,8 +29,8 @@ struct Workflow {
 struct Job {
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
-    #[serde(rename = "runs-on", deserialize_with = "string")]
-    runner: String,
+    #[serde(rename = "runs-on", deserialize_with = "runner_requirement")]
+    runner: RunnerRequirement,
     #[serde(default)]
     needs: Needs,
     steps: Vec<Step>,
@@ -83,7 +85,19 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
             );
         }
         check_literal(job.name.as_deref(), &format!("jobs.{id}.name"))?;
-        check_required(&job.runner, &format!("jobs.{id}.runs-on"))?;
+        match &job.runner {
+            RunnerRequirement::Label(label) => {
+                check_required(label, &format!("jobs.{id}.runs-on"))?
+            }
+            RunnerRequirement::Labels(labels) => {
+                if labels.is_empty() {
+                    anyhow::bail!("jobs.{id}.runs-on: expected at least one label");
+                }
+                for (index, label) in labels.iter().enumerate() {
+                    check_required(label, &format!("jobs.{id}.runs-on[{}]", index + 1))?;
+                }
+            }
+        }
         let mut steps = Vec::new();
         let mut step_ids = BTreeMap::new();
         for (index, step) in job.steps.into_iter().enumerate() {
@@ -216,4 +230,30 @@ fn present_string<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error> {
     string(deserializer).map(Some)
+}
+
+fn runner_requirement<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<RunnerRequirement, D::Error> {
+    match serde_yaml::Value::deserialize(deserializer)? {
+        serde_yaml::Value::String(label) => Ok(RunnerRequirement::Label(label)),
+        serde_yaml::Value::Sequence(values) => values
+            .into_iter()
+            .enumerate()
+            .map(|(index, value)| match value {
+                serde_yaml::Value::String(label) => Ok(label),
+                _ => Err(serde::de::Error::custom(format!(
+                    "runs-on[{}]: expected a string label",
+                    index + 1
+                ))),
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map(RunnerRequirement::Labels),
+        serde_yaml::Value::Mapping(_) => Err(serde::de::Error::custom(
+            "runs-on: unsupported runner-selector mapping",
+        )),
+        _ => Err(serde::de::Error::custom(
+            "runs-on: expected a string or list of strings",
+        )),
+    }
 }

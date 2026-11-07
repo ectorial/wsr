@@ -1,0 +1,12 @@
+jobs:
+  build:
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - id: compile
+        run: touch executed
+      - uses: ./unopened-action
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo test
