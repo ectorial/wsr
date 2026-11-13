@@ -1,6 +1,28 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-16 concurrency implemented; PR pending checks
+## Current checkpoint — B-17 continue-on-error and step timeouts implemented; PR pending checks
+
+Same Schedule A run, after the PR #46 wake (lock retaken 2026-11-13). PR #46 squash-merged as
+`472887c` after all four required checks passed on `e766d96` with no reviews or comments; `wsr` and
+`wsr-gha` tests (117) verified on synced main. B-17 on `feat/b17-continue-timeout` from `472887c`;
+slice record [inspection-continue-timeout.md](inspection-continue-timeout.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode; `wsr-types` fields under D-033); cross-reviewed by Codex
+gpt-6.1-sol (high): no blockers; one P2 fixed (step `background` is not a valid Unsupported sample).
+Follow-up for Schedule B: the `Step` schema-key list classifies `background`, `cancel`, `parallel`,
+`wait` and `wait-all` as `Unsupported`, but the pinned reader rejects at least `background` unless
+`allowBackgroundSteps` (default false) is enabled, so they may belong in `Invalid`.
+
+- Red (observed): `continue_timeout.rs` failed with ``jobs.b: unknown field `continue-on-error` ``
+  (Unsupported).
+- Contract changes: `diagnostics.rs` Unsupported samples → job `cancel-timeout-minutes`, step
+  `name: 5`; job and step "expected one of" lists name the new keys (two CLI tests).
+- Green: 2 `wsr-gha` tests, 2 CLI tests (written after the `wsr-gha` green; acceptance); full suites
+  (121); `cargo xtask ci`.
+
+B-17 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-18 (job `outputs`).
+
+## Previous checkpoint — B-16 concurrency delivered (PR #46, `472887c`)
 
 Same Schedule A run, after the PR #45 wake (lock retaken 2026-11-13). PR #45 squash-merged as
 `e95b0d4` after all four required checks passed on `bb1ec38` with no reviews or comments; `wsr` and

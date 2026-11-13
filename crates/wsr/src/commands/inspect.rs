@@ -212,6 +212,7 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
             )?,
             None => {}
         }
+        render_unapplied(&mut out, "  ", "Continue on error", job.continue_on_error)?;
         if let Some(env) = job.env {
             render_values(&mut out, "  ", "Env (not bound)", env)?;
         }
@@ -244,6 +245,13 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                     condition.escape_debug()
                 )?;
             }
+            render_unapplied(
+                &mut out,
+                "    ",
+                "Continue on error",
+                step.continue_on_error,
+            )?;
+            render_unapplied(&mut out, "    ", "Timeout minutes", step.timeout_minutes)?;
             if let Some(shell) = step.shell {
                 writeln!(out, "    Shell: {} (not selected)", shell.escape_debug())?;
             }
@@ -327,6 +335,27 @@ fn render_defaults(out: &mut String, indent: &str, defaults: RunDefaults) -> std
         }
     }
     Ok(())
+}
+
+fn render_unapplied(
+    out: &mut String,
+    indent: &str,
+    label: &str,
+    text: Option<SourceText>,
+) -> std::fmt::Result {
+    match text {
+        Some(SourceText::Literal(text)) => writeln!(
+            out,
+            "{indent}{label}: {} (not applied)",
+            text.escape_debug()
+        ),
+        Some(SourceText::Unevaluated(text)) => writeln!(
+            out,
+            "{indent}{label}: {} (unevaluated; expression syntax not validated; not applied)",
+            text.escape_debug()
+        ),
+        None => Ok(()),
+    }
 }
 
 fn render_concurrency(

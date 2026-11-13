@@ -1002,7 +1002,7 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        bogus: {}\n"
                 .to_owned(),
-            "jobs.b.steps[1]: unknown field `bogus`, expected one of `id`, `name`, `if`, `run`, `shell`, `working-directory`, `env`, `with`, `uses` at line 6 column 9",
+            "jobs.b.steps[1]: unknown field `bogus`, expected one of `id`, `name`, `if`, `run`, `shell`, `working-directory`, `env`, `with`, `uses`, `continue-on-error`, `timeout-minutes` at line 6 column 9",
         ),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: ~\n        run: echo\n"
@@ -1106,7 +1106,7 @@ fn inspect_errors_escape_unicode_format_characters_on_stderr() {
     for (source, diagnostic) in [
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        \"k\\u202Eq\\u200B\": 1\n".to_owned(),
-            "jobs.b.steps[1]: unknown field `k\\u{202e}q\\u{200b}`, expected one of `id`, `name`, `if`, `run`, `shell`, `working-directory`, `env`, `with`, `uses` at line 6 column 9",
+            "jobs.b.steps[1]: unknown field `k\\u{202e}q\\u{200b}`, expected one of `id`, `name`, `if`, `run`, `shell`, `working-directory`, `env`, `with`, `uses`, `continue-on-error`, `timeout-minutes` at line 6 column 9",
         ),
         (
             format!("jobs:\n  \"b\\u202E\\u200B\\u2066\\u2069\":\n{job}"),
@@ -2064,6 +2064,56 @@ fn inspect_rejects_concurrency_outside_the_inspected_subset() {
             String::from_utf8(output.stderr).unwrap(),
             format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
             "{value}"
+        );
+    }
+}
+
+// Backlog B-17: job and step `continue-on-error` and step `timeout-minutes`, never applied.
+#[test]
+fn inspect_reports_continue_on_error_and_step_timeouts_without_applying_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: 5\n    continue-on-error: \"${{ $(touch executed)\\e\\u202E }}\"\n    steps:\n      - run: touch executed\n        continue-on-error: true\n        timeout-minutes: 1.5\n      - uses: ./action\n        timeout-minutes: ${{ inputs.minutes }}\n";
+    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Timeout minutes: 5 (not applied)\n  Continue on error: ${{ $(touch executed)\\u{1b}\\u{202e} }} (unevaluated; expression syntax not validated; not applied)\n  Step 1: run\n    Continue on error: true (not applied)\n    Timeout minutes: 1.5 (not applied)\n  Step 2: uses ./action\n    Timeout minutes: ${{ inputs.minutes }} (unevaluated; expression syntax not validated; not applied)\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn inspect_rejects_non_boolean_continue_on_error_and_non_number_step_timeouts() {
+    let directory = tempfile::tempdir().unwrap();
+    for (field, diagnostic) in [
+        (
+            "    continue-on-error: 5\n    steps:\n      - run: echo\n",
+            "jobs.b.continue-on-error: expected a boolean at line 3 column 5",
+        ),
+        (
+            "    steps:\n      - run: echo\n        continue-on-error: 'true'\n",
+            "jobs.b.steps[1].continue-on-error: expected a boolean at line 5 column 9",
+        ),
+        (
+            "    steps:\n      - run: echo\n        timeout-minutes: true\n",
+            "jobs.b.steps[1].timeout-minutes: expected a positive number at line 5 column 9",
+        ),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            format!("jobs:\n  b:\n    runs-on: linux\n{field}"),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{field}: {output:?}");
+        assert!(output.stdout.is_empty(), "{field}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{field}"
         );
     }
 }

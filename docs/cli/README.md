@@ -194,8 +194,26 @@ contain a `{0}` placeholder, since the runner rejects anything else
 containing {0}`). A literal `uses` must be `./path` (or `.\path`), `docker://image` or `owner/repo[/path]@ref`
 (`uses: invalid action reference 'actions/checkout'; …`); references are checked for shape only,
 and a `$/…` self-repository reference is unsupported.
-No timeout is applied and no shell is selected, located or invoked. Step `timeout-minutes` and
-`cancel-timeout-minutes` remain unsupported.
+No timeout is applied and no shell is selected, located or invoked. Job `cancel-timeout-minutes`
+remains unsupported.
+
+### Continue-on-error and step timeouts
+
+Job and step `continue-on-error` and step `timeout-minutes` print after the job's timeout and after a
+step's condition, each marked `(not applied)`:
+
+```text
+  Continue on error: ${{ matrix.experimental }} (unevaluated; expression syntax not validated; not applied)
+  Step 1: run
+    Continue on error: true (not applied)
+    Timeout minutes: 1.5 (not applied)
+```
+
+`continue-on-error` takes a boolean or `${{` text (`boolean-strategy-context` and
+`step-continue-on-error` have expression contexts); a number, null, the string `'true'` or any other
+shape is invalid (`expected a boolean`). A step timeout follows the job timeout rules: a finite
+positive number or `${{` text, a non-positive number unsupported, anything else invalid. A failing
+job is never tolerated and no step is timed.
 
 ### Step environment, action inputs and working directories
 

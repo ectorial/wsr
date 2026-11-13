@@ -229,7 +229,7 @@ Schedule A takes only ready slices.
 
 ## B-17 Job and step `continue-on-error`, step `timeout-minutes`
 
-- Status: **READY** (Schedule A).
+- Status: **delivered on merge of the B-17 PR** (Schedule A); see [slice record](inspection-continue-timeout.md).
 
 - Behavior: job and step `continue-on-error` take a boolean, step `timeout-minutes` a number (reuse the job
   timeout decoder for it only); either may instead be `${{` text, reported unevaluated; all are reported
