@@ -124,7 +124,7 @@ fn input(id: String, value: &Mapping, route: &str) -> Result<DispatchInput, Erro
     )?;
     let description = value
         .get("description")
-        .map(|v| text(v, &format!("{route}.description")))
+        .map(|v| converted_text(v, &format!("{route}.description")))
         .transpose()?;
     let input_type = value
         .get("type")
@@ -162,6 +162,10 @@ fn input(id: String, value: &Mapping, route: &str) -> Result<DispatchInput, Erro
         .get("default")
         .map(|v| match v {
             Value::String(_) => text(v, &format!("{route}.default")).map(InputDefault::String),
+            // The reader converts a null to an empty string, which only a boolean input rejects.
+            Value::Null if input_type != Some(DispatchInputType::Boolean) => Err(
+                Error::unsupported(format!("{route}.default"), super::NON_STRING),
+            ),
             Value::Bool(flag) => Ok(InputDefault::Boolean(*flag)),
             Value::Number(number) => Ok(InputDefault::Number(number.to_string())),
             _ => Err(Error::invalid(
@@ -182,7 +186,7 @@ fn input(id: String, value: &Mapping, route: &str) -> Result<DispatchInput, Erro
             values
                 .iter()
                 .enumerate()
-                .map(|(index, v)| text(v, &format!("{route}.options[{}]", index + 1)))
+                .map(|(index, v)| converted_text(v, &format!("{route}.options[{}]", index + 1)))
                 .collect::<Result<Vec<_>, _>>()
         })
         .transpose()?;
@@ -239,6 +243,17 @@ fn text(value: &Value, route: &str) -> Result<String, Error> {
     };
     super::check_literal(Some(value), route, Category::Invalid)?;
     Ok(value.clone())
+}
+
+/// Like [`text`], for a field whose null, boolean and number literals the pinned reader converts
+/// to strings that the schema accepts.
+fn converted_text(value: &Value, route: &str) -> Result<String, Error> {
+    match value {
+        Value::Null | Value::Bool(_) | Value::Number(_) => {
+            Err(Error::unsupported(route, super::NON_STRING))
+        }
+        _ => text(value, route),
+    }
 }
 
 /// Reject keys outside `allowed`; those in `schema` are valid GHA that is not inspected yet.

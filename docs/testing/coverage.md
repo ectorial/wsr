@@ -328,6 +328,20 @@ only above 512,000 bytes. Observed red: no warning at 512,001 bytes. The closed-
 638,896-byte fixture now asserts exactly the warning on stderr instead of empty stderr. A closed-stderr
 test (red: exit 101, empty stdout) asserts exit 0 and the full report when the warning cannot be written.
 
+## Scalar conversion categories (backlog B-13)
+
+`crates/wsr-gha/tests/scalar_conversion.rs` (12 tests, `cargo test -p wsr-gha --test scalar_conversion --locked`)
+asserts category and route for the null, boolean and number rows of the
+[slice record](../implementation/inspection-scalar-conversion.md#target-table): `name`, `run-name`, step `run`
+and `working-directory`, `shell`, `defaults.run`, `runs-on` and selectors, dispatch `description`,
+`options`, `type`, `required` and `default` by input type, `env`/`with` nulls, step `id`, and the rows that
+stay as they are, plus summary assertions that `5` and `"5"` and missing and null stay distinct. Eight
+tests were red on assertions before the change (`expected Unsupported at Some("jobs.b.runs-on"), got
+Invalid …`); four are green characterization. `diagnostics.rs`, `env_defaults.rs`, `step_inputs.rs` and
+eight CLI inspection tests were updated as the B-13 contract change. The B-12 CLI goldens now expect
+`(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
+goldens are unchanged. The CLI inspection suite lists 45 tests.
+
 ## Job and step conditions (backlog B-12)
 
 `inspect_reports_job_and_step_conditions_without_evaluating_them` asserts the complete report for

@@ -34,6 +34,12 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
                 .to_owned(),
             "jobs.b.runs-on",
         ),
+        // B-13: numbers and booleans are converted to strings by the pinned reader.
+        (format!("name: 5\n{JOB}"), "name"),
+        (
+            "jobs:\n  b:\n    runs-on: {group: 1}\n    steps:\n      - run: echo\n".to_owned(),
+            "jobs.b.runs-on",
+        ),
     ] {
         assert_eq!(
             diagnose(&source),
@@ -169,10 +175,6 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
             Some("jobs.b.runs-on"),
         ),
         (
-            "jobs:\n  b:\n    runs-on: {group: 1}\n    steps:\n      - run: echo\n".to_owned(),
-            Some("jobs.b.runs-on"),
-        ),
-        (
             format!("on: {{workflow_dispatch: {{inputs: {{a: {{type: object}}}}}}}}\n{JOB}"),
             Some("on.workflow_dispatch.inputs.a.type"),
         ),
@@ -191,7 +193,10 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
                 .to_owned(),
             Some("jobs.b.steps[1].id"),
         ),
-        (format!("name: 5\n{JOB}"), Some("name")),
+        (
+            "jobs:\n  b:\n    runs-on: {group: ~}\n    steps:\n      - run: echo\n".to_owned(),
+            Some("jobs.b.runs-on"),
+        ),
         ("jobs: {}".to_owned(), Some("jobs")),
         ("jobs: [".to_owned(), None),
     ] {

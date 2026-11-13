@@ -169,3 +169,102 @@ Schedule A takes only ready slices.
 - Expected red: the current `Unsupported` `if` diagnostic.
 - Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs`, `crates/wsr/src/commands/inspect.rs`,
   tests, `docs/cli/README.md`.
+
+## B-13 Scalar conversion categories (audit F21, F22)
+
+- Status: **delivered** in the Schedule B architecture PR `arch/review-2026-11-13-run3`; see
+  [slice record](inspection-scalar-conversion.md).
+
+- Behavior: the pinned reader converts an unmatched null, boolean or number to a string and validates it, so a
+  conversion the schema accepts is `Unsupported` ("non-string value is not inspected yet") and one the schema or
+  runner rejects stays `Invalid`, decided per field (`name`, `run-name`, `run`, `working-directory`, `runs-on`
+  and selectors, dispatch `description`/`options`/null `default`, `env`/`with` nulls and a boolean step `id` move
+  to `Unsupported`; `defaults.run.shell` numbers and booleans move to `Invalid`). `Condition:` lines also say the
+  expression syntax is not validated (F23). Output of successful inspections is unchanged.
+
+## B-14 Shell and action-reference semantic validation (audit F28)
+
+- Status: **READY** (Schedule A).
+
+- Behavior: step `shell` and `defaults.run.shell` literal text that is not a built-in shell (`bash`, `pwsh`,
+  `python`, `sh`, `cmd`, `powershell`) and has no `{0}` placeholder is `Invalid` (the runner's ScriptHandler
+  rejects it; the B-8 semantic-rejection allowance). Literal `uses` text that is not `./…`, `docker://…` or
+  `owner/repo[/path]@ref` is `Invalid`. Keep stdout empty and exit 1 on failure, deterministic output, no
+  evaluation, binding or execution claims, and a hostile-content escaping test.
+- Acceptance: `wsr-gha` category tests for `shell: "true"`, `shell: "5"`, `shell: "perl {0}"` (accepted),
+  `uses: "5"` and `uses: "actions/checkout"` (no ref, Invalid); dogfood goldens unchanged.
+- Expected red: quoted `"true"` shell and `"5"` uses currently inspect with exit 0.
+- Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-gha/src/defaults.rs`, tests, `docs/cli/README.md`.
+
+## B-15 Non-dispatch `on:` events with empty bodies, starting with `workflow_call`
+
+- Status: **READY** (Schedule A).
+
+- Behavior: report `Trigger: <event> (not evaluated)` for scalar, sequence and null or empty-body mapping forms
+  of non-dispatch events, in source order; non-empty bodies (filters, `workflow_call` inputs and secrets) stay
+  `Unsupported`; unknown event names are categorized from `on` strict versus `on` mapping per B-8. Label any new
+  `wsr-types` summary next to `ManualTrigger` as D-033 temporary GHA-derived types. Keep stdout empty and exit 1
+  on failure, deterministic output, no evaluation, binding or execution claims, and a hostile-content escaping test.
+- Acceptance: CLI goldens plus `wsr-gha` category tests; the repository's `check-docs`, `check-fmt`,
+  `check-lint` and `test` workflows (as temporary copies only, never in the real workflow directory) then inspect.
+- Expected red: `on.workflow_call: unsupported field or event`; `on: unsupported trigger; only workflow_dispatch is
+  inspected yet`; `on: expected a mapping (other trigger forms are unsupported)`.
+- Files: `crates/wsr-gha/src/dispatch.rs`, `crates/wsr-types/src/inspection.rs`,
+  `crates/wsr/src/commands/inspect.rs`, `docs/cli/README.md`.
+
+## B-16 Workflow and job `concurrency`
+
+- Status: **READY** (Schedule A).
+
+- Behavior: a string or `{group, cancel-in-progress}` (check the pinned schema for any further keys) is reported
+  "(not applied)"; expressions are `Unsupported` or unevaluated, since `workflow-concurrency` and
+  `job-concurrency` have contexts; an empty `group` is `Invalid`; the string `"true"` for `cancel-in-progress` is
+  `Invalid`. Scalar conversions follow B-13. Keep stdout empty and exit 1 on failure, deterministic output, no
+  evaluation, binding or execution claims, and a hostile-content escaping test.
+- Acceptance: per-level CLI tests, `wsr-gha` category tests, hostile-content sentinel.
+- Expected red: ``unknown field `concurrency` `` at both levels.
+- Files: `crates/wsr-gha/src/lib.rs` plus a new module, `crates/wsr-types/src/inspection.rs`,
+  `crates/wsr/src/commands/inspect.rs`, tests.
+
+## B-17 Job and step `continue-on-error`, step `timeout-minutes`
+
+- Status: **READY** (Schedule A).
+
+- Behavior: job and step `continue-on-error` take a boolean, step `timeout-minutes` a number (reuse the job
+  timeout decoder for it only); either may instead be `${{` text, reported unevaluated; all are reported
+  "(not applied)". The contexts exist (`boolean-strategy-context`, `step-continue-on-error`,
+  `step-timeout-minutes`; pinned schema L2308-2325). Keep stdout
+  empty and exit 1 on failure, deterministic output, no evaluation, binding or execution claims, and a
+  hostile-content escaping test.
+- Acceptance: CLI tests, `wsr-gha` category tests including rejection of `continue-on-error: 5` and
+  `timeout-minutes: true`; `crates/wsr-gha/tests/diagnostics.rs` uses `continue-on-error`
+  as its `Unsupported` sample, so pick a new sample key there and record it as an intended contract change.
+- Expected red: ``unknown field `continue-on-error` `` and `` `timeout-minutes` `` (`Unsupported`).
+- Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs`, `crates/wsr/src/commands/inspect.rs`,
+  `crates/wsr-gha/tests/diagnostics.rs`, tests, `docs/cli/README.md`.
+
+## B-18 Job `outputs`
+
+- Status: **READY** (Schedule A).
+
+- Behavior: an ordered map whose values are unevaluated `string-runner-context` text, reported "(not resolved)";
+  an expression replacing the whole mapping is `Invalid` (`job-outputs` has no context); scalar values follow
+  B-13. Keep stdout empty and exit 1 on failure, deterministic output, no evaluation, binding or execution
+  claims, and a hostile-content escaping test.
+- Acceptance: CLI tests, `wsr-gha` category tests, hostile-content sentinel.
+- Expected red: ``jobs.b: unknown field `outputs` ``.
+- Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs`, `crates/wsr/src/commands/inspect.rs`,
+  tests, `docs/cli/README.md`.
+
+## B-19 Job `environment`
+
+- Status: **READY** (Schedule A).
+
+- Behavior: a string or `{name, url}` (check the pinned schema), reported "(not selected; no protection rules
+  evaluated)"; `name` is required; contexts per the schema decide `Invalid` versus `Unsupported` as in B-8. Keep
+  stdout empty and exit 1 on failure, deterministic output, no evaluation, binding or execution claims, and a
+  hostile-content escaping test.
+- Acceptance: CLI tests, `wsr-gha` category tests, hostile-content sentinel.
+- Expected red: ``unknown field `environment` ``.
+- Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs`, `crates/wsr/src/commands/inspect.rs`,
+  tests, `docs/cli/README.md`.
