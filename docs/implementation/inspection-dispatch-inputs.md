@@ -1,6 +1,7 @@
 # Next inspection iteration: manual dispatch input definitions
 
-Status: **owner-authorized; implemented locally, integration pending**. Baseline: PR #25 merged as `91fd3d5`;
+Status: **delivered**. PR #26 merged as `1c565a4` after all four required checks passed
+on `8ac3356`, with no review findings. Merged CLI fixture verified; local main clean. Baseline: PR #25 merged as `91fd3d5`;
 literal runner-label lists are delivered. Owner authorized implementation; schedule settings remain unchanged.
 
 ## Outcome

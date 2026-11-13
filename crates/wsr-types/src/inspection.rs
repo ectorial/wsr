@@ -5,10 +5,21 @@
 pub struct WorkflowSummary {
     /// Optional source display name.
     pub name: Option<String>,
+    /// Optional source run-name text, never evaluated.
+    pub run_name: Option<SourceText>,
     /// Optional static trigger name, not an evaluated invocation event.
     pub trigger: Option<ManualTrigger>,
     /// Jobs in deterministic identifier order.
     pub jobs: Vec<JobSummary>,
+}
+
+/// Decoded source text, classified without evaluating or validating expressions.
+#[derive(Debug, PartialEq, Eq)]
+pub enum SourceText {
+    /// Text without an expression opening fence.
+    Literal(String),
+    /// Entire raw text containing at least one `${{` fence; syntax is not validated.
+    Unevaluated(String),
 }
 
 /// A job's source-level requirements and ordered steps.

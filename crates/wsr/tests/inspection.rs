@@ -857,3 +857,114 @@ fn inspect_dispatch_identifiers_and_dynamic_required_are_diagnosed() {
         );
     }
 }
+
+const RUN_NAME_HEADER: &str = "Workflow: Example shell reference\nInspection only; execution compatibility is not assessed.\n";
+
+fn run_name_workflow(run_name: &str) -> String {
+    format!(
+        "name: Example shell reference\n{run_name}on:\n  workflow_dispatch:\n    inputs:\n      mode:\n        type: string\n        default: quick\njobs:\n  shell:\n    runs-on: ubuntu-latest\n    steps:\n      - run: touch executed\n      - uses: ./action\n"
+    )
+}
+
+#[test]
+fn inspect_run_name_reports_unevaluated_source_without_executing_or_binding_inputs() {
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = run_name_workflow("run-name: \"Shell reference — ${{ inputs.mode }}\"\n");
+    fs::write(directory.path().join("ci.yml"), &workflow).unwrap();
+    fs::write(directory.path().join("wsr.toml"), "invalid config sentinel").unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(
+        stdout,
+        "Workflow: Example shell reference\nRun name: Shell reference — ${{ inputs.mode }} (unevaluated; expression syntax not validated)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\n  Input: mode\n    Type: string\n    Default: \"quick\" (not applied)\nJob: shell\n  Runner: ubuntu-latest\n  Step 1: run\n  Step 2: uses ./action\n"
+    );
+    assert!(!stdout.contains("Shell reference — quick"), "{stdout}");
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        workflow
+    );
+    assert_eq!(
+        fs::read_to_string(directory.path().join("wsr.toml")).unwrap(),
+        "invalid config sentinel"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 2);
+}
+
+#[test]
+fn inspect_run_name_literal_omitted_and_unvalidated_fences() {
+    let directory = tempfile::tempdir().unwrap();
+    for (declaration, line) in [
+        (
+            "run-name: Local reference\n",
+            Some("Run name: Local reference (literal)"),
+        ),
+        ("", None),
+        (
+            "run-name: \"${{ inputs.a }}-${{ inputs.b }}\"\n",
+            Some(
+                "Run name: ${{ inputs.a }}-${{ inputs.b }} (unevaluated; expression syntax not validated)",
+            ),
+        ),
+        (
+            "run-name: \"open ${{ inputs.mode\"\n",
+            Some("Run name: open ${{ inputs.mode (unevaluated; expression syntax not validated)"),
+        ),
+        (
+            "run-name: \"a ${{\\n inputs.mode }}\\u001b\"\n",
+            Some(
+                "Run name: a ${{\\n inputs.mode }}\\u{1b} (unevaluated; expression syntax not validated)",
+            ),
+        ),
+        (
+            "run-name: \"tab\\there\"\n",
+            Some("Run name: tab\\there (literal)"),
+        ),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            run_name_workflow(declaration),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(0), "{declaration}: {output:?}");
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        let expected = match line {
+            Some(line) => RUN_NAME_HEADER.replacen("\n", &format!("\n{line}\n"), 1),
+            None => RUN_NAME_HEADER.to_string(),
+        };
+        assert!(stdout.starts_with(&expected), "{declaration}: {stdout}");
+        assert_eq!(stdout.contains("Run name:"), line.is_some(), "{stdout}");
+    }
+}
+
+#[test]
+fn inspect_run_name_rejects_wrong_shapes_and_blank_text_before_rendering() {
+    let directory = tempfile::tempdir().unwrap();
+    for (declaration, diagnostic) in [
+        ("run-name: null\n", "expected a string"),
+        ("run-name: ~\n", "expected a string"),
+        ("run-name: true\n", "expected a string"),
+        ("run-name: 42\n", "expected a string"),
+        ("run-name: [a]\n", "expected a string"),
+        ("run-name: {a: b}\n", "expected a string"),
+        ("run-name: ''\n", "run-name: expected a nonempty string"),
+        ("run-name: '  '\n", "run-name: expected a nonempty string"),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            run_name_workflow(declaration),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{declaration}: {output:?}");
+        assert!(output.stdout.is_empty(), "{declaration}: {output:?}");
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains("wsr inspect: ci.yml:") && error.contains(diagnostic),
+            "{declaration}: {error}"
+        );
+    }
+}
