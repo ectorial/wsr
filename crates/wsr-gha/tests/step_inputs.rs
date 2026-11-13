@@ -56,6 +56,18 @@ fn step_input_failures_have_category_and_route() {
             (Category::Invalid, "jobs.b.steps[1].env.A"),
         ),
         (
+            step("env: {1: x}"),
+            (Category::Unsupported, "jobs.b.steps[1].env"),
+        ),
+        (
+            step("env: {a: x, A: y}"),
+            (Category::Invalid, "jobs.b.steps[1].env.A"),
+        ),
+        (
+            step("with: '${{ x }}'"),
+            (Category::Invalid, "jobs.b.steps[1].with"),
+        ),
+        (
             step("with: {a: b}"),
             (Category::Invalid, "jobs.b.steps[1].with"),
         ),

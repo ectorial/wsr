@@ -2,51 +2,51 @@
 
 use std::collections::BTreeMap;
 
-use serde::Deserialize;
 use wsr_types::inspection::{SourceText, StepValue};
 
-use crate::diagnostic::{self, Error};
+use crate::diagnostic::Error;
 
-pub(crate) fn env<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Option<BTreeMap<String, StepValue>>, D::Error> {
-    decode("env", serde_yaml::Value::deserialize(deserializer)?)
-        .map(Some)
-        .map_err(diagnostic::raise)
-}
+const EXPRESSION: &str = "expression is unevaluated; dynamic inspection is not supported yet";
 
-pub(crate) fn with<'de, D: serde::Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Option<BTreeMap<String, StepValue>>, D::Error> {
-    decode("with", serde_yaml::Value::deserialize(deserializer)?)
-        .map(Some)
-        .map_err(diagnostic::raise)
-}
-
-// The pinned schema's `step-env`/`step-with`: nonempty string keys and loose string values,
-// so YAML numbers and booleans are valid and keep their type here.
-fn decode(field: &str, value: serde_yaml::Value) -> Result<BTreeMap<String, StepValue>, Error> {
+// The pinned schema's `step-env`/`step-with`: nonempty string keys, unique ignoring case, and loose
+// string values, so YAML numbers and booleans are valid and keep their type here.
+pub(crate) fn decode(
+    route: &str,
+    value: serde_yaml::Value,
+) -> Result<BTreeMap<String, StepValue>, Error> {
     let entries = match value {
         serde_yaml::Value::Mapping(entries) => entries,
         serde_yaml::Value::String(text) if text.contains("${{") => {
-            return Err(Error::unsupported(
-                field,
-                "expression is unevaluated; dynamic inspection is not supported yet",
-            ));
+            return Err(Error::unsupported(route, EXPRESSION));
         }
-        _ => return Err(Error::invalid(field, "expected a mapping")),
+        _ => return Err(Error::invalid(route, "expected a mapping")),
     };
     let mut values = BTreeMap::new();
+    let mut spellings = BTreeMap::new();
     for (key, value) in entries {
         let key = match key {
             serde_yaml::Value::String(key) if !key.is_empty() => key,
-            _ => return Err(Error::invalid(field, "expected a nonempty string key")),
+            // The pinned parser converts other scalar keys to strings.
+            serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
+                return Err(Error::unsupported(
+                    route,
+                    "non-string key is not inspected yet",
+                ));
+            }
+            _ => return Err(Error::invalid(route, "expected a nonempty string key")),
         };
-        let route = format!("{field}.{key}");
+        let field = format!("{route}.{key}");
         if key.contains("${{") {
-            return Err(Error::unsupported(
-                route,
-                "expression is unevaluated; dynamic inspection is not supported yet",
+            return Err(Error::unsupported(field, EXPRESSION));
+        }
+        if let Some(first) = spellings.insert(key.to_uppercase(), key.clone()) {
+            return Err(Error::invalid(
+                field,
+                format_args!(
+                    "duplicate key '{}'; already defined as '{}'",
+                    key.escape_debug(),
+                    first.escape_debug()
+                ),
             ));
         }
         let value = match value {
@@ -58,7 +58,7 @@ fn decode(field: &str, value: serde_yaml::Value) -> Result<BTreeMap<String, Step
             serde_yaml::Value::Number(value) => StepValue::Number(value.to_string()),
             _ => {
                 return Err(Error::invalid(
-                    route,
+                    field,
                     "expected a string, number or boolean",
                 ));
             }

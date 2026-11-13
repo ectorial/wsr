@@ -1362,27 +1362,48 @@ fn inspect_reports_step_inputs_without_binding_or_passing_them() {
     let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n";
     for (source, report) in [
         (
-            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - uses: ./action\n        with:\n          persist-credentials: false\n          python-version: \"3.13\"\n          retries: 3\n          token: ${{ secrets.TOKEN }}\n      - run: touch executed\n        working-directory: examples/python-basic\n        env:\n          ZED: \"$(touch executed)\\x1b[31m\"\n          MODE: ${{ inputs.mode }}\n",
+            r#"jobs:
+  b:
+    runs-on: linux
+    steps:
+      - uses: ./action
+        with:
+          persist-credentials: false
+          python-version: "3.13"
+          retries: 3
+          token: ${{ secrets.TOKEN }}
+      - run: touch executed
+        working-directory: examples/python-basic
+        env:
+          ZED: "$(touch executed)\x1b[31m"
+          MODE: ${{ inputs.mode }}
+      - run: echo
+        working-directory: "a\x07\"b\\"
+        env:
+          "K\x1b\"": "q\"\\\x07"
+"#
+            .to_owned(),
             format!(
-                "{head}  Step 1: uses ./action\n    With (not passed to any action):\n      persist-credentials: false\n      python-version: \"3.13\"\n      retries: 3\n      token: \"${{{{ secrets.TOKEN }}}}\" (unevaluated)\n  Step 2: run\n    Working directory: examples/python-basic (not resolved)\n    Env (not bound):\n      MODE: \"${{{{ inputs.mode }}}}\" (unevaluated)\n      ZED: \"$(touch executed)\\u{{1b}}[31m\"\n"
+                "{head}  Step 1: uses ./action\n    With (not passed to any action):\n      persist-credentials: false\n      python-version: \"3.13\"\n      retries: 3\n      token: \"${{{{ secrets.TOKEN }}}}\" (unevaluated)\n  Step 2: run\n    Working directory: examples/python-basic (not resolved)\n    Env (not bound):\n      MODE: \"${{{{ inputs.mode }}}}\" (unevaluated)\n      ZED: \"$(touch executed)\\u{{1b}}[31m\"\n{}",
+                r#"  Step 3: run
+    Working directory: a\u{7}\"b\\ (not resolved)
+    Env (not bound):
+      K\u{1b}\": "q\"\\\u{7}"
+"#
             ),
         ),
         (
-            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: touch executed\n        working-directory: ${{ github.workspace }}/x\n        env: {}\n      - uses: ./action\n        with: {}\n",
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: touch executed\n        working-directory: ${{ github.workspace }}/x\n        env: {}\n      - uses: ./action\n        with: {}\n".to_owned(),
             format!(
                 "{head}  Step 1: run\n    Working directory: ${{{{ github.workspace }}}}/x (unevaluated; expression syntax not validated; not resolved)\n    Env (not bound): {{}}\n  Step 2: uses ./action\n    With (not passed to any action): {{}}\n"
             ),
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(0), "{source}: {output:?}");
         assert!(output.stderr.is_empty(), "{source}: {output:?}");
-        assert_eq!(
-            String::from_utf8(output.stdout).unwrap(),
-            report,
-            "{source}"
-        );
+        assert_eq!(String::from_utf8(output.stdout).unwrap(), report, "{source}");
         assert!(!directory.path().join("executed").exists());
         assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
     }
@@ -1397,58 +1418,85 @@ fn inspect_rejects_invalid_step_inputs() {
     let uses = |field: &str| {
         format!("jobs:\n  b:\n    runs-on: linux\n    steps:\n      - uses: ./a\n        {field}\n")
     };
+    let dynamic = "expression is unevaluated; dynamic inspection is not supported yet";
     for (source, diagnostic) in [
         (
             run("env: ~"),
-            "jobs.b.steps[1].env: expected a mapping at line 5 column 9",
+            "jobs.b.steps[1].env: expected a mapping".to_owned(),
         ),
         (
             run("env: [A]"),
-            "jobs.b.steps[1].env: expected a mapping at line 5 column 9",
+            "jobs.b.steps[1].env: expected a mapping".to_owned(),
         ),
         (
             run("env: ${{ fromJSON(x) }}"),
-            "jobs.b.steps[1].env: expression is unevaluated; dynamic inspection is not supported yet at line 5 column 9",
+            format!("jobs.b.steps[1].env: {dynamic}"),
         ),
         (
             run("env: {A: ~}"),
-            "jobs.b.steps[1].env.A: expected a string, number or boolean at line 5 column 9",
+            "jobs.b.steps[1].env.A: expected a string, number or boolean".to_owned(),
         ),
         (
             run("env: {A: [1]}"),
-            "jobs.b.steps[1].env.A: expected a string, number or boolean at line 5 column 9",
+            "jobs.b.steps[1].env.A: expected a string, number or boolean".to_owned(),
         ),
         (
             run("env: {'': x}"),
-            "jobs.b.steps[1].env: expected a nonempty string key at line 5 column 9",
+            "jobs.b.steps[1].env: expected a nonempty string key".to_owned(),
         ),
         (
             run("env: {1: x}"),
-            "jobs.b.steps[1].env: expected a nonempty string key at line 5 column 9",
+            "jobs.b.steps[1].env: non-string key is not inspected yet".to_owned(),
         ),
         (
             run("env: {'${{ x }}': y}"),
-            "jobs.b.steps[1].env.${{ x }}: expression is unevaluated; dynamic inspection is not supported yet at line 5 column 9",
+            format!("jobs.b.steps[1].env.${{{{ x }}}}: {dynamic}"),
+        ),
+        (
+            run("env: {Mode: a, MODE: b}"),
+            "jobs.b.steps[1].env.MODE: duplicate key 'MODE'; already defined as 'Mode'".to_owned(),
+        ),
+        (
+            run(r#"env: {"K\x1b\"": [1]}"#),
+            "jobs.b.steps[1].env.K\\u{1b}\": expected a string, number or boolean".to_owned(),
         ),
         (
             uses("with: {a: {b: c}}"),
-            "jobs.b.steps[1].with.a: expected a string, number or boolean at line 5 column 9",
+            "jobs.b.steps[1].with.a: expected a string, number or boolean".to_owned(),
+        ),
+        (
+            uses("with: {token: a, Token: b}"),
+            "jobs.b.steps[1].with.Token: duplicate key 'Token'; already defined as 'token'"
+                .to_owned(),
         ),
         (
             run("with: {a: b}"),
-            "jobs.b.steps[1].with: with applies only to uses steps",
+            "jobs.b.steps[1].with: with applies only to uses steps".to_owned(),
+        ),
+        (
+            run("with: ${{ inputs.args }}"),
+            "jobs.b.steps[1].with: with applies only to uses steps".to_owned(),
+        ),
+        (
+            run("uses: ./a\n        env: {A: [1]}"),
+            "jobs.b.steps[1]: expected exactly one of run or uses".to_owned(),
+        ),
+        (
+            run("shell: ' '\n        env: {A: [1]}"),
+            "jobs.b.steps[1].shell: expected a nonempty string".to_owned(),
         ),
         (
             uses("working-directory: x"),
-            "jobs.b.steps[1].working-directory: working-directory applies only to run steps",
+            "jobs.b.steps[1].working-directory: working-directory applies only to run steps"
+                .to_owned(),
         ),
         (
             run("working-directory: 5"),
-            "jobs.b.steps[1].working-directory: expected a string at line 5 column 9",
+            "jobs.b.steps[1].working-directory: expected a string at line 5 column 9".to_owned(),
         ),
         (
             run("working-directory: ' '"),
-            "jobs.b.steps[1].working-directory: expected a nonempty string",
+            "jobs.b.steps[1].working-directory: expected a nonempty string".to_owned(),
         ),
     ] {
         fs::write(directory.path().join("ci.yml"), &source).unwrap();

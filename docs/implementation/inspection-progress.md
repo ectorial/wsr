@@ -6,11 +6,15 @@ Same Schedule A run, after the PR #34 wake (lock retaken 2026-11-13). PR #34 squ
 `85a1c30` after all four required checks passed on `136a811` with no reviews or comments; `wsr` and
 `wsr-gha` tests verified on synced main. B-5 on `feat/inspect-step-inputs` from `85a1c30`; slice
 record [inspection-step-inputs.md](inspection-step-inputs.md). Implemented by Claude
-(claude-opus-5-5, orchestrator, burn mode).
+(claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no blockers.
+Fixed: case-insensitive duplicate keys (pinned parser rule), `env`/`with` interpreted after
+placement and run/uses/shell checks (a `with` expression on a run step was `Unsupported`), number/
+boolean keys reclassified `Unsupported`, and hostile key/value/directory escaping tests. These
+review-fix cases were added with their fixes; their red was not separately observed.
 
 - Red (observed on `85a1c30` build): both new CLI tests failed with ``jobs.b.steps[1]: unknown field
   `with` ``.
-- Green: 2 CLI tests (2 accepted workflows, 13 exact-stderr rejections), 3 `wsr-gha` tests. Intended
+- Green: 2 CLI tests (2 accepted workflows, 19 exact-stderr rejections), 3 `wsr-gha` tests. Intended
   contract update: the B-1 unknown-step-key example moved from `with` to `bogus`.
 - Dogfood: `wsr inspect` now exits 0 on both `.github/workflows/example-*.yml` (static inspection only).
 

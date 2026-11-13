@@ -182,10 +182,11 @@ values may be strings, numbers or booleans; strings are quoted and escaped, and 
 fence is marked unevaluated. An empty mapping renders as `{}`. No variable is bound, no input is
 passed to an action, no directory is resolved and no expression is evaluated.
 
-Non-mapping values, empty or non-string keys, null or nested values, duplicate keys, `with` on a
-`run` step, `working-directory` on a `uses` step and blank or non-string directories fail before
-stdout (`jobs.b.steps[1].env.A: expected a string, number or boolean`). A whole-mapping
-expression or an expression in a key is valid GHA that is reported as unsupported.
+Non-mapping values, empty keys, null or nested values, keys duplicated ignoring case (as the pinned
+parser rejects), `with` on a `run` step, `working-directory` on a `uses` step and blank or
+non-string directories fail before stdout (`jobs.b.steps[1].env.A: expected a string, number or
+boolean`). A whole-mapping expression, an expression in a key or a number/boolean key is valid GHA
+that is reported as unsupported. Placement is checked before contents.
 
 ### Literal runner labels
 

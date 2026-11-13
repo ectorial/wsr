@@ -300,11 +300,14 @@ Values are reported, never applied, selected or invoked.
 
 ## Step environment, action inputs and working directories (backlog B-5)
 
-Two CLI tests in `crates/wsr/tests/inspection.rs` and three in `crates/wsr-gha/tests/step_inputs.rs`.
+Two CLI tests in `crates/wsr/tests/inspection.rs` and three in `crates/wsr-gha/tests/step_inputs.rs`
+(the last grown after cross-review).
 Observed red: both CLI tests failed with ``unknown field `with` `` before implementation. Coverage:
 string, number, boolean and unevaluated values with sorted keys; empty mappings; literal and
 unevaluated working directories; a hostile `$(touch executed)` value with an ESC byte rendered escaped
 and the directory sentinel unchanged; exact stderr for non-mapping, null and nested values, empty,
 numeric and expression keys, whole-mapping expressions, `with` on a run step, `working-directory`
-on a uses step and non-string/blank directories; duplicate keys keep decoder evidence. The B-1 route
+on a uses step and non-string/blank directories; case-insensitive duplicate keys; placement and
+run/uses/shell precedence over contents; hostile keys, values and directories with control bytes,
+quotes and backslashes in stdout and stderr; exact duplicate keys keep decoder evidence. The B-1 route
 test's unknown step key moved from `with` to `bogus`. Values are never bound, passed or resolved.

@@ -1,7 +1,8 @@
 # Step-input iteration: step `env`, `with` and `working-directory` (backlog B-5)
 
 Status: **delivered on merge of its PR**, branch `feat/inspect-step-inputs` from `85a1c30` (Schedule A).
-Implemented by Claude (claude-opus-5-5). Evidence lives in the [checkpoint](inspection-progress.md).
+Implemented by Claude (claude-opus-5-5); cross-reviewed by Codex gpt-6.1-sol (high): no blockers;
+two P2s and a nit fixed (see below). Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Scope
 
@@ -17,10 +18,14 @@ Per the [pinned workflow schema](https://github.com/actions/languageservices/blo
   in the canonical example is a boolean). Strings containing `${{` are unevaluated. Keys are sorted.
 - `working-directory` is `string-steps-context` on `run-step` only: literal or unevaluated text.
 
-Rejected before stdout: a non-mapping `env`/`with` (`Invalid`), a whole-mapping expression or an
-expression in a key (`Unsupported`, valid GHA that is not inspected), empty or non-string keys,
-null, sequence or mapping values, duplicate keys (decoder evidence, no route), `with` on a `run`
-step, `working-directory` on a `uses` step, and a non-string or blank `working-directory`.
+`env` and `with` are interpreted after the existing run/uses and `shell` checks, so a misplaced
+`with` on a `run` step is `Invalid` whatever its content. Rejected before stdout: a non-mapping
+`env`/`with` (`Invalid`); a whole-mapping expression, an expression in a key, or a number/boolean
+key, which the [pinned parser](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/templates/template-reader.ts)
+converts to a string (`Unsupported`); empty or null keys; null, sequence or mapping values; keys
+duplicated ignoring case, as the pinned parser rejects them (`env.MODE: duplicate key 'MODE';
+already defined as 'Mode'`), while exact YAML duplicates keep decoder evidence without a route;
+`with` on a `run` step; `working-directory` on a `uses` step; and a non-string or blank `working-directory`.
 Null values and blank directories are rejected by this subset's rules; whether GitHub coerces them
 is not claimed.
 

@@ -99,10 +99,11 @@ struct Step {
         deserialize_with = "present_string"
     )]
     working_directory: Option<String>,
-    #[serde(default, deserialize_with = "step_inputs::env")]
-    env: Option<BTreeMap<String, wsr_types::inspection::StepValue>>,
-    #[serde(default, deserialize_with = "step_inputs::with")]
-    with: Option<BTreeMap<String, wsr_types::inspection::StepValue>>,
+    // Interpreted after the step-kind checks, so a misplaced field reports its placement first.
+    #[serde(default, deserialize_with = "present_value")]
+    env: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "present_value")]
+    with: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_string")]
     uses: Option<String>,
 }
@@ -269,13 +270,21 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                     "with applies only to uses steps",
                 ));
             }
+            let env = step
+                .env
+                .map(|value| step_inputs::decode(&format!("{location}.env"), value))
+                .transpose()?;
+            let with = step
+                .with
+                .map(|value| step_inputs::decode(&format!("{location}.with"), value))
+                .transpose()?;
             steps.push(StepSummary {
                 id: step.id,
                 name: step.name,
                 shell: step.shell,
                 working_directory,
-                env: step.env,
-                with: step.with,
+                env,
+                with,
                 kind,
             });
         }
@@ -406,6 +415,12 @@ fn present_string<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error> {
     string(deserializer).map(Some)
+}
+
+fn present_value<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<serde_yaml::Value>, D::Error> {
+    serde_yaml::Value::deserialize(deserializer).map(Some)
 }
 
 fn timeout_minutes<'de, D: serde::Deserializer<'de>>(
