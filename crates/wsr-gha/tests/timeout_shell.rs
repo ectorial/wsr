@@ -32,8 +32,13 @@ fn timeout_and_shell_are_kept_as_source_data() {
 fn invalid_timeouts_and_shells_are_invalid_at_their_route() {
     for (source, route) in [
         (
-            "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: -5\n    steps:\n      - run: echo\n",
+            "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: .inf\n    steps:\n      - run: echo\n",
             "jobs.b.timeout-minutes",
+        ),
+        // The runner rejects a blank shell semantically, so it is not merely unsupported.
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        shell: ' '\n",
+            "jobs.b.steps[1].shell",
         ),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        shell: ${{ x }}\n",
@@ -49,6 +54,23 @@ fn invalid_timeouts_and_shells_are_invalid_at_their_route() {
             (error.category(), error.route()),
             (Category::Invalid, Some(route)),
             "{source}"
+        );
+    }
+}
+
+// number-strategy-context has no minimum, so non-positive minutes are valid GHA outside the
+// inspected subset rather than invalid source.
+#[test]
+fn non_positive_timeouts_are_schema_valid_but_unsupported() {
+    for minutes in ["0", "-5", "0.0", "-0.5"] {
+        let source = format!(
+            "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: {minutes}\n    steps:\n      - run: echo\n"
+        );
+        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        assert_eq!(
+            (error.category(), error.route()),
+            (Category::Unsupported, Some("jobs.b.timeout-minutes")),
+            "{minutes}: {error}"
         );
     }
 }

@@ -68,7 +68,7 @@ escaped, so no raw terminal escape sequence reaches stderr. If stdout is closed 
 Other trigger forms, runner-group objects, matrices, conditions, environment,
 defaults, services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
-Broader inspection and canonical dogfood fixtures remain pending.
+Broader inspection remains pending.
 
 ### Manual-trigger input declarations
 
@@ -234,6 +234,12 @@ stack rather than recursive calls, including a tested 4,096-job chain.
 Malformed types, null, empty identifiers and expressions in `needs` fail before any stdout summary.
 Job identifiers are validated before `needs` is resolved, so an invalid identifier is reported
 ahead of an unknown dependency.
+A job identifier is also validated before its body is decoded, so a hostile identifier cannot forge
+the route of a body diagnostic; when both are wrong, the identifier is the one reported. An expression in a field the pinned schema gives no expression
+context (workflow `name`, `on`, job and step identifiers, `needs`, `uses`, manual-input
+declarations) is invalid; where the schema allows expressions (job and step `name`, `run`,
+`runs-on`) it is valid GHA that inspection does not evaluate. See the
+[classification record](../implementation/inspection-classification.md).
 
 ### Diagnostic routes
 

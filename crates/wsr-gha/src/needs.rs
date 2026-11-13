@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 use serde_yaml::Value;
 
-use super::{Error, diagnostic};
+use super::{Category, Error, diagnostic};
 
 /// Preserve source shape so diagnostics can distinguish a scalar from a list entry.
 #[derive(Default)]
@@ -40,7 +40,7 @@ pub(super) fn validate(jobs: &std::collections::BTreeMap<String, super::Job>) ->
     for (id, job) in jobs {
         for (index, target) in job.needs.values().iter().enumerate() {
             let location = job.needs.location(id, index);
-            super::check_required(target, &location)?;
+            super::check_required(target, &location, Category::Invalid)?;
             if !jobs.contains_key(target) {
                 return Err(Error::invalid(
                     location,

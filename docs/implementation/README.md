@@ -12,6 +12,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | [Architecture review log](architecture-review.md) | Dated findings, classifications and dispositions from each Schedule B run (Schedule B owned) |
 | [Typed-error iteration](inspection-typed-errors.md) | Backlog B-0: provisional typed inspection errors with category and route |
 | [Diagnostic-route iteration](inspection-diagnostic-routes.md) | Backlog B-1: one-based route grammar and job-ID-first validation order |
+| [Classification iteration](inspection-classification.md) | Backlog B-8: expression category by schema context, schema-valid values no longer Invalid, job-ID-first route safety |
 | [Size-warning iteration](inspection-size-warning.md) | Backlog B-7: GitHub 500 KB workflow-size warning (D-032) |
 | [Dogfood acceptance iteration](inspection-dogfood.md) | Backlog B-6: golden `wsr inspect` output on the real `example-*.yml` with no-execution sentinels |
 | [Step-input iteration](inspection-step-inputs.md) | Backlog B-5: step `env`, `with` and `working-directory`, never bound, passed or resolved |

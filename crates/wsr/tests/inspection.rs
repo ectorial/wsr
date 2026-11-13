@@ -1010,6 +1010,11 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
             format!("jobs:\n  'b c':\n    needs: missing\n{job}"),
             "jobs.b c: invalid job identifier 'b c'",
         ),
+        // The identifier is validated before its body, so it cannot forge `jobs.a.steps[9].bogus`.
+        (
+            format!("jobs:\n  a.steps[9]:\n    bogus: 1\n{job}"),
+            "jobs.a.steps[9]: invalid job identifier 'a.steps[9]'",
+        ),
         (
             format!("jobs:\n  '${{{{ x }}}}':\n{job}"),
             "jobs.${{ x }}: expression is unevaluated; dynamic inspection is not supported yet",

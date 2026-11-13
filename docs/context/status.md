@@ -37,15 +37,14 @@ for delivery gates.
   See [timeout and shell contract](../cli/README.md#job-timeouts-and-step-shells).
 - [x] Workflow and job `permissions` in inspection: `read-all`/`write-all` or a pinned-schema
   scope→level mapping, reported as requested and not granted. See [permissions contract](../cli/README.md#requested-permissions).
-  No token, effective-permission computation or enforcement; full example-workflow inspection remains pending.
+  No token, effective-permission computation or enforcement.
 - [x] Workflow `run-name` in inspection: strict optional string, literal versus unevaluated
   classification of the whole decoded text and escaped rendering. See [run-name contract](../cli/README.md#unevaluated-run-names).
-  No expression parsing/validation, context lookup or default application; full example-workflow
-  inspection remains pending.
+  No expression parsing/validation, context lookup or default application.
 - [x] Manual-trigger mappings and input declarations in inspection: typed metadata/defaults,
   deterministic reports, explicit unsupported/dynamic diagnostics and distinct declaration states.
   See [manual-input contract](../cli/README.md#manual-trigger-input-declarations). No input binding,
-  default application or expression evaluation; full example-workflow inspection remains pending.
+  default application or expression evaluation.
 - [x] Literal scalar/list runner requirements in inspection: source form/order/spelling retained,
   quoted list output, strict shape/member validation and unevaluated-expression diagnostics.
   See [runner-label contract](../cli/README.md#literal-runner-labels). No runner resolution or execution.
@@ -85,7 +84,7 @@ Bun is now the intended GHA JavaScript compatibility runtime; this adds no imple
 
 ## Not implemented in the current checkout
 
-- [ ] Complete inspection milestone: richer source forms/diagnostics and canonical dogfood fixtures.
+- [ ] Complete inspection milestone: richer source forms and diagnostics.
 - [ ] Functional planning and executable canonical workflow compilation.
 - [ ] Repository setup, configuration loading/generation, and provider bootstrap/pinning.
 - [ ] Signed Component Model provider execution and canonical expression lowering.

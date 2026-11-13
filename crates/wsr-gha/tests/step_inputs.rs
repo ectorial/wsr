@@ -71,10 +71,6 @@ fn step_input_failures_have_category_and_route() {
             step("with: {a: b}"),
             (Category::Invalid, "jobs.b.steps[1].with"),
         ),
-        (
-            step("working-directory: ''"),
-            (Category::Invalid, "jobs.b.steps[1].working-directory"),
-        ),
     ] {
         let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
         assert_eq!(
@@ -96,4 +92,35 @@ fn duplicate_step_input_keys_keep_decoder_evidence() {
         error.to_string().contains("duplicate entry with key \"A\""),
         "{error}"
     );
+}
+
+// The pinned schema types `run` and `working-directory` as string-steps-context, which allows
+// empty strings; they are valid GHA that WSR does not inspect, not invalid source.
+#[test]
+fn empty_run_and_working_directory_are_schema_valid_but_unsupported() {
+    for (source, route) in [
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: ''\n",
+            "jobs.b.steps[1].run",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: '  '\n",
+            "jobs.b.steps[1].run",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        working-directory: ''\n",
+            "jobs.b.steps[1].working-directory",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        working-directory: '  '\n",
+            "jobs.b.steps[1].working-directory",
+        ),
+    ] {
+        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        assert_eq!(
+            (error.category(), error.route()),
+            (Category::Unsupported, Some(route)),
+            "{source}: {error}"
+        );
+    }
 }

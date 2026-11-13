@@ -40,3 +40,33 @@ Findings are classified (a) bounded correction, (b) owner decision — see
   B-3..B-6 marked blocked on DR-002 instead of ready. Ready backlog depth: 3 (B-0..B-2).
 - Next focus: verify B-0/B-1 land typed, non-string-coupled diagnostics;
   first permissions/env slices for untrusted-content escaping and no-binding claims.
+
+## 2026-11-13 run 2
+
+- Audited range: `fd574dc..e3a8373` (PRs #28–#37; #37 B-7 merged during the audit). Auditor: claude-opus-5-5
+  (effort high), burn mode. Second opinion on the highest-risk finding (F13): Codex gpt-6.1-sol (reasoning
+  high), which confirmed F13 field-by-field, lowered severity to medium diagnostic correctness/low operational
+  impact, and narrowed F14 (whitespace `shell` stays Invalid). Implementer: claude-sonnet-5-5 (high).
+  Cross-review: Codex gpt-6.1-sol.
+- Verified clean: no legacy `WorkflowIR`/`WorkflowProvider` use outside `wsr-types/src/lib.rs`; D-033 label
+  applied; no IO in `wsr-gha`/`wsr-types`; `anyhow` removed from `wsr-gha`; exit codes 0/1/2 and empty stdout
+  on failure; deterministic ordering; stdout escaping of all new fields; no grant/binding/execution claims;
+  dogfood golden test byte-exact with PATH/sentinel/no-mutation checks.
+
+| ID | Finding | Class | Disposition |
+| --- | --- | --- | --- |
+| F13 | `${{` in fields with no schema expression context classified Unsupported instead of Invalid; diagnostics.rs asserted the wrong category | (a) | Fixed in this PR (B-8) |
+| F14 | Subset rules report schema-valid `timeout-minutes: 0`, empty `working-directory`/`run` as Invalid | (a) | Fixed in this PR (B-8); whitespace `shell` stays Invalid (runner rejects it) |
+| F15 | stderr escapes control characters only; bidi/format characters (U+202E) reach stderr raw | (a) | Backlog B-9 |
+| F16 | Job body decoded before job-ID validation lets a job ID forge a route (`jobs.a.steps[9]`) | (a) | Fixed in this PR (B-8) |
+| F17 | Numbers re-rendered (`1e3` → `1000.0`), not source spelling | (c) | Nothing bound; dogfood unaffected |
+| F18 | Stale status/CLI claims (dogfood pending; size decision open) | (a) | Size lines fixed by #37; remainder fixed in this PR |
+| F19 | B-7 reads 500 KB as 512,000 bytes; 500,001–512,000 gets no warning if GitHub means 500,000 | (c) | Interpretation documented in CLI contract; revisit if GitHub states the unit |
+| F20 | Dogfood test hard-codes two file names; a new `example-*.yml` gets no golden coverage | (a) | Backlog B-10 |
+| F12 | carried: placeholder `wsr-expr` dependency, deprecated serde_yaml | (c) | Revisit before Component packaging |
+
+- No decision requests filed. Gate 1a is claimed met by #37; with F13/F14 corrected its "explicit
+  unsupported/dynamic classification" deliverable now matches the pinned schema.
+- PR: this PR (`arch/review-2026-11-13-run2`). Ready backlog depth after this PR: 4 (B-9..B-12).
+- Next focus: B-11/B-12 new-field slices follow the B-8 category rule (schema expression context decides
+  Invalid vs Unsupported); Gate 1b remains blocked on pin schema, canonical-IR boundary and Component host contract.

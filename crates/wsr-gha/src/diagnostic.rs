@@ -9,9 +9,9 @@ use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, Visitor};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Category {
-    /// Invalid for the pinned GHA schema or this inspection subset's stated rules.
+    /// Invalid per the pinned GHA schema or semantically rejected by GitHub.
     Invalid,
-    /// Valid GitHub Actions source that WSR does not inspect yet.
+    /// Valid GitHub Actions outside WSR's inspection subset.
     Unsupported,
 }
 
@@ -83,6 +83,8 @@ struct Detected {
     // `None` when serde_yaml or the YAML parser raised the error itself. Its message, path and
     // location are then kept verbatim and no route is attached.
     detail: Option<String>,
+    // Whether the parser location is appended to the detail.
+    located: bool,
 }
 
 // serde errors cannot carry a typed payload, so a failure detected inside a deserializer records
@@ -91,12 +93,13 @@ thread_local! {
     static DETECTED: RefCell<Option<Detected>> = const { RefCell::new(None) };
 }
 
-fn detect(route: Option<String>, detail: Option<String>) {
+fn detect(category: Category, route: Option<String>, detail: Option<String>) {
     DETECTED.set(Some(Detected {
-        category: Category::Invalid,
+        category,
         label: route.clone(),
         route,
         detail,
+        located: true,
     }));
 }
 
@@ -107,25 +110,40 @@ fn detected() -> bool {
 /// Mark an error raised by serde_yaml or the parser, so enclosing levels leave it unrouted.
 fn opaque() {
     if !detected() {
-        detect(None, None);
+        detect(Category::Invalid, None, None);
     }
 }
 
 /// Record a typed failure detected during decoding and return its serde counterpart.
 pub(crate) fn raise<E: de::Error>(error: Error) -> E {
+    raise_with(error, true)
+}
+
+/// Like [`raise`], but the diagnostic keeps its text without the parser location.
+pub(crate) fn raise_unlocated<E: de::Error>(error: Error) -> E {
+    raise_with(error, false)
+}
+
+fn raise_with<E: de::Error>(error: Error, located: bool) -> E {
     let message = error.to_string();
     DETECTED.set(Some(Detected {
         category: error.category,
         route: error.route,
         label: error.label,
         detail: Some(error.detail),
+        located,
     }));
     E::custom(message)
 }
 
 /// Record an invalid value whose field route the enclosing mapping level supplies.
 pub(crate) fn raise_unrouted<E: de::Error>(detail: &str) -> E {
-    detect(None, Some(detail.to_owned()));
+    raise_unrouted_as(Category::Invalid, detail)
+}
+
+/// Like [`raise_unrouted`], for a value that is valid GHA outside the inspected subset.
+pub(crate) fn raise_unrouted_as<E: de::Error>(category: Category, detail: &str) -> E {
+    detect(category, None, Some(detail.to_owned()));
     E::custom(detail)
 }
 
@@ -156,12 +174,13 @@ pub(crate) fn decode<T: de::DeserializeOwned>(raw: &[u8]) -> Result<T, Error> {
             route,
             label,
             detail: Some(detail),
+            located,
         }) => Error {
             category,
             route,
             label,
             detail: match error.location() {
-                Some(at) if at.line() != 1 || at.column() != 1 => {
+                Some(at) if located && (at.line() != 1 || at.column() != 1) => {
                     format!("{detail} at line {} column {}", at.line(), at.column())
                 }
                 _ => detail,
@@ -206,7 +225,7 @@ impl<'de, T: Level> de::Deserialize<'de> for Fields<T> {
                     // Field and key failures are recorded below, so this is the derived struct's
                     // own unmarked error, such as a missing field.
                     if !detected() {
-                        detect(None, Some(error.to_string()));
+                        detect(Category::Invalid, None, Some(error.to_string()));
                     }
                 })
             }
@@ -304,6 +323,7 @@ impl<V, T: Level> KeyVisitor<'_, V, T> {
                 route: Some(key.to_owned()),
                 label: None,
                 detail: Some(error.to_string()),
+                located: true,
             }));
         }
         result

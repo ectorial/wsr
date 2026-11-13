@@ -57,7 +57,7 @@ pub(super) fn deserialize<'de, D: serde::Deserializer<'de>>(
 
 fn parse(value: &Value) -> Result<ManualTrigger, Error> {
     if let Value::String(event) = value {
-        super::check_literal(Some(event), "on")?;
+        super::check_literal(Some(event), "on", Category::Invalid)?;
         if event != "workflow_dispatch" {
             let detail = "unsupported trigger; only workflow_dispatch is inspected yet";
             return Err(if EVENTS.contains(&event.as_str()) {
@@ -95,7 +95,7 @@ fn parse(value: &Value) -> Result<ManualTrigger, Error> {
             for (id, value) in inputs {
                 let id = text(id, "on.workflow_dispatch.inputs")?;
                 let route = format!("on.workflow_dispatch.inputs.{id}");
-                super::check_required(&id, &route)?;
+                super::check_required(&id, &route, Category::Invalid)?;
                 if !(id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
                     && id
                         .chars()
@@ -147,7 +147,7 @@ fn input(id: String, value: &Mapping, route: &str) -> Result<DispatchInput, Erro
         .get("required")
         .map(|v| {
             if let Value::String(text) = v {
-                super::check_literal(Some(text), &format!("{route}.required"))?;
+                super::check_literal(Some(text), &format!("{route}.required"), Category::Invalid)?;
             }
             match v {
                 Value::Bool(flag) => Ok(*flag),
@@ -237,7 +237,7 @@ fn text(value: &Value, route: &str) -> Result<String, Error> {
     let Value::String(value) = value else {
         return Err(Error::invalid(route, "expected a string"));
     };
-    super::check_literal(Some(value), route)?;
+    super::check_literal(Some(value), route, Category::Invalid)?;
     Ok(value.clone())
 }
 
