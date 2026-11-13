@@ -184,7 +184,7 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
         if let Some(condition) = job.condition {
             writeln!(
                 out,
-                "  Condition: {} (not evaluated)",
+                "  Condition: {} (not evaluated; expression syntax not validated)",
                 condition.escape_debug()
             )?;
         }
@@ -227,7 +227,7 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
             if let Some(condition) = step.condition {
                 writeln!(
                     out,
-                    "    Condition: {} (not evaluated)",
+                    "    Condition: {} (not evaluated; expression syntax not validated)",
                     condition.escape_debug()
                 )?;
             }

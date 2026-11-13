@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 
 use wsr_types::inspection::{SourceText, StepValue};
 
+use crate::NON_STRING;
 use crate::diagnostic::Error;
 
 const EXPRESSION: &str = "expression is unevaluated; dynamic inspection is not supported yet";
@@ -56,6 +57,8 @@ pub(crate) fn decode(
             serde_yaml::Value::String(text) => StepValue::Text(SourceText::Literal(text)),
             serde_yaml::Value::Bool(value) => StepValue::Boolean(value),
             serde_yaml::Value::Number(value) => StepValue::Number(value.to_string()),
+            // The pinned reader converts a null value to an empty string.
+            serde_yaml::Value::Null => return Err(Error::unsupported(field, NON_STRING)),
             _ => {
                 return Err(Error::invalid(
                     field,

@@ -60,7 +60,7 @@ fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
     for (source, diagnostic) in [
         (
             "jobs:\n  test:\n    runs-on: linux\n    steps:\n      - run: null\n        uses: ./action",
-            "expected a string",
+            "non-string value is not inspected yet",
         ),
         ("jobs: {}", "jobs: expected at least one job"),
         (
@@ -69,7 +69,7 @@ fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
         ),
         (
             "jobs:\n  test:\n    runs-on: 42\n    steps:\n      - run: echo hello",
-            "expected a string",
+            "non-string value is not inspected yet",
         ),
         (
             "jobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello\n        uses: ./action",
@@ -429,7 +429,7 @@ fn inspect_rejects_invalid_step_identities_before_rendering() {
         ("'${{ inputs.id }}'".to_owned(), "expression is unevaluated"),
         ("null".to_owned(), "expected a string"),
         ("42".to_owned(), "expected a string"),
-        ("true".to_owned(), "expected a string"),
+        ("true".to_owned(), "non-string value is not inspected yet"),
         ("[]".to_owned(), "expected a string"),
         ("{}".to_owned(), "expected a string"),
     ] {
@@ -531,10 +531,16 @@ fn inspect_runner_labels_reject_empty_invalid_and_dynamic_values() {
         ),
         ("'${{ matrix.os }}'", "runs-on: expression is unevaluated"),
         ("null", "runs-on: expected a string or list of strings"),
-        ("42", "runs-on: expected a string or list of strings"),
-        ("true", "runs-on: expected a string or list of strings"),
-        ("[linux, 42]", "runs-on[2]: expected a string label"),
-        ("[linux, true]", "runs-on[2]: expected a string label"),
+        ("42", "runs-on: non-string value is not inspected yet"),
+        ("true", "runs-on: non-string value is not inspected yet"),
+        (
+            "[linux, 42]",
+            "runs-on[2]: non-string value is not inspected yet",
+        ),
+        (
+            "[linux, true]",
+            "runs-on[2]: non-string value is not inspected yet",
+        ),
         ("[linux, null]", "runs-on[2]: expected a string label"),
         ("[linux, [x64]]", "runs-on[2]: expected a string label"),
         ("[linux, {}]", "runs-on[2]: expected a string label"),
@@ -659,10 +665,13 @@ fn inspect_dispatch_enforces_choice_options_and_default_types() {
 fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
     let directory = tempfile::tempdir().unwrap();
     for (fields, diagnostic) in [
-        ("        description: 42", ".description: expected a string"),
+        (
+            "        description: 42",
+            ".description: non-string value is not inspected yet",
+        ),
         (
             "        description: null",
-            ".description: expected a string",
+            ".description: non-string value is not inspected yet",
         ),
         ("        required: 'true'", ".required: expected a boolean"),
         ("        required: null", ".required: expected a boolean"),
@@ -670,6 +679,10 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
         ("        type: []", ".type: expected a string"),
         (
             "        default: null",
+            ".default: non-string value is not inspected yet",
+        ),
+        (
+            "        type: boolean\n        default: null",
             ".default: expected a string, boolean or number",
         ),
         (
@@ -686,11 +699,11 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
         ),
         (
             "        type: choice\n        options: [a, false]",
-            ".options[2]: expected a string",
+            ".options[2]: non-string value is not inspected yet",
         ),
         (
             "        type: choice\n        options: [a, null]",
-            ".options[2]: expected a string",
+            ".options[2]: non-string value is not inspected yet",
         ),
         (
             "        description: '${{ inputs.mode }}'",
@@ -952,10 +965,10 @@ fn inspect_run_name_literal_omitted_and_unvalidated_fences() {
 fn inspect_run_name_rejects_wrong_shapes_and_blank_text_before_rendering() {
     let directory = tempfile::tempdir().unwrap();
     for (declaration, diagnostic) in [
-        ("run-name: null\n", "expected a string"),
-        ("run-name: ~\n", "expected a string"),
-        ("run-name: true\n", "expected a string"),
-        ("run-name: 42\n", "expected a string"),
+        ("run-name: null\n", "non-string value is not inspected yet"),
+        ("run-name: ~\n", "non-string value is not inspected yet"),
+        ("run-name: true\n", "non-string value is not inspected yet"),
+        ("run-name: 42\n", "non-string value is not inspected yet"),
         ("run-name: [a]\n", "expected a string"),
         ("run-name: {a: b}\n", "expected a string"),
         ("run-name: ''\n", "run-name: expected a nonempty string"),
@@ -995,10 +1008,10 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n      - run: echo\n        name: 5\n"
                 .to_owned(),
-            "jobs.b.steps[2].name: expected a string at line 6 column 9",
+            "jobs.b.steps[2].name: non-string value is not inspected yet at line 6 column 9",
         ),
         (
-            "jobs:\n  b:\n    runs-on: [linux, 42]\n    steps:\n      - run: echo\n".to_owned(),
+            "jobs:\n  b:\n    runs-on: [linux, ~]\n    steps:\n      - run: echo\n".to_owned(),
             "jobs.b.runs-on[2]: expected a string label at line 3 column 5",
         ),
         (
@@ -1571,6 +1584,11 @@ fn inspect_rejects_invalid_workflow_and_job_env_and_run_defaults() {
             "defaults.run.shell: expected a nonempty string".to_owned(),
         ),
         (
+            // B-13: the runner rejects a converted `3` shell, unlike a converted directory.
+            format!("defaults: {{run: {{shell: 3}}}}\n{job}"),
+            "defaults.run.shell: expected a string".to_owned(),
+        ),
+        (
             format!("defaults: {{run: {{working-directory: 3}}}}\n{job}"),
             "defaults.run.working-directory: non-string value is not inspected yet".to_owned(),
         ),
@@ -1625,14 +1643,14 @@ fn inspect_reports_job_and_step_conditions_without_evaluating_them() {
 Inspection only; execution compatibility is not assessed.
 Job: b
   Runner: linux
-  Condition: github.event_name == \'push\' (not evaluated)
+  Condition: github.event_name == \'push\' (not evaluated; expression syntax not validated)
   Step 1: run
-    Condition: ${{ failure() }} (not evaluated)
+    Condition: ${{ failure() }} (not evaluated; expression syntax not validated)
   Step 2: uses ./action
-    Condition: $(touch executed)\u{1b}[31m\u{202e} (not evaluated)
+    Condition: $(touch executed)\u{1b}[31m\u{202e} (not evaluated; expression syntax not validated)
 Job: c
   Runner: linux
-  Condition: ${{ inputs.mode == \'fail\' }} && always() (not evaluated)
+  Condition: ${{ inputs.mode == \'fail\' }} && always() (not evaluated; expression syntax not validated)
   Step 1: run
 "#;
     fs::write(directory.path().join("ci.yml"), source).unwrap();
@@ -1716,7 +1734,11 @@ fn inspect_rejects_invalid_step_inputs() {
         ),
         (
             run("env: {A: ~}"),
-            "jobs.b.steps[1].env.A: expected a string, number or boolean".to_owned(),
+            "jobs.b.steps[1].env.A: non-string value is not inspected yet".to_owned(),
+        ),
+        (
+            uses("with: {a: ~}"),
+            "jobs.b.steps[1].with.a: non-string value is not inspected yet".to_owned(),
         ),
         (
             run("env: {A: [1]}"),
@@ -1774,7 +1796,7 @@ fn inspect_rejects_invalid_step_inputs() {
         ),
         (
             run("working-directory: 5"),
-            "jobs.b.steps[1].working-directory: expected a string at line 5 column 9".to_owned(),
+            "jobs.b.steps[1].working-directory: non-string value is not inspected yet at line 5 column 9".to_owned(),
         ),
         (
             run("working-directory: ' '"),

@@ -25,7 +25,7 @@ use needs::Needs;
 struct Workflow {
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
-    #[serde(rename = "run-name", default, deserialize_with = "present_string")]
+    #[serde(rename = "run-name", default, deserialize_with = "converted_string")]
     run_name: Option<String>,
     #[serde(rename = "on", default, deserialize_with = "dispatch::deserialize")]
     trigger: Option<wsr_types::inspection::ManualTrigger>,
@@ -93,20 +93,20 @@ impl diagnostic::Level for Job {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Step {
-    #[serde(default, deserialize_with = "present_string")]
+    #[serde(default, deserialize_with = "step_id")]
     id: Option<String>,
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
     #[serde(rename = "if", default, deserialize_with = "condition")]
     condition: Option<String>,
-    #[serde(default, deserialize_with = "present_string")]
+    #[serde(default, deserialize_with = "converted_string")]
     run: Option<String>,
     #[serde(default, deserialize_with = "present_string")]
     shell: Option<String>,
     #[serde(
         rename = "working-directory",
         default,
-        deserialize_with = "present_string"
+        deserialize_with = "converted_string"
     )]
     working_directory: Option<String>,
     // Interpreted after the step-kind checks, so a misplaced field reports its placement first.
@@ -464,12 +464,47 @@ fn string<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<String, D
     }
 }
 
+/// The pinned reader converts an unmatched null, boolean or number to a string (a null to "") and
+/// validates that string. A conversion the schema accepts is valid GHA that WSR does not inspect.
+pub(crate) const NON_STRING: &str = "non-string value is not inspected yet";
+
+/// A string field whose null, boolean and number literals the pinned reader converts to strings
+/// that the schema accepts. The converted text is never rendered.
+fn converted_string<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    match serde_yaml::Value::deserialize(deserializer)? {
+        serde_yaml::Value::String(value) => Ok(Some(value)),
+        serde_yaml::Value::Null | serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => Err(
+            diagnostic::raise_unrouted_as(Category::Unsupported, NON_STRING),
+        ),
+        _ => Err(diagnostic::raise_unrouted("expected a string")),
+    }
+}
+
+/// Like [`converted_string`], except that a null is an absent value.
 fn optional_string<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error> {
     match Option::<serde_yaml::Value>::deserialize(deserializer)? {
         Some(serde_yaml::Value::String(value)) => Ok(Some(value)),
         None => Ok(None),
+        Some(serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_)) => Err(
+            diagnostic::raise_unrouted_as(Category::Unsupported, NON_STRING),
+        ),
+        _ => Err(diagnostic::raise_unrouted("expected a string")),
+    }
+}
+
+/// A step ID. Only a boolean converts to a valid identifier (`true`, `false`); a number does not
+/// start with a letter and a null is empty.
+fn step_id<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<String>, D::Error> {
+    match serde_yaml::Value::deserialize(deserializer)? {
+        serde_yaml::Value::String(value) => Ok(Some(value)),
+        serde_yaml::Value::Bool(_) => Err(diagnostic::raise_unrouted_as(
+            Category::Unsupported,
+            NON_STRING,
+        )),
         _ => Err(diagnostic::raise_unrouted("expected a string")),
     }
 }
@@ -545,6 +580,12 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
             .enumerate()
             .map(|(index, value)| match value {
                 serde_yaml::Value::String(label) => Ok(label),
+                serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
+                    Err(diagnostic::raise(Error::unsupported(
+                        format!("runs-on[{}]", index + 1),
+                        NON_STRING,
+                    )))
+                }
                 _ => Err(diagnostic::raise(Error::invalid(
                     format!("runs-on[{}]", index + 1),
                     "expected a string label",
@@ -552,16 +593,20 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
             })
             .collect::<Result<Vec<_>, _>>()
             .map(RunnerRequirement::Labels),
-        // The pinned schema's selector accepts a `group` string and a `labels` string or list.
+        serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
+            Err(diagnostic::raise(Error::unsupported("runs-on", NON_STRING)))
+        }
+        // The pinned schema's selector accepts a `group` string and a `labels` string or list;
+        // the reader converts a number or boolean in either to a string.
         serde_yaml::Value::Mapping(selector) => Err(diagnostic::raise(Error::new(
             if !selector.is_empty()
                 && selector.iter().all(|(key, value)| match key.as_str() {
-                    Some("group") => value.is_string(),
+                    Some("group") => is_label(value),
                     Some("labels") => {
-                        value.is_string()
-                            || value.as_sequence().is_some_and(|labels| {
-                                labels.iter().all(serde_yaml::Value::is_string)
-                            })
+                        is_label(value)
+                            || value
+                                .as_sequence()
+                                .is_some_and(|labels| labels.iter().all(is_label))
                     }
                     _ => false,
                 })
@@ -578,4 +623,11 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
             "expected a string or list of strings",
         ))),
     }
+}
+
+fn is_label(value: &serde_yaml::Value) -> bool {
+    matches!(
+        value,
+        serde_yaml::Value::String(_) | serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_)
+    )
 }

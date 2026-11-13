@@ -2,6 +2,7 @@
 
 use wsr_types::inspection::{RunDefaults, SourceText};
 
+use crate::NON_STRING;
 use crate::diagnostic::{Category, Error};
 
 const EXPRESSION: &str = "expression is unevaluated; dynamic inspection is not supported yet";
@@ -40,12 +41,15 @@ pub(crate) fn decode(
             let field = format!("{route}.{key}");
             let text = match value {
                 serde_yaml::Value::String(text) => text,
-                // The pinned reader converts number and boolean literals to strings.
+                // The pinned reader converts number and boolean literals to strings. A converted
+                // directory is valid GHA that is not inspected; a converted shell is not a
+                // built-in shell and has no `{0}`, which the runner rejects.
                 serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
-                    return Err(Error::unsupported(
-                        field,
-                        "non-string value is not inspected yet",
-                    ));
+                    return Err(if key == "shell" {
+                        Error::invalid(field, "expected a string")
+                    } else {
+                        Error::unsupported(field, NON_STRING)
+                    });
                 }
                 _ => return Err(Error::invalid(field, "expected a string")),
             };

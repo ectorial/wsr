@@ -52,8 +52,9 @@ fn step_input_failures_have_category_and_route() {
             (Category::Unsupported, "jobs.b.steps[1].env"),
         ),
         (
+            // B-13: the pinned reader converts a null value to an empty string.
             step("env: {A: ~}"),
-            (Category::Invalid, "jobs.b.steps[1].env.A"),
+            (Category::Unsupported, "jobs.b.steps[1].env.A"),
         ),
         (
             step("env: {1: x}"),

@@ -63,7 +63,7 @@ fn env_and_run_default_failures_have_category_and_route() {
         ),
         (
             format!("env: {{A: ~}}\n{job}"),
-            (Category::Invalid, "env.A"),
+            (Category::Unsupported, "env.A"),
         ),
         (
             in_job("env: '${{ x }}'"),
@@ -106,8 +106,9 @@ fn env_and_run_default_failures_have_category_and_route() {
             (Category::Unsupported, "jobs.b.defaults.run.${{ x }}"),
         ),
         (
+            // B-13: the runner rejects a bare `true` shell, so it is not merely unsupported.
             format!("defaults: {{run: {{shell: true}}}}\n{job}"),
-            (Category::Unsupported, "defaults.run.shell"),
+            (Category::Invalid, "defaults.run.shell"),
         ),
         (
             format!("defaults: {{run: {{shell: ~}}}}\n{job}"),
