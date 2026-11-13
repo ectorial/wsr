@@ -1,6 +1,26 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-17 continue-on-error and step timeouts implemented; PR pending checks
+## Current checkpoint — B-18 job outputs implemented; PR pending checks
+
+Same Schedule A run, after the PR #47 wake (lock retaken 2026-11-13). PR #47 squash-merged as
+`5ec43bf` after all four required checks passed on `e4a96c2` with no reviews or comments; `wsr` and
+`wsr-gha` tests (121) verified on synced main. B-18 on `feat/b18-job-outputs` from `5ec43bf`; slice
+record [inspection-job-outputs.md](inspection-job-outputs.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode; `wsr-types` field under D-033); cross-reviewed by Codex
+gpt-6.1-sol (high): no blockers; one P2 fixed (boolean/number keys Invalid: the pinned YAML adapter
+keeps them raw and the reader rejects them), one P3 fixed (null keys documented). Follow-up for
+Schedule B: `step_inputs.rs` (step/workflow/job `env`, step `with`) still classifies boolean and number
+keys as `Unsupported` under the same reader path.
+
+- Red (observed): `outputs.rs` failed with ``jobs.b: unknown field `outputs` `` (Unsupported).
+- Contract change: the job "expected one of" list in `diagnostics.rs` names `outputs`.
+- Green: 3 `wsr-gha` tests, 2 CLI tests (written after the `wsr-gha` green; acceptance); full suites
+  (126); `cargo xtask ci`.
+
+B-18 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-19 (job `environment`).
+
+## Previous checkpoint — B-17 continue-on-error and step timeouts delivered (PR #47, `5ec43bf`)
 
 Same Schedule A run, after the PR #46 wake (lock retaken 2026-11-13). PR #46 squash-merged as
 `472887c` after all four required checks passed on `e766d96` with no reviews or comments; `wsr` and

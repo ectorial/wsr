@@ -2117,3 +2117,54 @@ fn inspect_rejects_non_boolean_continue_on_error_and_non_number_step_timeouts() 
         );
     }
 }
+
+// Backlog B-18: job `outputs` are reported by name as source text, never resolved.
+#[test]
+fn inspect_reports_job_outputs_without_resolving_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = "jobs:\n  b:\n    runs-on: linux\n    outputs:\n      result: ${{ steps.s.outputs.r }}\n      \"n\\u202E\": \"$(touch executed)\\e[31m\"\n    steps:\n      - id: s\n        run: touch executed\n  c:\n    runs-on: linux\n    outputs: {}\n    steps:\n      - run: echo\n";
+    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Outputs (not resolved):\n    n\\u{202e}: \"$(touch executed)\\u{1b}[31m\"\n    result: \"${{ steps.s.outputs.r }}\" (unevaluated)\n  Step 1 [s]: run\nJob: c\n  Runner: linux\n  Outputs (not resolved): {}\n  Step 1: run\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn inspect_rejects_job_outputs_outside_the_inspected_subset() {
+    let directory = tempfile::tempdir().unwrap();
+    for (outputs, diagnostic) in [
+        (
+            "'${{ fromJSON(x) }}'",
+            "jobs.b.outputs: expression is unevaluated and not allowed in job outputs",
+        ),
+        (
+            "{a: x, A: y}",
+            "jobs.b.outputs.A: duplicate key 'A'; already defined as 'a'",
+        ),
+        ("{a: [x]}", "jobs.b.outputs.a: expected a string"),
+        (
+            "{a: 5}",
+            "jobs.b.outputs.a: non-string value is not inspected yet",
+        ),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            format!("jobs:\n  b:\n    runs-on: linux\n    outputs: {outputs}\n    steps:\n      - run: echo\n"),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{outputs}: {output:?}");
+        assert!(output.stdout.is_empty(), "{outputs}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{outputs}"
+        );
+    }
+}

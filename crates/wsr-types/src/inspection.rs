@@ -58,6 +58,8 @@ pub struct JobSummary {
     pub defaults: Option<RunDefaults>,
     /// Optional job-level `concurrency`, not merged with the workflow's; never applied.
     pub concurrency: Option<Concurrency>,
+    /// Optional `outputs` text by name (D-033), never resolved or exposed to other jobs.
+    pub outputs: Option<BTreeMap<String, SourceText>>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }

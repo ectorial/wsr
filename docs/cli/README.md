@@ -294,6 +294,20 @@ group, and blank text, are unsupported. Unknown keys, a missing `group`, a non-b
 `cancel-in-progress` (including the string `'true'`), another `queue` value and other shapes are
 invalid. No group is formed and nothing is queued or cancelled.
 
+### Job outputs
+
+Job `outputs` print by name in sorted order after the job's concurrency, as `Outputs (not resolved):`
+lines in the step-input value format (`result: "${{ steps.s.outputs.r }}" (unevaluated)`), or
+`Outputs (not resolved): {}`. Values are `string-runner-context` text with an expression context, so
+`${{` text is unevaluated; the
+[pinned](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
+`job-outputs` mapping itself has none, so an expression replacing it or used as a key is invalid
+(`jobs.b.outputs: expression is unevaluated and not allowed in job outputs`). Empty, null, number and
+boolean keys (the pinned reader rejects raw scalar keys), keys repeated ignoring case, non-mappings
+and nested values are invalid; number, boolean and null values, which the pinned reader converts to
+strings, are unsupported. No output is
+resolved or exposed to `needs`.
+
 ### Unevaluated job and step conditions
 
 A job or step `if` string is reported as written, bare or `${{ }}`-fenced, after the job's runner
