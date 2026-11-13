@@ -3,7 +3,8 @@ use std::io::{ErrorKind, Read as _, Write as _};
 use std::path::Path;
 
 use wsr_types::inspection::{
-    DispatchInputType, InputDefault, ManualTrigger, RunnerRequirement, SourceText, StepSummaryKind,
+    DispatchInputType, InputDefault, ManualTrigger, PermissionLevel, Permissions,
+    RunnerRequirement, SourceText, StepSummaryKind,
 };
 
 pub fn run(file: &Path) -> anyhow::Result<()> {
@@ -127,6 +128,9 @@ fn render(file: &Path) -> anyhow::Result<String> {
             }
         }
     }
+    if let Some(permissions) = summary.permissions {
+        render_permissions(&mut out, "", permissions)?;
+    }
     for job in summary.jobs {
         write!(out, "Job: {}", job.id.escape_debug())?;
         if let Some(name) = job.name {
@@ -157,6 +161,9 @@ fn render(file: &Path) -> anyhow::Result<String> {
                     .join(", ")
             )?;
         }
+        if let Some(permissions) = job.permissions {
+            render_permissions(&mut out, "  ", permissions)?;
+        }
         for (index, step) in job.steps.into_iter().enumerate() {
             write!(out, "  Step {}", index + 1)?;
             if let Some(id) = step.id {
@@ -176,4 +183,38 @@ fn render(file: &Path) -> anyhow::Result<String> {
         }
     }
     Ok(out)
+}
+
+fn render_permissions(
+    out: &mut String,
+    indent: &str,
+    permissions: Permissions,
+) -> std::fmt::Result {
+    match permissions {
+        Permissions::ReadAll => writeln!(
+            out,
+            "{indent}Permissions: read-all (requested; not granted)"
+        ),
+        Permissions::WriteAll => {
+            writeln!(
+                out,
+                "{indent}Permissions: write-all (requested; not granted)"
+            )
+        }
+        Permissions::Scopes(scopes) if scopes.is_empty() => {
+            writeln!(out, "{indent}Permissions: {{}} (requested; not granted)")
+        }
+        Permissions::Scopes(scopes) => {
+            writeln!(out, "{indent}Permissions (requested; not granted):")?;
+            for (scope, level) in scopes {
+                let level = match level {
+                    PermissionLevel::Read => "read",
+                    PermissionLevel::Write => "write",
+                    PermissionLevel::None => "none",
+                };
+                writeln!(out, "{indent}  {scope}: {level}")?;
+            }
+            Ok(())
+        }
+    }
 }
