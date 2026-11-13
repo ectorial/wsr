@@ -68,7 +68,7 @@ Every character `char::escape_debug` escapes is escaped, including combining mar
 backslashes stay as written. If stdout is closed early (for example
 `wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
 
-Other trigger forms, runner-group objects, matrices, conditions, environment,
+Other trigger forms, runner-group objects, matrices, environment,
 services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection remains pending.
@@ -222,6 +222,26 @@ workflow defaults`). Unknown keys (``defaults.run: unknown field `bogus`, expect
 `working-directory` ``, routed to the key), non-mappings, null or nested values and empty strings
 are invalid. Number and boolean values, which the pinned reader converts to strings, are unsupported.
 A blank shell is invalid and a blank directory unsupported, as for steps.
+
+### Unevaluated job and step conditions
+
+A job or step `if` string is reported as written, bare or `${{ }}`-fenced, after the job's runner
+and needs or the step's header line, with `escape_debug` escaping:
+
+```text
+Job: b
+  Runner: linux
+  Condition: github.event_name == \'push\' (not evaluated)
+  Step 1: run
+    Condition: ${{ failure() }} (not evaluated)
+```
+
+The pinned schema's `job-if` and `step-if` are strings that GitHub evaluates as expressions with or
+without the fence. Inspection does not parse, validate or evaluate the text, and a condition does not
+change which jobs or steps are reported. A number or boolean (which the pinned reader converts to a
+string) and a null, empty or blank condition (which GitHub treats as `success()`) are unsupported
+(`jobs.b.if: non-string condition is not inspected yet at line 3 column 5`); sequences and mappings
+are invalid.
 
 ### Literal runner labels
 

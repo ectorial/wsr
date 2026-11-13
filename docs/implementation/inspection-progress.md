@@ -1,6 +1,25 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-11 workflow/job env and run defaults implemented; PR pending checks
+## Current checkpoint — B-12 job and step conditions implemented; PR pending checks
+
+Same Schedule A run, after the PR #41 wake (lock retaken 2026-11-13). PR #41 squash-merged as
+`b686358` after all four required checks passed on `b22ae10` with no reviews or comments; `wsr` and
+`wsr-gha` tests (84) verified on synced main. B-12 on `feat/b12-if-conditions` from `b686358`; slice
+record [inspection-conditions.md](inspection-conditions.md). Implemented by Claude (claude-opus-5-5,
+orchestrator, burn mode; interface-touching: `condition` fields in `wsr-types`, D-033);
+cross-reviewed by Codex gpt-6.1-sol (high): no blockers; one P2 fixed (null `if` is Unsupported).
+
+- Red (observed): both new CLI tests failed on ``jobs.b: unknown field `if` `` (Unsupported) / exit 1.
+- Contract change (cited by the backlog): B-0's job-`if` Unsupported example in
+  `wsr-gha/tests/diagnostics.rs` now uses `continue-on-error` (still Unsupported) and the location
+  test's expected-fields list names `if`; CLI unknown-step-key messages name `if` too.
+- Green: 2 CLI tests, 2 `wsr-gha` tests; full `wsr`/`wsr-gha` suites; `cargo xtask ci`.
+
+B-12 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings. After that no ready slice remains (B-0..B-12 delivered); report and exit until Schedule B
+or the owner adds one.
+
+## Previous checkpoint — B-11 workflow/job env and run defaults delivered (PR #41, `b686358`)
 
 Same Schedule A run, after the PR #40 wake (lock retaken 2026-11-13). PR #40 squash-merged as
 `5c6e284` after all four required checks passed on `334b19e` with no reviews or comments; `wsr` and

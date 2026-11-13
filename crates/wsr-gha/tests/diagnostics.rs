@@ -10,10 +10,11 @@ fn diagnose(source: &str) -> (Category, Option<String>) {
 #[test]
 fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() {
     for (source, route) in [
+        // Job `if` was this example until B-12 made conditions inspected; see conditions.rs.
         (
-            "jobs:\n  b:\n    if: true\n    runs-on: linux\n    steps:\n      - run: echo\n"
+            "jobs:\n  b:\n    continue-on-error: true\n    runs-on: linux\n    steps:\n      - run: echo\n"
                 .to_owned(),
-            "jobs.b.if",
+            "jobs.b.continue-on-error",
         ),
         (format!("on: {{push: null}}\n{JOB}"), "on.push"),
         (format!("on: [push]\n{JOB}"), "on"),
@@ -205,12 +206,12 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
 #[test]
 fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
     let error = wsr_gha::inspect(
-        b"jobs:\n  b:\n    runs-on: linux\n    if: true\n    steps:\n      - run: echo\n",
+        b"jobs:\n  b:\n    runs-on: linux\n    continue-on-error: true\n    steps:\n      - run: echo\n",
     )
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "jobs.b: unknown field `if`, expected one of `name`, `runs-on`, `needs`, `permissions`, `timeout-minutes`, `env`, `defaults`, `steps` at line 4 column 5"
+        "jobs.b: unknown field `continue-on-error`, expected one of `name`, `runs-on`, `needs`, `if`, `permissions`, `timeout-minutes`, `env`, `defaults`, `steps` at line 4 column 5"
     );
     let duplicate = wsr_gha::inspect(
         format!("on: {{workflow_dispatch: null, workflow_dispatch: {{}}}}\n{JOB}").as_bytes(),

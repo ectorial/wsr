@@ -40,6 +40,8 @@ pub struct JobSummary {
     pub runner: RunnerRequirement,
     /// Static source dependency identifiers, retaining declared order and repetitions.
     pub needs: Vec<String>,
+    /// Optional `if` text as written, bare or fenced; never parsed or evaluated.
+    pub condition: Option<String>,
     /// Optional job-level token permissions request, not merged with the workflow's.
     pub permissions: Option<Permissions>,
     /// Optional source timeout: a literal positive YAML number rendered as text, or unevaluated
@@ -60,6 +62,8 @@ pub struct StepSummary {
     pub id: Option<String>,
     /// Optional display name.
     pub name: Option<String>,
+    /// Optional `if` text as written, bare or fenced; never parsed or evaluated.
+    pub condition: Option<String>,
     /// Optional literal shell of a run step, never selected or invoked.
     pub shell: Option<String>,
     /// Optional working directory of a run step, never resolved.

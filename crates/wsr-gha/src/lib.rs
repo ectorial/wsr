@@ -53,6 +53,8 @@ struct Job {
     runner: RunnerRequirement,
     #[serde(default)]
     needs: Needs,
+    #[serde(rename = "if", default, deserialize_with = "condition")]
+    condition: Option<String>,
     #[serde(default, deserialize_with = "permissions::deserialize")]
     permissions: Option<wsr_types::inspection::Permissions>,
     #[serde(
@@ -78,7 +80,6 @@ impl diagnostic::Level for Job {
         "container",
         "continue-on-error",
         "environment",
-        "if",
         "outputs",
         "secrets",
         "services",
@@ -96,6 +97,8 @@ struct Step {
     id: Option<String>,
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
+    #[serde(rename = "if", default, deserialize_with = "condition")]
+    condition: Option<String>,
     #[serde(default, deserialize_with = "present_string")]
     run: Option<String>,
     #[serde(default, deserialize_with = "present_string")]
@@ -122,7 +125,6 @@ impl diagnostic::Level for Step {
         "background",
         "cancel",
         "continue-on-error",
-        "if",
         "parallel",
         "timeout-minutes",
         "wait",
@@ -311,6 +313,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             steps.push(StepSummary {
                 id: step.id,
                 name: step.name,
+                condition: step.condition,
                 shell: step.shell,
                 working_directory,
                 env,
@@ -323,6 +326,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             name: job.name,
             runner: job.runner,
             needs: job.needs.into_values(),
+            condition: job.condition,
             permissions: job.permissions,
             timeout_minutes: job.timeout_minutes,
             env,
@@ -480,6 +484,32 @@ fn present_value<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<serde_yaml::Value>, D::Error> {
     serde_yaml::Value::deserialize(deserializer).map(Some)
+}
+
+// The pinned job-if and step-if are strings with expression contexts, implicitly expressions
+// whether bare or fenced; inspection keeps the text and never parses or evaluates it.
+fn condition<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    match serde_yaml::Value::deserialize(deserializer)? {
+        // The pinned reader admits a null or empty condition, which GitHub treats as `success()`.
+        serde_yaml::Value::Null => Err(diagnostic::raise_unrouted_as(
+            Category::Unsupported,
+            "expected a nonempty condition",
+        )),
+        serde_yaml::Value::String(text) if text.trim().is_empty() => Err(
+            diagnostic::raise_unrouted_as(Category::Unsupported, "expected a nonempty condition"),
+        ),
+        serde_yaml::Value::String(text) => Ok(Some(text)),
+        // The pinned reader converts number and boolean literals to condition strings.
+        serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
+            Err(diagnostic::raise_unrouted_as(
+                Category::Unsupported,
+                "non-string condition is not inspected yet",
+            ))
+        }
+        _ => Err(diagnostic::raise_unrouted("expected a string")),
+    }
 }
 
 fn timeout_minutes<'de, D: serde::Deserializer<'de>>(
