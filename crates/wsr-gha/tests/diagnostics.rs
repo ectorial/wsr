@@ -28,6 +28,11 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
             "jobs:\n  b:\n    runs-on: {group: fleet}\n    steps:\n      - run: echo\n".to_owned(),
             "jobs.b.runs-on",
         ),
+        (
+            "jobs:\n  b:\n    runs-on: {group: fleet, labels: [a]}\n    steps:\n      - run: echo\n"
+                .to_owned(),
+            "jobs.b.runs-on",
+        ),
     ] {
         assert_eq!(
             diagnose(&source),
@@ -71,6 +76,17 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
         ),
         (format!("bogus: 1\n{JOB}"), Some("bogus")),
         (format!("on: {{bogus: null}}\n{JOB}"), Some("on.bogus")),
+        (format!("on: bogus\n{JOB}"), Some("on")),
+        (format!("on: [push, bogus]\n{JOB}"), Some("on")),
+        (format!("on: [1]\n{JOB}"), Some("on")),
+        (
+            "jobs:\n  b:\n    runs-on: {bogus: linux}\n    steps:\n      - run: echo\n".to_owned(),
+            Some("jobs.b.runs-on"),
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: {group: 1}\n    steps:\n      - run: echo\n".to_owned(),
+            Some("jobs.b.runs-on"),
+        ),
         (
             format!("on: {{workflow_dispatch: {{inputs: {{a: {{type: object}}}}}}}}\n{JOB}"),
             Some("on.workflow_dispatch.inputs.a.type"),

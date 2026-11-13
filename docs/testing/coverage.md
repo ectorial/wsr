@@ -264,3 +264,6 @@ literal-only fields are `Unsupported`; unknown keys/events, unknown input types,
 empty jobs and parse failures stay `Invalid`. Line/column locations and duplicate-key messages are
 retained. A 53-case stderr/exit corpus of `wsr inspect` diagnostics was byte-identical before and
 after on `3793749`; the 31 CLI inspection tests are unchanged. Classification is not a stable contract.
+Cross-review (Codex) found two over-broad `Unsupported` classifications; red cases `on: [push, bogus]`
+and `runs-on: {bogus: linux}` now stay `Invalid` unless every event is a schema event and every
+selector key is a well-shaped `group`/`labels`.

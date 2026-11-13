@@ -69,7 +69,11 @@ fn parse(value: &Value) -> Result<ManualTrigger, Error> {
         return Ok(ManualTrigger::Scalar);
     }
     let events = mapping(value, "on").map_err(|error| match value {
-        Value::Sequence(_) => {
+        Value::Sequence(events)
+            if events
+                .iter()
+                .all(|event| event.as_str().is_some_and(|event| EVENTS.contains(&event))) =>
+        {
             Error::new(Category::Unsupported, Some("on".into()), error.to_string())
         }
         _ => error,

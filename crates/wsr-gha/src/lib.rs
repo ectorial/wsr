@@ -368,8 +368,24 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
             })
             .collect::<Result<Vec<_>, _>>()
             .map(RunnerRequirement::Labels),
-        serde_yaml::Value::Mapping(_) => Err(diagnostic::raise(Error::new(
-            Category::Unsupported,
+        // The pinned schema's selector accepts a `group` string and a `labels` string or list.
+        serde_yaml::Value::Mapping(selector) => Err(diagnostic::raise(Error::new(
+            if !selector.is_empty()
+                && selector.iter().all(|(key, value)| match key.as_str() {
+                    Some("group") => value.is_string(),
+                    Some("labels") => {
+                        value.is_string()
+                            || value.as_sequence().is_some_and(|labels| {
+                                labels.iter().all(serde_yaml::Value::is_string)
+                            })
+                    }
+                    _ => false,
+                })
+            {
+                Category::Unsupported
+            } else {
+                Category::Invalid
+            },
             Some("runs-on".into()),
             "runs-on: unsupported runner-selector mapping".into(),
         ))),

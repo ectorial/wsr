@@ -1,6 +1,6 @@
 # Inspection iteration: provisional typed inspection errors (backlog B-0)
 
-Status: **in progress** on `fix/inspect-typed-errors` (Schedule A, [backlog B-0](backlog.md), audit F1).
+Status: **implemented, PR pending checks** on `fix/inspect-typed-errors` (Schedule A, [backlog B-0](backlog.md), audit F1).
 Baseline `main`: `3793749`. Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Developer outcome
