@@ -39,7 +39,8 @@ for delivery gates.
   warning (B-7, [contract](../cli/README.md#static-workflow-inspection)). Gate 1b (Component
   compilation and planning) remains unmet.
 - [x] Job `timeout-minutes` and run-step `shell` in inspection: literal positive number or
-  unevaluated timeout text, literal nonempty shell, reported as not applied/not selected.
+  unevaluated timeout text, literal nonempty shell, reported as not applied/not selected. Unknown
+  shells and malformed `uses` references are invalid (B-14; shape only, nothing resolved).
   See [timeout and shell contract](../cli/README.md#job-timeouts-and-step-shells).
 - [x] Workflow and job `permissions` in inspection: `read-all`/`write-all` or a pinned-schema
   scope→level mapping, reported as requested and not granted. See [permissions contract](../cli/README.md#requested-permissions).

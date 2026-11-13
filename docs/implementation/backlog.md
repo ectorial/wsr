@@ -184,7 +184,7 @@ Schedule A takes only ready slices.
 
 ## B-14 Shell and action-reference semantic validation (audit F28)
 
-- Status: **READY** (Schedule A).
+- Status: **delivered on merge of the B-14 PR** (Schedule A); see [slice record](inspection-shell-uses.md).
 
 - Behavior: step `shell` and `defaults.run.shell` literal text that is not a built-in shell (`bash`, `pwsh`,
   `python`, `sh`, `cmd`, `powershell`) and has no `{0}` placeholder is `Invalid` (the runner's ScriptHandler

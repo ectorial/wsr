@@ -254,6 +254,15 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             }
             let kind = match (step.run, step.uses) {
                 (Some(_), None) => StepSummaryKind::Run,
+                (None, Some(reference)) if !is_action_reference(&reference) => {
+                    return Err(Error::invalid(
+                        format!("{location}.uses"),
+                        format_args!(
+                            "invalid action reference '{}'; expected ./path, docker://image or owner/repo[/path]@ref",
+                            reference.escape_debug()
+                        ),
+                    ));
+                }
                 (None, Some(reference)) => StepSummaryKind::Uses(reference),
                 _ => {
                     return Err(Error::invalid(
@@ -277,6 +286,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 if !matches!(kind, StepSummaryKind::Run) {
                     return Err(Error::invalid(field, "shell applies only to run steps"));
                 }
+                check_shell(shell, &field)?;
             }
             let working_directory = match step.working_directory {
                 Some(_) if !matches!(kind, StepSummaryKind::Run) => {
@@ -367,6 +377,40 @@ fn check_required(value: &str, location: &str, expression: Category) -> Result<(
 }
 
 /// A job ID has no schema expression context and must be an identifier.
+/// The runner rejects a shell that is neither a built-in shell nor a `{0}` format string.
+pub(crate) fn check_shell(shell: &str, location: &str) -> Result<(), Error> {
+    const BUILT_IN: &[&str] = &["bash", "pwsh", "python", "sh", "cmd", "powershell"];
+    if BUILT_IN.contains(&shell.trim()) || shell.contains("{0}") {
+        return Ok(());
+    }
+    Err(Error::invalid(
+        location,
+        format_args!(
+            "unknown shell '{}'; expected bash, pwsh, python, sh, cmd, powershell or a command containing {{0}}",
+            shell.escape_debug()
+        ),
+    ))
+}
+
+/// A local `./` path, a `docker://` image or `owner/repo[/path]@ref`; nothing is resolved.
+fn is_action_reference(reference: &str) -> bool {
+    if reference.starts_with("./") {
+        return true;
+    }
+    if let Some(image) = reference.strip_prefix("docker://") {
+        return !image.is_empty();
+    }
+    match reference.split_once('@') {
+        Some((path, version)) => {
+            !version.is_empty()
+                && !version.contains('@')
+                && path.split('/').count() >= 2
+                && path.split('/').all(|segment| !segment.is_empty())
+        }
+        None => false,
+    }
+}
+
 fn check_job_id(id: &str) -> Result<(), Error> {
     let route = format!("jobs.{id}");
     check_literal(Some(id), &route, Category::Invalid)?;
