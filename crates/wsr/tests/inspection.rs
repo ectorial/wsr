@@ -985,7 +985,7 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        with: {}\n"
                 .to_owned(),
-            "jobs.b.steps[1]: unknown field `with`, expected one of `id`, `name`, `run`, `uses` at line 6 column 9",
+            "jobs.b.steps[1]: unknown field `with`, expected one of `id`, `name`, `run`, `shell`, `uses` at line 6 column 9",
         ),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: ~\n        run: echo\n"
@@ -1253,6 +1253,86 @@ fn inspect_rejects_permissions_outside_the_pinned_schema() {
         (
             format!("permissions:\n  \"x\\x1b[31m\": read\njobs:\n  b:\n{job}"),
             "permissions.x\\u{1b}[31m: unknown permission scope 'x\\u{1b}[31m'".to_owned(),
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
+        assert!(output.stdout.is_empty(), "{source}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{source}"
+        );
+    }
+}
+
+#[test]
+fn inspect_reports_job_timeouts_and_step_shells_without_applying_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\n";
+    for (source, report) in [
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: 5\n    steps:\n      - run: touch executed\n        shell: bash\n      - uses: ./action\n",
+            format!(
+                "{head}Job: b\n  Runner: linux\n  Timeout minutes: 5 (not applied)\n  Step 1: run\n    Shell: bash (not selected)\n  Step 2: uses ./action\n"
+            ),
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: 0.5\n    steps:\n      - run: touch executed\n",
+            format!(
+                "{head}Job: b\n  Runner: linux\n  Timeout minutes: 0.5 (not applied)\n  Step 1: run\n"
+            ),
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: ${{ inputs.minutes }}\n    steps:\n      - run: touch executed\n        shell: \"pwsh -command \\\"& '{0}'\\\"\\x1b\"\n",
+            format!(
+                "{head}Job: b\n  Runner: linux\n  Timeout minutes: ${{{{ inputs.minutes }}}} (unevaluated; expression syntax not validated; not applied)\n  Step 1: run\n    Shell: pwsh -command \\\"& \\'{{0}}\\'\\\"\\u{{1b}} (not selected)\n"
+            ),
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(0), "{source}: {output:?}");
+        assert!(output.stderr.is_empty(), "{source}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap(),
+            report,
+            "{source}"
+        );
+        assert!(!directory.path().join("executed").exists());
+    }
+}
+
+#[test]
+fn inspect_rejects_invalid_job_timeouts_and_step_shells() {
+    let directory = tempfile::tempdir().unwrap();
+    let job = |field: &str| {
+        format!("jobs:\n  b:\n    runs-on: linux\n    {field}\n    steps:\n      - run: echo\n")
+    };
+    let step = |field: &str| {
+        format!("jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        {field}\n")
+    };
+    let timeout = "jobs.b.timeout-minutes: expected a positive number at line 3 column 5";
+    for (source, diagnostic) in [
+        (job("timeout-minutes: true"), timeout),
+        (job("timeout-minutes: -1"), timeout),
+        (job("timeout-minutes: 0"), timeout),
+        (job("timeout-minutes: .inf"), timeout),
+        (job("timeout-minutes: '5'"), timeout),
+        (job("timeout-minutes: ~"), timeout),
+        (job("timeout-minutes: [5]"), timeout),
+        (step("shell: ~"), "jobs.b.steps[1].shell: expected a string at line 5 column 9"),
+        (step("shell: 5"), "jobs.b.steps[1].shell: expected a string at line 5 column 9"),
+        (step("shell: ' '"), "jobs.b.steps[1].shell: expected a nonempty string"),
+        (
+            step("shell: ${{ matrix.shell }}"),
+            "jobs.b.steps[1].shell: expression is unevaluated and not allowed in shell",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - uses: ./action\n        shell: bash\n"
+                .to_owned(),
+            "jobs.b.steps[1].shell: shell applies only to run steps",
         ),
     ] {
         fs::write(directory.path().join("ci.yml"), &source).unwrap();

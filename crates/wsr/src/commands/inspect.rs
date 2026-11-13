@@ -164,6 +164,17 @@ fn render(file: &Path) -> anyhow::Result<String> {
         if let Some(permissions) = job.permissions {
             render_permissions(&mut out, "  ", permissions)?;
         }
+        match job.timeout_minutes {
+            Some(SourceText::Literal(minutes)) => {
+                writeln!(out, "  Timeout minutes: {minutes} (not applied)")?
+            }
+            Some(SourceText::Unevaluated(text)) => writeln!(
+                out,
+                "  Timeout minutes: {} (unevaluated; expression syntax not validated; not applied)",
+                text.escape_debug()
+            )?,
+            None => {}
+        }
         for (index, step) in job.steps.into_iter().enumerate() {
             write!(out, "  Step {}", index + 1)?;
             if let Some(id) = step.id {
@@ -180,6 +191,9 @@ fn render(file: &Path) -> anyhow::Result<String> {
                 write!(out, " ({})", name.escape_debug())?;
             }
             writeln!(out)?;
+            if let Some(shell) = step.shell {
+                writeln!(out, "    Shell: {} (not selected)", shell.escape_debug())?;
+            }
         }
     }
     Ok(out)

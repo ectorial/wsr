@@ -38,6 +38,9 @@ pub struct JobSummary {
     pub needs: Vec<String>,
     /// Optional job-level token permissions request, not merged with the workflow's.
     pub permissions: Option<Permissions>,
+    /// Optional source timeout: a literal positive YAML number rendered as text, or unevaluated
+    /// expression text. Never applied.
+    pub timeout_minutes: Option<SourceText>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }
@@ -49,6 +52,8 @@ pub struct StepSummary {
     pub id: Option<String>,
     /// Optional display name.
     pub name: Option<String>,
+    /// Optional literal shell of a run step, never selected or invoked.
+    pub shell: Option<String>,
     /// Source operation classification.
     pub kind: StepSummaryKind,
 }

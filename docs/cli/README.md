@@ -142,6 +142,25 @@ fail before stdout (`permissions.secrets: unknown permission scope 'secrets'`,
 `jobs.b.permissions.models: expected read or none`). The pinned schema gives `permissions` no
 expression context, so `${{` text fails as an unevaluated expression the field does not allow.
 
+### Job timeouts and step shells
+
+A job's `timeout-minutes` and a run step's `shell` are reported as source data on lines after the
+job's runner, needs and permissions lines and after the step line:
+
+```text
+  Timeout minutes: 5 (not applied)
+  Timeout minutes: ${{ inputs.minutes }} (unevaluated; expression syntax not validated; not applied)
+  Step 1: run
+    Shell: bash (not selected)
+```
+
+A timeout must be a finite positive YAML number, rendered from the number value, or text with a
+`${{` fence, which stays unevaluated as for `run-name`. A shell must be a nonempty string on a
+`run` step; the [pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
+gives `shell` no expression context, so `${{` text fails, as does `shell` on a `uses` step.
+No timeout is applied and no shell is selected, located or invoked. Step `timeout-minutes` and
+`cancel-timeout-minutes` remain unsupported.
+
 ### Literal runner labels
 
 `runs-on` accepts a nonempty scalar string or nonempty list of nonempty strings.
