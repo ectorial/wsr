@@ -1,6 +1,29 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — November 13, 2026
+## Current checkpoint — B-0 typed inspection errors implemented; PR pending checks
+
+Schedule A run 2026-11-13T01:57Z (no prior lock). Baseline `3793749` = origin/main; Dependabot #23
+untouched; no open Schedule B PR. Local uncommitted run-name checkpoint edits were superseded by
+`3793749` and saved as a patch under `.git/wsr-worker/` before the fast-forward. Branch
+`fix/inspect-typed-errors`. Implementer: Claude (claude-opus-5-5, orchestrator). Cross-review: Codex
+gpt-6.1-sol high: no blockers; two P2 over-broad `Unsupported` classifications fixed with red/green.
+
+Delivered per [typed-error iteration](inspection-typed-errors.md) (backlog B-0): `wsr_gha::inspect`
+returns a provisional `wsr_gha::Error` with `Category::{Invalid, Unsupported}` and `route()`.
+Red: three new `crates/wsr-gha/tests/diagnostics.rs` tests failed on `(Invalid, None)` with a catch-all
+classification. Green: 4 diagnostics tests, 31 unchanged CLI inspection tests, `cargo xtask ci`,
+`git diff --check`; a 53-case `wsr inspect` stderr/exit corpus was byte-identical to `3793749`.
+
+Incident: an empty-SHA `git stash apply` during review fixes partially applied the preserved
+prototype stash (`daee088`, still `stash@{0}`, not dropped) to the checkout. The tree was restored to
+the committed slice; the conflicted status list is saved under `.git/wsr-worker/`. No stash commands
+are used in this loop any more.
+
+Next action: wait for required hosted checks on the PR, merge the verified head with no unresolved
+findings, sync main, mark B-0 delivered. Then take B-1 (consistent diagnostic routes and validation
+order), building on the typed routes. B-3..B-6 remain blocked on DR-002.
+
+## Previous checkpoint — November 13, 2026
 
 Run-name inspection merged as [PR #27](https://github.com/ectorial/wsr/pull/27), commit `fd574dc`
 (`main` and `origin/main`). The iteration is delivered; see the [run-name iteration](inspection-run-name.md).

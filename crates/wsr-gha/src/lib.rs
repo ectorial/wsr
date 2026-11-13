@@ -10,8 +10,11 @@ use wsr_types::inspection::{
     JobSummary, RunnerRequirement, SourceText, StepSummary, StepSummaryKind, WorkflowSummary,
 };
 
+mod diagnostic;
 mod dispatch;
 mod needs;
+use diagnostic::Fields;
+pub use diagnostic::{Category, Error};
 use needs::Needs;
 
 #[derive(Deserialize)]
@@ -27,6 +30,17 @@ struct Workflow {
     jobs: BTreeMap<String, Job>,
 }
 
+impl diagnostic::Level for Workflow {
+    const NAME: &'static str = "Workflow";
+    const SCHEMA: &'static [&'static str] = &[
+        "concurrency",
+        "defaults",
+        "description",
+        "env",
+        "permissions",
+    ];
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Job {
@@ -36,7 +50,32 @@ struct Job {
     runner: RunnerRequirement,
     #[serde(default)]
     needs: Needs,
+    #[serde(deserialize_with = "steps")]
     steps: Vec<Step>,
+}
+
+impl diagnostic::Level for Job {
+    const NAME: &'static str = "Job";
+    // The union of the pinned schema's job-factory and reusable workflow-job keys.
+    const SCHEMA: &'static [&'static str] = &[
+        "cancel-timeout-minutes",
+        "concurrency",
+        "container",
+        "continue-on-error",
+        "defaults",
+        "env",
+        "environment",
+        "if",
+        "outputs",
+        "permissions",
+        "secrets",
+        "services",
+        "snapshot",
+        "strategy",
+        "timeout-minutes",
+        "uses",
+        "with",
+    ];
 }
 
 #[derive(Deserialize)]
@@ -52,19 +91,38 @@ struct Step {
     uses: Option<String>,
 }
 
+impl diagnostic::Level for Step {
+    const NAME: &'static str = "Step";
+    // The union of the pinned schema's run, regular, wait, wait-all, cancel and parallel steps.
+    const SCHEMA: &'static [&'static str] = &[
+        "background",
+        "cancel",
+        "continue-on-error",
+        "env",
+        "if",
+        "parallel",
+        "shell",
+        "timeout-minutes",
+        "wait",
+        "wait-all",
+        "with",
+        "working-directory",
+    ];
+}
+
 /// Inspect a static GHA source subset without performing IO or executing workflow content.
 ///
 /// Unsupported fields are rejected rather than silently omitted. The summary is intentionally
 /// separate from the legacy execution model; the same compiler can later be packaged as a Component.
-pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
-    let workflow: Workflow = serde_yaml::from_slice(raw)?;
+pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
+    let Fields(workflow) = diagnostic::decode::<Fields<Workflow>>(raw)?;
     if workflow.jobs.is_empty() {
-        anyhow::bail!("jobs: expected at least one job");
+        return Err(Error::invalid("jobs", "expected at least one job"));
     }
     check_literal(workflow.name.as_deref(), "name")?;
     let run_name = match workflow.run_name {
         Some(text) if text.trim().is_empty() => {
-            anyhow::bail!("run-name: expected a nonempty string")
+            return Err(Error::invalid("run-name", "expected a nonempty string"));
         }
         Some(text) if text.contains("${{") => Some(SourceText::Unevaluated(text)),
         Some(text) => Some(SourceText::Literal(text)),
@@ -74,18 +132,23 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
     let mut jobs = Vec::new();
     for (id, job) in workflow.jobs {
         if job.steps.is_empty() {
-            anyhow::bail!("jobs.{id}.steps: expected at least one step");
+            return Err(Error::invalid(
+                format!("jobs.{id}.steps"),
+                "expected at least one step",
+            ));
         }
-        check_literal(Some(&id), "jobs identifier")?;
+        check_literal(Some(&id), "jobs identifier")
+            .map_err(|error| error.routed(format!("jobs.{id}")))?;
         if !id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
             || !id
                 .chars()
                 .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
         {
-            anyhow::bail!(
-                "jobs: invalid job identifier {:?}",
-                id.escape_debug().to_string()
-            );
+            return Err(Error::invalid(
+                "jobs",
+                format_args!("invalid job identifier {:?}", id.escape_debug().to_string()),
+            )
+            .routed(format!("jobs.{id}")));
         }
         check_literal(job.name.as_deref(), &format!("jobs.{id}.name"))?;
         match &job.runner {
@@ -94,7 +157,10 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
             }
             RunnerRequirement::Labels(labels) => {
                 if labels.is_empty() {
-                    anyhow::bail!("jobs.{id}.runs-on: expected at least one label");
+                    return Err(Error::invalid(
+                        format!("jobs.{id}.runs-on"),
+                        "expected at least one label",
+                    ));
                 }
                 for (index, label) in labels.iter().enumerate() {
                     check_required(label, &format!("jobs.{id}.runs-on[{}]", index + 1))?;
@@ -115,16 +181,22 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
                         .chars()
                         .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
                 {
-                    anyhow::bail!(
-                        "{field}: invalid step identifier '{}'; expected fewer than 100 ASCII identifier characters and no '__' prefix",
-                        step_id.escape_debug()
-                    );
+                    return Err(Error::invalid(
+                        field,
+                        format_args!(
+                            "invalid step identifier '{}'; expected fewer than 100 ASCII identifier characters and no '__' prefix",
+                            step_id.escape_debug()
+                        ),
+                    ));
                 }
                 if let Some(first) = step_ids.insert(step_id.clone(), index + 1) {
-                    anyhow::bail!(
-                        "{field}: duplicate step identifier '{}'; first declared at jobs.{id}.steps[{first}].id",
-                        step_id.escape_debug()
-                    );
+                    return Err(Error::invalid(
+                        field,
+                        format_args!(
+                            "duplicate step identifier '{}'; first declared at jobs.{id}.steps[{first}].id",
+                            step_id.escape_debug()
+                        ),
+                    ));
                 }
             }
             check_literal(step.name.as_deref(), &format!("{location}.name"))?;
@@ -137,10 +209,12 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
             let kind = match (step.run, step.uses) {
                 (Some(_), None) => StepSummaryKind::Run,
                 (None, Some(reference)) => StepSummaryKind::Uses(reference),
-                _ => anyhow::bail!(
-                    "jobs.{id}.steps[{}]: expected exactly one of run or uses",
-                    index + 1
-                ),
+                _ => {
+                    return Err(Error::invalid(
+                        location,
+                        "expected exactly one of run or uses",
+                    ));
+                }
             };
             steps.push(StepSummary {
                 id: step.id,
@@ -164,19 +238,20 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
     })
 }
 
-fn check_literal(value: Option<&str>, location: &str) -> anyhow::Result<()> {
+fn check_literal(value: Option<&str>, location: &str) -> Result<(), Error> {
     if value.is_some_and(|value| value.contains("${{")) {
-        anyhow::bail!(
-            "{location}: expression is unevaluated; dynamic inspection is not supported yet"
-        );
+        return Err(Error::unsupported(
+            location,
+            "expression is unevaluated; dynamic inspection is not supported yet",
+        ));
     }
     Ok(())
 }
 
-fn check_required(value: &str, location: &str) -> anyhow::Result<()> {
+fn check_required(value: &str, location: &str) -> Result<(), Error> {
     check_literal(Some(value), location)?;
     if value.trim().is_empty() {
-        anyhow::bail!("{location}: expected a nonempty string");
+        return Err(Error::invalid(location, "expected a nonempty string"));
     }
     Ok(())
 }
@@ -197,18 +272,57 @@ fn unique_jobs<'de, D: serde::Deserializer<'de>>(
             mut map: M,
         ) -> Result<Self::Value, M::Error> {
             let mut jobs = BTreeMap::new();
-            while let Some((id, job)) = map.next_entry::<serde_yaml::Value, Job>()? {
+            while let Some(id) = map.next_key::<serde_yaml::Value>()? {
+                let Fields(job) = map.next_value::<Fields<Job>>().inspect_err(|_| match &id {
+                    serde_yaml::Value::String(id) => diagnostic::within(&format!("jobs.{id}")),
+                    _ => diagnostic::within("jobs"),
+                })?;
                 let serde_yaml::Value::String(id) = id else {
-                    return Err(serde::de::Error::custom("expected a string job identifier"));
+                    return Err(diagnostic::raise(Error::new(
+                        Category::Invalid,
+                        Some("jobs".into()),
+                        "expected a string job identifier".into(),
+                    )));
                 };
-                if jobs.insert(id, job).is_some() {
-                    return Err(serde::de::Error::custom("duplicate job identifier"));
+                if jobs.contains_key(&id) {
+                    return Err(diagnostic::raise(Error::new(
+                        Category::Invalid,
+                        Some(format!("jobs.{id}")),
+                        "duplicate job identifier".into(),
+                    )));
                 }
+                jobs.insert(id, job);
             }
             Ok(jobs)
         }
     }
     deserializer.deserialize_map(Jobs)
+}
+
+fn steps<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Vec<Step>, D::Error> {
+    struct Steps;
+    impl<'de> serde::de::Visitor<'de> for Steps {
+        type Value = Vec<Step>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("a sequence")
+        }
+
+        fn visit_seq<S: serde::de::SeqAccess<'de>>(
+            self,
+            mut seq: S,
+        ) -> Result<Self::Value, S::Error> {
+            let mut steps = Vec::new();
+            while let Some(Fields(step)) = seq
+                .next_element::<Fields<Step>>()
+                .inspect_err(|_| diagnostic::within(&format!("steps[{}]", steps.len() + 1)))?
+            {
+                steps.push(step);
+            }
+            Ok(steps)
+        }
+    }
+    deserializer.deserialize_seq(Steps)
 }
 
 // serde_yaml's String deserializer also accepts numbers and booleans. Source fields must
@@ -246,18 +360,39 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
             .enumerate()
             .map(|(index, value)| match value {
                 serde_yaml::Value::String(label) => Ok(label),
-                _ => Err(serde::de::Error::custom(format!(
-                    "runs-on[{}]: expected a string label",
-                    index + 1
+                _ => Err(diagnostic::raise(Error::new(
+                    Category::Invalid,
+                    Some(format!("runs-on[{}]", index + 1)),
+                    format!("runs-on[{}]: expected a string label", index + 1),
                 ))),
             })
             .collect::<Result<Vec<_>, _>>()
             .map(RunnerRequirement::Labels),
-        serde_yaml::Value::Mapping(_) => Err(serde::de::Error::custom(
-            "runs-on: unsupported runner-selector mapping",
-        )),
-        _ => Err(serde::de::Error::custom(
-            "runs-on: expected a string or list of strings",
-        )),
+        // The pinned schema's selector accepts a `group` string and a `labels` string or list.
+        serde_yaml::Value::Mapping(selector) => Err(diagnostic::raise(Error::new(
+            if !selector.is_empty()
+                && selector.iter().all(|(key, value)| match key.as_str() {
+                    Some("group") => value.is_string(),
+                    Some("labels") => {
+                        value.is_string()
+                            || value.as_sequence().is_some_and(|labels| {
+                                labels.iter().all(serde_yaml::Value::is_string)
+                            })
+                    }
+                    _ => false,
+                })
+            {
+                Category::Unsupported
+            } else {
+                Category::Invalid
+            },
+            Some("runs-on".into()),
+            "runs-on: unsupported runner-selector mapping".into(),
+        ))),
+        _ => Err(diagnostic::raise(Error::new(
+            Category::Invalid,
+            Some("runs-on".into()),
+            "runs-on: expected a string or list of strings".into(),
+        ))),
     }
 }

@@ -1,5 +1,7 @@
-use serde::{Deserialize, Deserializer, de};
+use serde::{Deserialize, Deserializer};
 use serde_yaml::Value;
+
+use super::{Category, Error, diagnostic};
 
 /// Preserve source shape so diagnostics can distinguish a scalar from a list entry.
 #[derive(Default)]
@@ -35,26 +37,26 @@ impl Needs {
     }
 }
 
-pub(super) fn validate(
-    jobs: &std::collections::BTreeMap<String, super::Job>,
-) -> anyhow::Result<()> {
+pub(super) fn validate(jobs: &std::collections::BTreeMap<String, super::Job>) -> Result<(), Error> {
     for (id, job) in jobs {
         for (index, target) in job.needs.values().iter().enumerate() {
             let location = job.needs.location(id, index);
             super::check_required(target, &location)?;
             if !jobs.contains_key(target) {
-                anyhow::bail!("{location}: unknown job '{}'", target.escape_debug());
+                return Err(Error::invalid(
+                    location,
+                    format_args!("unknown job '{}'", target.escape_debug()),
+                ));
             }
         }
     }
     for (id, job) in jobs {
         for (index, target) in job.needs.values().iter().enumerate() {
             if target == id {
-                anyhow::bail!(
-                    "{}: job '{}' depends on itself",
+                return Err(Error::invalid(
                     job.needs.location(id, index),
-                    id.escape_debug()
-                );
+                    format_args!("job '{}' depends on itself", id.escape_debug()),
+                ));
             }
         }
     }
@@ -90,7 +92,10 @@ pub(super) fn validate(
                         .chain(std::iter::once(target.escape_debug().to_string()))
                         .collect::<Vec<_>>()
                         .join(" -> ");
-                    anyhow::bail!("{}: dependency cycle: {cycle}", needs.location(id, index));
+                    return Err(Error::invalid(
+                        needs.location(id, index),
+                        format_args!("dependency cycle: {cycle}"),
+                    ));
                 }
                 None => {
                     visits.insert(target.as_str(), Visit::Active(stack.len()));
@@ -111,16 +116,19 @@ impl<'de> Deserialize<'de> for Needs {
                 .enumerate()
                 .map(|(index, value)| match value {
                     Value::String(value) => Ok(value),
-                    _ => Err(de::Error::custom(format!(
-                        "needs[{}]: expected a string",
-                        index + 1
+                    _ => Err(diagnostic::raise(Error::new(
+                        Category::Invalid,
+                        Some(format!("needs[{}]", index + 1)),
+                        format!("needs[{}]: expected a string", index + 1),
                     ))),
                 })
                 .collect::<Result<Vec<_>, _>>()
                 .map(Self::List),
-            _ => Err(de::Error::custom(
-                "needs: expected a string or a sequence of strings",
-            )),
+            _ => Err(diagnostic::raise(Error::new(
+                Category::Invalid,
+                Some("needs".into()),
+                "needs: expected a string or a sequence of strings".into(),
+            ))),
         }
     }
 }

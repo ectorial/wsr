@@ -251,3 +251,19 @@ job-identifier locations (exit 1, empty stdout); exit 0 with empty stderr and no
 and exit 1 with `not a regular file` for a `/dev/zero` symlink, a directory and (when `mkfifo` exists)
 a FIFO. The non-regular-file test is `#[cfg(unix)]`. These establish static-input hardening only, not a size limit
 (an open [decision request](../implementation/decision-requests.md)), execution or sandboxing.
+
+## Provisional typed inspection errors (backlog B-0)
+
+`crates/wsr-gha/tests/diagnostics.rs` (4 tests) calls `wsr_gha::inspect` directly and asserts the
+provisional `Category` and `route()` of failures. Observed red: with every failure first classified
+`Invalid` without a route, three tests failed on `(Invalid, None)` assertions (for example
+`jobs.b.if`, `name`, `jobs.b.bogus`); the location test passed as characterization. Coverage:
+schema-listed but uninspected keys at workflow/job/step level (`permissions`, job `if`, step `shell`),
+known `on` events in scalar, sequence and mapping forms, runner-selector mappings and expressions in
+literal-only fields are `Unsupported`; unknown keys/events, unknown input types, unknown dependencies,
+empty jobs and parse failures stay `Invalid`. Line/column locations and duplicate-key messages are
+retained. A 53-case stderr/exit corpus of `wsr inspect` diagnostics was byte-identical before and
+after on `3793749`; the 31 CLI inspection tests are unchanged. Classification is not a stable contract.
+Cross-review (Codex) found two over-broad `Unsupported` classifications; red cases `on: [push, bogus]`
+and `runs-on: {bogus: linux}` now stay `Invalid` unless every event is a schema event and every
+selector key is a well-shaped `group`/`labels`.
