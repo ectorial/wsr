@@ -6,7 +6,11 @@ Same Schedule A run, after the PR #47 wake (lock retaken 2026-11-13). PR #47 squ
 `5ec43bf` after all four required checks passed on `e4a96c2` with no reviews or comments; `wsr` and
 `wsr-gha` tests (121) verified on synced main. B-18 on `feat/b18-job-outputs` from `5ec43bf`; slice
 record [inspection-job-outputs.md](inspection-job-outputs.md). Implemented by Claude
-(claude-opus-5-5, orchestrator, burn mode; `wsr-types` field under D-033); cross-review below.
+(claude-opus-5-5, orchestrator, burn mode; `wsr-types` field under D-033); cross-reviewed by Codex
+gpt-6.1-sol (high): no blockers; one P2 fixed (boolean/number keys Invalid: the pinned YAML adapter
+keeps them raw and the reader rejects them), one P3 fixed (null keys documented). Follow-up for
+Schedule B: `step_inputs.rs` (step/workflow/job `env`, step `with`) still classifies boolean and number
+keys as `Unsupported` under the same reader path.
 
 - Red (observed): `outputs.rs` failed with ``jobs.b: unknown field `outputs` `` (Unsupported).
 - Contract change: the job "expected one of" list in `diagnostics.rs` names `outputs`.

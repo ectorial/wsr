@@ -345,8 +345,8 @@ goldens are unchanged. The CLI inspection suite lists 45 tests.
 ## Job outputs (backlog B-18)
 
 `crates/wsr-gha/tests/outputs.rs` asserts kept sorted text (literal, empty, unevaluated; `{}`; absent),
-eight `Invalid` shapes (mapping and key expressions, non-mappings, empty and case-duplicate keys,
-nested values) and four `Unsupported` conversions. Two CLI tests pin a golden with hostile name and
+eleven `Invalid` shapes (mapping and key expressions, non-mappings, empty, scalar and case-duplicate
+keys, nested values) and three `Unsupported` value conversions. Two CLI tests pin a golden with hostile name and
 value text escaped plus an `executed` sentinel, and four exact diagnostics. Observed red:
 ``jobs.b: unknown field `outputs` ``. Contract change: the job "expected one of" list in
 `diagnostics.rs` names `outputs`. The CLI inspection suite lists 55 tests.

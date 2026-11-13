@@ -28,13 +28,7 @@ pub(crate) fn decode(route: &str, value: Value) -> Result<BTreeMap<String, Sourc
                 return Err(Error::invalid(route, NOT_ALLOWED));
             }
             Value::String(key) if !key.is_empty() => key,
-            // The pinned reader converts other scalar keys to strings.
-            Value::Bool(_) | Value::Number(_) => {
-                return Err(Error::unsupported(
-                    route,
-                    "non-string key is not inspected yet",
-                ));
-            }
+            // The pinned YAML adapter keeps a boolean or number key raw, which the reader rejects.
             _ => return Err(Error::invalid(route, "expected a nonempty string key")),
         };
         let field = format!("{route}.{key}");

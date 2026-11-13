@@ -56,6 +56,10 @@ fn schema_rejected_outputs_are_invalid() {
         ("[a]", "jobs.b.outputs"),
         ("~", "jobs.b.outputs"),
         ("{'': x}", "jobs.b.outputs"),
+        // The pinned reader rejects raw boolean and number keys before converting them.
+        ("{5: x}", "jobs.b.outputs"),
+        ("{true: x}", "jobs.b.outputs"),
+        ("{~: x}", "jobs.b.outputs"),
         ("{a: x, A: y}", "jobs.b.outputs.A"),
         ("{a: [x]}", "jobs.b.outputs.a"),
         ("{a: {b: c}}", "jobs.b.outputs.a"),
@@ -70,7 +74,6 @@ fn converted_scalars_are_unsupported() {
         ("{a: 5}", "jobs.b.outputs.a"),
         ("{a: true}", "jobs.b.outputs.a"),
         ("{a: ~}", "jobs.b.outputs.a"),
-        ("{5: x}", "jobs.b.outputs"),
     ] {
         assert_category(outputs, Category::Unsupported, route);
     }

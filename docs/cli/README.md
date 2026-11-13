@@ -302,9 +302,10 @@ lines in the step-input value format (`result: "${{ steps.s.outputs.r }}" (uneva
 `${{` text is unevaluated; the
 [pinned](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
 `job-outputs` mapping itself has none, so an expression replacing it or used as a key is invalid
-(`jobs.b.outputs: expression is unevaluated and not allowed in job outputs`). Empty keys, keys
-repeated ignoring case, non-mappings and nested values are invalid; number, boolean and null values
-and non-string keys, which the pinned reader converts to strings, are unsupported. No output is
+(`jobs.b.outputs: expression is unevaluated and not allowed in job outputs`). Empty, null, number and
+boolean keys (the pinned reader rejects raw scalar keys), keys repeated ignoring case, non-mappings
+and nested values are invalid; number, boolean and null values, which the pinned reader converts to
+strings, are unsupported. No output is
 resolved or exposed to `needs`.
 
 ### Unevaluated job and step conditions
