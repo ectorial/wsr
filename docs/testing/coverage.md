@@ -350,7 +350,7 @@ goldens are unchanged. The CLI inspection suite lists 45 tests.
 `Unsupported` one. Two CLI tests pin a golden with hostile unevaluated text and an `executed` sentinel,
 and three exact diagnostics. Observed red: ``unknown field `continue-on-error` `` (Unsupported).
 Contract changes: `diagnostics.rs` Unsupported samples moved to job `cancel-timeout-minutes` and step
-`background`, its location test now uses `cancel-timeout-minutes`, and the job and two CLI step
+`name: 5` (a converted scalar), its location test now uses `cancel-timeout-minutes`, and the job and two CLI step
 "expected one of" lists name the new keys. The CLI inspection suite lists 53 tests.
 
 ## Workflow and job concurrency (backlog B-16)

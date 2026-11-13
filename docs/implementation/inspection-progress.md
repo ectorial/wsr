@@ -6,12 +6,16 @@ Same Schedule A run, after the PR #46 wake (lock retaken 2026-11-13). PR #46 squ
 `472887c` after all four required checks passed on `e766d96` with no reviews or comments; `wsr` and
 `wsr-gha` tests (117) verified on synced main. B-17 on `feat/b17-continue-timeout` from `472887c`;
 slice record [inspection-continue-timeout.md](inspection-continue-timeout.md). Implemented by Claude
-(claude-opus-5-5, orchestrator, burn mode; `wsr-types` fields under D-033); cross-review below.
+(claude-opus-5-5, orchestrator, burn mode; `wsr-types` fields under D-033); cross-reviewed by Codex
+gpt-6.1-sol (high): no blockers; one P2 fixed (step `background` is not a valid Unsupported sample).
+Follow-up for Schedule B: the `Step` schema-key list classifies `background`, `cancel`, `parallel`,
+`wait` and `wait-all` as `Unsupported`, but the pinned reader rejects at least `background` unless
+`allowBackgroundSteps` (default false) is enabled, so they may belong in `Invalid`.
 
 - Red (observed): `continue_timeout.rs` failed with ``jobs.b: unknown field `continue-on-error` ``
   (Unsupported).
 - Contract changes: `diagnostics.rs` Unsupported samples → job `cancel-timeout-minutes`, step
-  `background`; job and step "expected one of" lists name the new keys (two CLI tests).
+  `name: 5`; job and step "expected one of" lists name the new keys (two CLI tests).
 - Green: 2 `wsr-gha` tests, 2 CLI tests (written after the `wsr-gha` green; acceptance); full suites
   (121); `cargo xtask ci`.
 

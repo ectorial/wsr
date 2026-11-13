@@ -22,4 +22,4 @@ timeout reuses the job decoder (finite positive number; non-positive `Unsupporte
 `crates/wsr-gha/tests/continue_timeout.rs` and two CLI tests, including rejection of
 `continue-on-error: 5` and `timeout-minutes: true`. Expected red: ``unknown field `continue-on-error` ``
 and `` `timeout-minutes` `` (`Unsupported`). Contract change: `diagnostics.rs` samples move to job
-`cancel-timeout-minutes` and step `background`.
+`cancel-timeout-minutes` and step `name: 5` (a converted scalar).

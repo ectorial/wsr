@@ -25,9 +25,9 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
         (format!("description: x\n{JOB}"), "description"),
         (
             // B-17 contract change: step `timeout-minutes` is now inspected.
-            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - background: true\n        run: b\n"
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - name: 5\n        run: b\n"
                 .to_owned(),
-            "jobs.b.steps[2].background",
+            "jobs.b.steps[2].name",
         ),
         (
             "jobs:\n  b:\n    runs-on: {group: fleet}\n    steps:\n      - run: echo\n".to_owned(),
