@@ -1,6 +1,6 @@
 # Inspection iteration: consistent diagnostic routes and validation order (backlog B-1)
 
-Status: **in progress** on `fix/inspect-diagnostic-routes` (Schedule A, [backlog B-1](backlog.md), audit F3, F5).
+Status: **delivered** in [PR #30](https://github.com/ectorial/wsr/pull/30) as `1545ab3` (Schedule A, [backlog B-1](backlog.md), audit F3, F5).
 Baseline `main`: `d9712ec`. Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Developer outcome
