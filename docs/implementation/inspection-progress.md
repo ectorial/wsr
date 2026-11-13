@@ -1,6 +1,22 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-7 size warning implemented; PR pending checks
+## Current checkpoint — B-9 format-character escaping implemented; PR pending checks
+
+Schedule A run 2026-11-13 (lock created 16:24 UTC; no prior lock). Gate: stash@{0} intact, main clean
+at `3c8c95c`, only Dependabot PR #23 open. B-7 (#37) and Schedule B's B-8 (#38) were merged. B-9 on
+`impl/b9-format-escape` from `3c8c95c`; slice record [inspection-format-escape.md](inspection-format-escape.md).
+Implemented by Claude (claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol
+(high): no blockers; one P3 doc nit fixed.
+
+- Red (observed on `3c8c95c` build and in the new CLI test): raw U+202E/U+200B on stderr in
+  ``unknown field `k‮q​` `` and in the job-ID route `jobs.b‮⁦`.
+- Green: `inspect_errors_escape_unicode_format_characters_on_stderr`; all 41 `wsr` inspection tests;
+  `cargo xtask ci` and `git diff --check` pass. Stdout, exit codes, categories and routes unchanged.
+
+B-9 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-10 (dogfood workflow-set guard), then B-11, B-12.
+
+## Previous checkpoint — B-7 size warning implemented; PR pending checks
 
 Same Schedule A run, after the PR #36 wake (lock retaken 2026-11-13). PR #36 squash-merged as
 `07d1892` after all four required checks passed on `8b5b3a2` with no reviews or comments; `wsr` and

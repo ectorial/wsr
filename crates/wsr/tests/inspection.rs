@@ -1080,6 +1080,35 @@ fn inspect_errors_never_write_raw_control_bytes_to_stderr() {
     }
 }
 
+// Backlog B-9: bidi overrides, isolates and zero-width characters (Unicode `Cf`) can make a
+// diagnostic read differently from its bytes, so stderr escapes them exactly as stdout does.
+#[test]
+fn inspect_errors_escape_unicode_format_characters_on_stderr() {
+    let directory = tempfile::tempdir().unwrap();
+    let job = "    runs-on: linux\n    steps:\n      - run: echo\n";
+    for (source, diagnostic) in [
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        \"k\\u202Eq\\u200B\": 1\n".to_owned(),
+            "jobs.b.steps[1]: unknown field `k\\u{202e}q\\u{200b}`, expected one of `id`, `name`, `run`, `shell`, `working-directory`, `env`, `with`, `uses` at line 6 column 9",
+        ),
+        (
+            format!("jobs:\n  \"b\\u202E\\u200B\\u2066\\u2069\":\n{job}"),
+            "jobs.b\\u{202e}\\u{200b}\\u{2066}\\u{2069}: invalid job identifier 'b\\u{202e}\\u{200b}\\u{2066}\\u{2069}'",
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
+        assert!(output.stdout.is_empty(), "{source}: {output:?}");
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            !error.contains(['\u{202e}', '\u{200b}', '\u{2066}', '\u{2069}']),
+            "raw format character on stderr: {error:?}"
+        );
+        assert_eq!(error, format!("error: wsr inspect: ci.yml: {diagnostic}\n"), "{source}");
+    }
+}
+
 #[test]
 fn inspect_does_not_panic_when_stdout_is_closed_early() {
     use std::process::Stdio;

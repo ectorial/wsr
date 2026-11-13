@@ -62,7 +62,10 @@ limit (D-032). When a successfully inspected file exceeds GitHub's documented 50
 as 512,000 bytes (GitHub does not define the unit), one line is written to stderr before the unchanged report, and the exit code stays 0:
 `warning: wsr inspect: ci.yml: 512001 bytes exceeds GitHub's documented 500 KB (512000-byte) workflow
 file limit; GitHub would not run this workflow`. A closed stderr does not stop the report. Because workflow content is untrusted, diagnostics are written with control characters
-escaped, so no raw terminal escape sequence reaches stderr. If stdout is closed early (for example
+and other unprintable characters escaped (`\n`, `\t` or `\u{…}`), so no raw terminal escape sequence, bidi override or
+isolate, or zero-width character reaches stderr (`jobs.b\u{202e}: invalid job identifier 'b\u{202e}'`).
+Every character `char::escape_debug` escapes is escaped, including combining marks; quotes and
+backslashes stay as written. If stdout is closed early (for example
 `wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
 
 Other trigger forms, runner-group objects, matrices, conditions, environment,

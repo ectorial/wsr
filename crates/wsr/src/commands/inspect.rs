@@ -13,15 +13,15 @@ const GITHUB_WORKFLOW_LIMIT: usize = 512_000;
 
 pub fn run(file: &Path) -> anyhow::Result<()> {
     // Workflow content is untrusted and reaches diagnostics (serde field names, `on:` keys),
-    // so escape control characters before the message can be written to a terminal.
-    let (size, report) = render(file)
-        .map_err(|error| anyhow::anyhow!(escape_control_characters(&error.to_string())))?;
+    // so escape unprintable characters before the message can be written to a terminal.
+    let (size, report) =
+        render(file).map_err(|error| anyhow::anyhow!(escape_unprintable(&error.to_string())))?;
     if size > GITHUB_WORKFLOW_LIMIT {
         // Advisory only: a closed stderr must not prevent the report.
         let _ = writeln!(
             std::io::stderr().lock(),
             "warning: wsr inspect: {}: {size} bytes exceeds GitHub's documented 500 KB ({GITHUB_WORKFLOW_LIMIT}-byte) workflow file limit; GitHub would not run this workflow",
-            escape_control_characters(&file.display().to_string())
+            escape_unprintable(&file.display().to_string())
         );
     }
     let mut stdout = std::io::stdout().lock();
@@ -35,13 +35,15 @@ pub fn run(file: &Path) -> anyhow::Result<()> {
     }
 }
 
-fn escape_control_characters(text: &str) -> String {
+fn escape_unprintable(text: &str) -> String {
     text.chars()
         .map(|c| {
-            if c.is_control() {
-                c.escape_debug().to_string()
-            } else {
+            // `escape_debug` also covers Unicode format characters (bidi overrides and isolates,
+            // zero-width spaces), as stdout does; quotes and backslashes stay as written.
+            if matches!(c, '\'' | '"' | '\\') {
                 c.to_string()
+            } else {
+                c.escape_debug().to_string()
             }
         })
         .collect()
