@@ -328,6 +328,15 @@ only above 512,000 bytes. Observed red: no warning at 512,001 bytes. The closed-
 638,896-byte fixture now asserts exactly the warning on stderr instead of empty stderr. A closed-stderr
 test (red: exit 101, empty stdout) asserts exit 0 and the full report when the warning cannot be written.
 
+## Workflow and job env and run defaults (backlog B-11)
+
+`inspect_reports_workflow_and_job_env_and_run_defaults_without_applying_them` asserts the complete
+report for workflow and job `env` (sorted, typed, hostile ESC/bidi/zero-width text escaped) and
+literal, unevaluated and empty `defaults.run`, with a `touch executed` sentinel untouched.
+`inspect_rejects_invalid_workflow_and_job_env_and_run_defaults` pins 15 exact diagnostics.
+`crates/wsr-gha/tests/env_defaults.rs` asserts summary values and, for 17 sources, category and route
+by schema expression context. Observed red: ``unknown field `env` `` for every case.
+
 ## Dogfood workflow-set guard (backlog B-10)
 
 `every_dogfood_example_has_a_golden_case` asserts the sorted `.github/workflows/example-*.yml` names

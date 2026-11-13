@@ -26,6 +26,9 @@ for delivery gates.
   literal/unevaluated text, sorted keys, step-kind restrictions; never bound, passed or resolved.
   See [step-input contract](../cli/README.md#step-environment-action-inputs-and-working-directories).
   Both canonical example workflows inspect successfully.
+- [x] Workflow and job `env` and `defaults.run` in inspection: same value rules as step `env`;
+  `shell`/`working-directory` defaults as literal/unevaluated text by schema context; never bound,
+  merged or applied. See [contract](../cli/README.md#workflow-and-job-environment-and-run-defaults).
 - [x] Dogfood inspection acceptance: golden `wsr inspect` output for the real `.github/workflows/example-*.yml`
   with directory, `PATH`-command and source sentinels showing no execution (`crates/wsr/tests/dogfood.rs`).
   Static inspection only, not execution support.

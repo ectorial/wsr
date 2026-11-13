@@ -10,6 +10,7 @@ use wsr_types::inspection::{
     JobSummary, RunnerRequirement, SourceText, StepSummary, StepSummaryKind, WorkflowSummary,
 };
 
+mod defaults;
 mod diagnostic;
 mod dispatch;
 mod needs;
@@ -30,13 +31,17 @@ struct Workflow {
     trigger: Option<wsr_types::inspection::ManualTrigger>,
     #[serde(default, deserialize_with = "permissions::deserialize")]
     permissions: Option<wsr_types::inspection::Permissions>,
+    #[serde(default, deserialize_with = "present_value")]
+    env: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "present_value")]
+    defaults: Option<serde_yaml::Value>,
     #[serde(deserialize_with = "unique_jobs")]
     jobs: BTreeMap<String, Job>,
 }
 
 impl diagnostic::Level for Workflow {
     const NAME: &'static str = "Workflow";
-    const SCHEMA: &'static [&'static str] = &["concurrency", "defaults", "description", "env"];
+    const SCHEMA: &'static [&'static str] = &["concurrency", "description"];
 }
 
 #[derive(Deserialize)]
@@ -56,6 +61,10 @@ struct Job {
         deserialize_with = "timeout_minutes"
     )]
     timeout_minutes: Option<SourceText>,
+    #[serde(default, deserialize_with = "present_value")]
+    env: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "present_value")]
+    defaults: Option<serde_yaml::Value>,
     #[serde(deserialize_with = "steps")]
     steps: Vec<Step>,
 }
@@ -68,8 +77,6 @@ impl diagnostic::Level for Job {
         "concurrency",
         "container",
         "continue-on-error",
-        "defaults",
-        "env",
         "environment",
         "if",
         "outputs",
@@ -141,6 +148,15 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         Some(text) => Some(SourceText::Literal(text)),
         None => None,
     };
+    // The pinned workflow-env has an expression context; workflow-defaults(-run) has none.
+    let env = workflow
+        .env
+        .map(|value| step_inputs::decode("env", value))
+        .transpose()?;
+    let defaults = workflow
+        .defaults
+        .map(|value| defaults::decode("defaults", value, Category::Invalid))
+        .transpose()?;
     needs::validate(&workflow.jobs)?;
     let mut jobs = Vec::new();
     for (id, job) in workflow.jobs {
@@ -175,6 +191,17 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 }
             }
         }
+        // job-env and job-defaults-run have expression contexts; job-defaults has none.
+        let env = job
+            .env
+            .map(|value| step_inputs::decode(&format!("jobs.{id}.env"), value))
+            .transpose()?;
+        let defaults = job
+            .defaults
+            .map(|value| {
+                defaults::decode(&format!("jobs.{id}.defaults"), value, Category::Unsupported)
+            })
+            .transpose()?;
         let mut steps = Vec::new();
         let mut step_ids = BTreeMap::new();
         for (index, step) in job.steps.into_iter().enumerate() {
@@ -298,6 +325,8 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             needs: job.needs.into_values(),
             permissions: job.permissions,
             timeout_minutes: job.timeout_minutes,
+            env,
+            defaults,
             steps,
         });
     }
@@ -306,6 +335,8 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         run_name,
         trigger: workflow.trigger,
         permissions: workflow.permissions,
+        env,
+        defaults,
         jobs,
     })
 }

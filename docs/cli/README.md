@@ -69,7 +69,7 @@ backslashes stay as written. If stdout is closed early (for example
 `wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
 
 Other trigger forms, runner-group objects, matrices, conditions, environment,
-defaults, services and other GHA constructs are rejected explicitly in this first slice.
+services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection remains pending.
 
@@ -193,6 +193,34 @@ parser rejects), `with` on a `run` step, `working-directory` on a `uses` step an
 non-string directories fail before stdout (`jobs.b.steps[1].env.A: expected a string, number or
 boolean`). A whole-mapping expression, an expression in a key or a number/boolean key is valid GHA
 that is reported as unsupported. Placement is checked before contents.
+
+### Workflow and job environment and run defaults
+
+Workflow-level and job-level `env` follow the step `env` rules above and render, unindented or
+under the job, as `Env (not bound):`. `defaults.run` at either level accepts only `shell` and
+`working-directory` strings and renders as source data; a job's values are never merged with the
+workflow's and nothing is applied to any step:
+
+```text
+Env (not bound):
+  MODE: "${{ inputs.mode }}" (unevaluated)
+Run defaults (not applied):
+  Shell: bash
+  Working directory: src
+Job: b
+  Runner: linux
+  Run defaults (not applied):
+    Shell: ${{ matrix.shell }} (unevaluated; expression syntax not validated)
+```
+
+`defaults: {}` and `defaults: {run: {}}` both render `Run defaults (not applied): {}`. Following the
+pinned schema, workflow and job `env` and job `defaults.run` have expression contexts: an expression
+replacing the whole mapping is unsupported, and job `shell`/`working-directory` text with a `${{`
+fence is reported as unevaluated. Workflow `defaults.run` and `defaults` itself have none, so an
+expression there is invalid (`defaults.run.shell: expression is unevaluated and not allowed in
+workflow defaults`). Unknown keys (``defaults.run: unknown field `bogus`, expected `shell` or
+`working-directory` ``), non-mappings, non-string values and empty strings are invalid; a blank
+shell is invalid and a blank directory unsupported, as for steps.
 
 ### Literal runner labels
 

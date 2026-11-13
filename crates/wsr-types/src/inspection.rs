@@ -12,6 +12,10 @@ pub struct WorkflowSummary {
     pub trigger: Option<ManualTrigger>,
     /// Optional workflow-level token permissions request, never granted by inspection.
     pub permissions: Option<Permissions>,
+    /// Optional workflow-level environment entries by name, never bound.
+    pub env: Option<BTreeMap<String, StepValue>>,
+    /// Optional workflow-level `defaults.run`, never applied to jobs or steps.
+    pub defaults: Option<RunDefaults>,
     /// Jobs in deterministic identifier order.
     pub jobs: Vec<JobSummary>,
 }
@@ -41,6 +45,10 @@ pub struct JobSummary {
     /// Optional source timeout: a literal positive YAML number rendered as text, or unevaluated
     /// expression text. Never applied.
     pub timeout_minutes: Option<SourceText>,
+    /// Optional job-level environment entries by name, not merged with the workflow's; never bound.
+    pub env: Option<BTreeMap<String, StepValue>>,
+    /// Optional job-level `defaults.run`, not merged with the workflow's; never applied to steps.
+    pub defaults: Option<RunDefaults>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }
@@ -62,6 +70,15 @@ pub struct StepSummary {
     pub with: Option<BTreeMap<String, StepValue>>,
     /// Source operation classification.
     pub kind: StepSummaryKind,
+}
+
+/// Declared `defaults.run` settings; `defaults: {}` and `defaults: {run: {}}` both have neither.
+#[derive(Debug, PartialEq, Eq)]
+pub struct RunDefaults {
+    /// Optional shell text, never selected or invoked.
+    pub shell: Option<SourceText>,
+    /// Optional working directory, never resolved.
+    pub working_directory: Option<SourceText>,
 }
 
 /// A scalar `env`/`with` source value, retaining its YAML type; never evaluated.

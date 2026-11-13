@@ -3,7 +3,7 @@ use std::io::{ErrorKind, Read as _, Write as _};
 use std::path::Path;
 
 use wsr_types::inspection::{
-    DispatchInputType, InputDefault, ManualTrigger, PermissionLevel, Permissions,
+    DispatchInputType, InputDefault, ManualTrigger, PermissionLevel, Permissions, RunDefaults,
     RunnerRequirement, SourceText, StepSummaryKind, StepValue,
 };
 
@@ -145,6 +145,12 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
     if let Some(permissions) = summary.permissions {
         render_permissions(&mut out, "", permissions)?;
     }
+    if let Some(env) = summary.env {
+        render_values(&mut out, "", "Env (not bound)", env)?;
+    }
+    if let Some(defaults) = summary.defaults {
+        render_defaults(&mut out, "", defaults)?;
+    }
     for job in summary.jobs {
         write!(out, "Job: {}", job.id.escape_debug())?;
         if let Some(name) = job.name {
@@ -189,6 +195,12 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
             )?,
             None => {}
         }
+        if let Some(env) = job.env {
+            render_values(&mut out, "  ", "Env (not bound)", env)?;
+        }
+        if let Some(defaults) = job.defaults {
+            render_defaults(&mut out, "  ", defaults)?;
+        }
         for (index, step) in job.steps.into_iter().enumerate() {
             write!(out, "  Step {}", index + 1)?;
             if let Some(id) = step.id {
@@ -222,10 +234,10 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                 None => {}
             }
             if let Some(env) = step.env {
-                render_values(&mut out, "Env (not bound)", env)?;
+                render_values(&mut out, "    ", "Env (not bound)", env)?;
             }
             if let Some(with) = step.with {
-                render_values(&mut out, "With (not passed to any action)", with)?;
+                render_values(&mut out, "    ", "With (not passed to any action)", with)?;
             }
         }
     }
@@ -266,17 +278,42 @@ fn render_permissions(
     }
 }
 
+fn render_defaults(out: &mut String, indent: &str, defaults: RunDefaults) -> std::fmt::Result {
+    if defaults.shell.is_none() && defaults.working_directory.is_none() {
+        return writeln!(out, "{indent}Run defaults (not applied): {{}}");
+    }
+    writeln!(out, "{indent}Run defaults (not applied):")?;
+    for (label, text) in [
+        ("Shell", defaults.shell),
+        ("Working directory", defaults.working_directory),
+    ] {
+        match text {
+            Some(SourceText::Literal(text)) => {
+                writeln!(out, "{indent}  {label}: {}", text.escape_debug())?
+            }
+            Some(SourceText::Unevaluated(text)) => writeln!(
+                out,
+                "{indent}  {label}: {} (unevaluated; expression syntax not validated)",
+                text.escape_debug()
+            )?,
+            None => {}
+        }
+    }
+    Ok(())
+}
+
 fn render_values(
     out: &mut String,
+    indent: &str,
     label: &str,
     values: std::collections::BTreeMap<String, StepValue>,
 ) -> std::fmt::Result {
     if values.is_empty() {
-        return writeln!(out, "    {label}: {{}}");
+        return writeln!(out, "{indent}{label}: {{}}");
     }
-    writeln!(out, "    {label}:")?;
+    writeln!(out, "{indent}{label}:")?;
     for (key, value) in values {
-        write!(out, "      {}: ", key.escape_debug())?;
+        write!(out, "{indent}  {}: ", key.escape_debug())?;
         match value {
             StepValue::Text(SourceText::Literal(text)) => writeln!(out, "{text:?}")?,
             StepValue::Text(SourceText::Unevaluated(text)) => {

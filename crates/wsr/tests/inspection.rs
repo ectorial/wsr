@@ -1450,6 +1450,151 @@ fn inspect_reports_step_inputs_without_binding_or_passing_them() {
     }
 }
 
+// Backlog B-11: workflow and job `env` and `defaults.run` are source data, never bound or applied.
+#[test]
+fn inspect_reports_workflow_and_job_env_and_run_defaults_without_applying_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = r#"env:
+  ZED: "$(touch executed)\x1b[31m"
+  MODE: ${{ inputs.mode }}
+  N: 3
+defaults:
+  run:
+    shell: bash
+    working-directory: src
+jobs:
+  b:
+    runs-on: linux
+    env: {}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+        working-directory: ${{ github.workspace }}
+    steps:
+      - run: touch executed
+  c:
+    runs-on: linux
+    defaults: {run: {}}
+    env: {"A\u202e": "\u200b"}
+    steps: [{run: echo}]
+"#;
+    let report = r#"Workflow: (unnamed)
+Inspection only; execution compatibility is not assessed.
+Env (not bound):
+  MODE: "${{ inputs.mode }}" (unevaluated)
+  N: 3
+  ZED: "$(touch executed)\u{1b}[31m"
+Run defaults (not applied):
+  Shell: bash
+  Working directory: src
+Job: b
+  Runner: linux
+  Env (not bound): {}
+  Run defaults (not applied):
+    Shell: ${{ matrix.shell }} (unevaluated; expression syntax not validated)
+    Working directory: ${{ github.workspace }} (unevaluated; expression syntax not validated)
+  Step 1: run
+Job: c
+  Runner: linux
+  Env (not bound):
+    A\u{202e}: "\u{200b}"
+  Run defaults (not applied): {}
+  Step 1: run
+"#;
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(String::from_utf8(output.stdout).unwrap(), report);
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn inspect_rejects_invalid_workflow_and_job_env_and_run_defaults() {
+    let directory = tempfile::tempdir().unwrap();
+    let job = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n";
+    let in_job = |field: &str| {
+        format!("jobs:\n  b:\n    runs-on: linux\n    {field}\n    steps:\n      - run: echo\n")
+    };
+    let dynamic = "expression is unevaluated; dynamic inspection is not supported yet";
+    for (source, diagnostic) in [
+        (
+            format!("env: ~\n{job}"),
+            "env: expected a mapping".to_owned(),
+        ),
+        (
+            format!("env: ${{{{ x }}}}\n{job}"),
+            format!("env: {dynamic}"),
+        ),
+        (
+            format!("env: {{A: [1]}}\n{job}"),
+            "env.A: expected a string, number or boolean".to_owned(),
+        ),
+        (
+            in_job("env: {a: x, A: y}"),
+            "jobs.b.env.A: duplicate key 'A'; already defined as 'a'".to_owned(),
+        ),
+        (
+            format!("defaults: ~\n{job}"),
+            "defaults: expected a mapping".to_owned(),
+        ),
+        (
+            format!("defaults: ${{{{ x }}}}\n{job}"),
+            "defaults: expression is unevaluated and not allowed in defaults".to_owned(),
+        ),
+        (
+            format!("defaults: {{bogus: 1}}\n{job}"),
+            "defaults: unknown field `bogus`, expected `run`".to_owned(),
+        ),
+        (
+            format!("defaults: {{run: ~}}\n{job}"),
+            "defaults.run: expected a mapping".to_owned(),
+        ),
+        (
+            format!("defaults: {{run: {{bogus: 1}}}}\n{job}"),
+            "defaults.run: unknown field `bogus`, expected `shell` or `working-directory`"
+                .to_owned(),
+        ),
+        (
+            format!("defaults: {{run: '${{{{ x }}}}'}}\n{job}"),
+            "defaults.run: expression is unevaluated and not allowed in workflow defaults"
+                .to_owned(),
+        ),
+        (
+            format!("defaults: {{run: {{shell: '${{{{ x }}}}'}}}}\n{job}"),
+            "defaults.run.shell: expression is unevaluated and not allowed in workflow defaults"
+                .to_owned(),
+        ),
+        (
+            format!("defaults: {{run: {{shell: ''}}}}\n{job}"),
+            "defaults.run.shell: expected a nonempty string".to_owned(),
+        ),
+        (
+            format!("defaults: {{run: {{working-directory: 3}}}}\n{job}"),
+            "defaults.run.working-directory: expected a string".to_owned(),
+        ),
+        (
+            in_job("defaults: {run: '${{ x }}'}"),
+            format!("jobs.b.defaults.run: {dynamic}"),
+        ),
+        (
+            in_job("defaults: {run: {working-directory: ''}}"),
+            "jobs.b.defaults.run.working-directory: expected a nonempty string".to_owned(),
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
+        assert!(output.stdout.is_empty(), "{source}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{source}"
+        );
+    }
+}
+
 #[test]
 fn inspect_rejects_invalid_step_inputs() {
     let directory = tempfile::tempdir().unwrap();
