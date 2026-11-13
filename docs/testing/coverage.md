@@ -342,6 +342,16 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Shell and action-reference validation (backlog B-14)
+
+`crates/wsr-gha/tests/shell_uses.rs` asserts `Invalid` at the step, workflow-defaults and
+job-defaults shell routes for non-built-in shells without `{0}` (including ` bash`), acceptance of
+the six built-ins in any case and `{0}` strings, nine malformed versus nine well-formed `uses`
+references (runner separator normalization, `.\` paths) and `$/` as Unsupported.
+`inspect_rejects_unknown_shells_and_malformed_action_references` pins three exact escaped CLI
+diagnostics with an `executed` sentinel. Observed red: `'true'` shell and `'5'` uses inspected Ok.
+No existing assertion changed; dogfood goldens unchanged. The CLI inspection suite lists 46 tests.
+
 ## Job and step conditions (backlog B-12)
 
 `inspect_reports_job_and_step_conditions_without_evaluating_them` asserts the complete report for

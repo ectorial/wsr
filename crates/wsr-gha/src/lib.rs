@@ -254,7 +254,10 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             }
             let kind = match (step.run, step.uses) {
                 (Some(_), None) => StepSummaryKind::Run,
-                (None, Some(reference)) => StepSummaryKind::Uses(reference),
+                (None, Some(reference)) => {
+                    check_action_reference(&reference, &format!("{location}.uses"))?;
+                    StepSummaryKind::Uses(reference)
+                }
                 _ => {
                     return Err(Error::invalid(
                         location,
@@ -277,6 +280,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 if !matches!(kind, StepSummaryKind::Run) {
                     return Err(Error::invalid(field, "shell applies only to run steps"));
                 }
+                check_shell(shell, &field)?;
             }
             let working_directory = match step.working_directory {
                 Some(_) if !matches!(kind, StepSummaryKind::Run) => {
@@ -364,6 +368,65 @@ fn check_required(value: &str, location: &str, expression: Category) -> Result<(
         return Err(Error::invalid(location, "expected a nonempty string"));
     }
     Ok(())
+}
+
+/// The runner splits a shell at its first space into a command and arguments, and rejects one
+/// without `{0}` unless the command is a built-in shell (case-insensitive) with no arguments.
+pub(crate) fn check_shell(shell: &str, location: &str) -> Result<(), Error> {
+    const BUILT_IN: &[&str] = &["bash", "pwsh", "python", "sh", "cmd", "powershell"];
+    let (command, arguments) = shell.split_once(' ').unwrap_or((shell, ""));
+    if shell.contains("{0}")
+        || (arguments.trim().is_empty()
+            && BUILT_IN
+                .iter()
+                .any(|built_in| command.eq_ignore_ascii_case(built_in)))
+    {
+        return Ok(());
+    }
+    Err(Error::invalid(
+        location,
+        format_args!(
+            "unknown shell '{}'; expected bash, pwsh, python, sh, cmd, powershell or a command containing {{0}}",
+            shell.escape_debug()
+        ),
+    ))
+}
+
+/// Accept a local `./` or `.\` path, a `docker://` image or `owner/repo[/path]@ref`, whose path
+/// the runner splits on either separator, dropping empty segments. Nothing is resolved.
+fn check_action_reference(reference: &str, location: &str) -> Result<(), Error> {
+    if reference.starts_with("./") || reference.starts_with(".\\") {
+        return Ok(());
+    }
+    if reference.starts_with("$/") {
+        // The pinned parser reads `$/` as a self-repository reference.
+        return Err(Error::unsupported(
+            location,
+            "self-repository action references are not inspected yet",
+        ));
+    }
+    let valid = match reference.strip_prefix("docker://") {
+        Some(image) => !image.is_empty(),
+        None => reference.split_once('@').is_some_and(|(path, version)| {
+            !version.is_empty()
+                && !version.contains('@')
+                && path
+                    .split(['/', '\\'])
+                    .filter(|segment| !segment.is_empty())
+                    .count()
+                    >= 2
+        }),
+    };
+    if valid {
+        return Ok(());
+    }
+    Err(Error::invalid(
+        location,
+        format_args!(
+            "invalid action reference '{}'; expected ./path, docker://image or owner/repo[/path]@ref",
+            reference.escape_debug()
+        ),
+    ))
 }
 
 /// A job ID has no schema expression context and must be an identifier.

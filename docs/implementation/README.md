@@ -13,6 +13,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | [Typed-error iteration](inspection-typed-errors.md) | Backlog B-0: provisional typed inspection errors with category and route |
 | [Diagnostic-route iteration](inspection-diagnostic-routes.md) | Backlog B-1: one-based route grammar and job-ID-first validation order |
 | [Classification iteration](inspection-classification.md) | Backlog B-8: expression category by schema context, schema-valid values no longer Invalid, job-ID-first route safety |
+| [Shell and action-reference iteration](inspection-shell-uses.md) | Backlog B-14: unknown shells and malformed `uses` references rejected as invalid |
 | [Scalar-conversion iteration](inspection-scalar-conversion.md) | Backlog B-13: null, boolean and number conversions classified per field as Unsupported or Invalid |
 | [Conditions iteration](inspection-conditions.md) | Backlog B-12: job and step `if` reported as written, never evaluated |
 | [Env and defaults iteration](inspection-env-defaults.md) | Backlog B-11: workflow/job `env` and `defaults.run`, never bound, merged or applied |

@@ -1869,3 +1869,36 @@ fn inspect_size_warning_does_not_panic_when_stderr_is_closed() {
         "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Step 1: run\n"
     );
 }
+
+// Backlog B-14: a shell or action reference the runner rejects fails before stdout, with the
+// hostile text escaped once and nothing run or fetched.
+#[test]
+fn inspect_rejects_unknown_shells_and_malformed_action_references() {
+    let directory = tempfile::tempdir().unwrap();
+    for (source, diagnostic) in [
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        shell: \"touch executed\\e[31m\\u202E\"\n",
+            "jobs.b.steps[1].shell: unknown shell 'touch executed\\u{1b}[31m\\u{202e}'; expected bash, pwsh, python, sh, cmd, powershell or a command containing {0}",
+        ),
+        (
+            "defaults:\n  run:\n    shell: perl\njobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n",
+            "defaults.run.shell: unknown shell 'perl'; expected bash, pwsh, python, sh, cmd, powershell or a command containing {0}",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - uses: \"actions/checkout\\e\\u202E\"\n",
+            "jobs.b.steps[1].uses: invalid action reference 'actions/checkout\\u{1b}\\u{202e}'; expected ./path, docker://image or owner/repo[/path]@ref",
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
+        assert!(output.stdout.is_empty(), "{source}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{source}"
+        );
+        assert!(!directory.path().join("executed").exists());
+        assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+}

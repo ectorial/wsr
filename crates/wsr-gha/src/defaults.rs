@@ -69,6 +69,9 @@ pub(crate) fn decode(
                 };
                 return Err(Error::new(category, field, "expected a nonempty string"));
             } else {
+                if key == "shell" {
+                    crate::check_shell(&text, &field)?;
+                }
                 SourceText::Literal(text)
             });
         }
