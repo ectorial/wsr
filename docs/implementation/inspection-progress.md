@@ -1,6 +1,26 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-3 requested permissions implemented; PR pending checks
+## Current checkpoint — B-4 job timeouts and step shells implemented; PR pending checks
+
+Same Schedule A run, after the PR #33 wake (lock retaken 2026-11-13). PR #33 squash-merged as
+`40f1354` after all four required checks passed on `e2cc637` with no reviews or comments; `wsr` and
+`wsr-gha` tests verified on synced main. B-4 on `feat/inspect-timeout-shell` from `40f1354`; slice
+record [inspection-timeout-shell.md](inspection-timeout-shell.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no blockers;
+two nits fixed (shell checks now follow the run/uses rule, with precedence tests; positivity documented
+as a subset rule, not the schema's).
+
+- Red (observed on `40f1354` build): both new CLI tests failed with ``jobs.b: unknown field
+  `timeout-minutes` ``.
+- Green: 2 CLI tests (3 accepted cases, 14 exact-stderr rejections), 2 `wsr-gha` tests. Intended
+  contract updates: unknown-field lists name `shell`/`timeout-minutes`; B-0 unsupported step-key case
+  `shell` → step `timeout-minutes`.
+- Dogfood: `example-python.yml` now stops at step `with`, `example-shell.yml` at step `env` (B-5).
+
+B-4 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings, then take B-5 (step `env`, `with`, `working-directory`).
+
+## Previous checkpoint — B-3 requested permissions delivered (PR #33, `40f1354`)
 
 Schedule A run 2026-11-13T15:24Z (no prior lock; lock taken). Baseline `319fc07` = origin/main;
 Dependabot #23 untouched; no open Schedule B PR. Branch `feat/inspect-permissions`; slice record

@@ -49,6 +49,12 @@ struct Job {
     needs: Needs,
     #[serde(default, deserialize_with = "permissions::deserialize")]
     permissions: Option<wsr_types::inspection::Permissions>,
+    #[serde(
+        rename = "timeout-minutes",
+        default,
+        deserialize_with = "timeout_minutes"
+    )]
+    timeout_minutes: Option<SourceText>,
     #[serde(deserialize_with = "steps")]
     steps: Vec<Step>,
 }
@@ -70,7 +76,6 @@ impl diagnostic::Level for Job {
         "services",
         "snapshot",
         "strategy",
-        "timeout-minutes",
         "uses",
         "with",
     ];
@@ -86,6 +91,8 @@ struct Step {
     #[serde(default, deserialize_with = "present_string")]
     run: Option<String>,
     #[serde(default, deserialize_with = "present_string")]
+    shell: Option<String>,
+    #[serde(default, deserialize_with = "present_string")]
     uses: Option<String>,
 }
 
@@ -99,7 +106,6 @@ impl diagnostic::Level for Step {
         "env",
         "if",
         "parallel",
-        "shell",
         "timeout-minutes",
         "wait",
         "wait-all",
@@ -216,9 +222,26 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                     ));
                 }
             };
+            if let Some(shell) = &step.shell {
+                let field = format!("{location}.shell");
+                // The pinned schema gives `shell` no expression context and only run steps a shell.
+                if shell.contains("${{") {
+                    return Err(Error::invalid(
+                        field,
+                        "expression is unevaluated and not allowed in shell",
+                    ));
+                }
+                if shell.trim().is_empty() {
+                    return Err(Error::invalid(field, "expected a nonempty string"));
+                }
+                if !matches!(kind, StepSummaryKind::Run) {
+                    return Err(Error::invalid(field, "shell applies only to run steps"));
+                }
+            }
             steps.push(StepSummary {
                 id: step.id,
                 name: step.name,
+                shell: step.shell,
                 kind,
             });
         }
@@ -228,6 +251,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             runner: job.runner,
             needs: job.needs.into_values(),
             permissions: job.permissions,
+            timeout_minutes: job.timeout_minutes,
             steps,
         });
     }
@@ -348,6 +372,22 @@ fn present_string<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error> {
     string(deserializer).map(Some)
+}
+
+fn timeout_minutes<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<SourceText>, D::Error> {
+    match serde_yaml::Value::deserialize(deserializer)? {
+        serde_yaml::Value::String(text) if text.contains("${{") => {
+            Ok(Some(SourceText::Unevaluated(text)))
+        }
+        serde_yaml::Value::Number(minutes)
+            if minutes.as_f64().is_some_and(|m| m.is_finite() && m > 0.0) =>
+        {
+            Ok(Some(SourceText::Literal(minutes.to_string())))
+        }
+        _ => Err(diagnostic::raise_unrouted("expected a positive number")),
+    }
 }
 
 fn runner_requirement<'de, D: serde::Deserializer<'de>>(

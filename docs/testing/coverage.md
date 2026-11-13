@@ -287,3 +287,13 @@ control-byte scopes, scope-restricted levels (`models`, `id-token`, `vulnerabili
 `copilot-requests`), non-string levels, expressions and duplicate scopes, with category `Invalid`
 and field routes. The B-0 unsupported-key case moved from `permissions` to `concurrency`, and the
 job unknown-field message now lists `permissions`. Requests are reported, never granted or enforced.
+
+## Job timeouts and step shells (backlog B-4)
+
+Two CLI tests in `crates/wsr/tests/inspection.rs` and two in `crates/wsr-gha/tests/timeout_shell.rs`.
+Observed red: both CLI tests failed with ``unknown field `timeout-minutes` `` before implementation.
+Coverage: integer, fractional and unevaluated timeouts; literal and escaped hostile shell text; exact
+stderr for boolean, negative, zero, `.inf`, string, null and sequence timeouts and for null, numeric,
+blank, expression and `uses`-step shells. The step/job unknown-field messages now list `shell` and
+`timeout-minutes`; the B-0 unsupported step-key case moved from `shell` to step `timeout-minutes`.
+Values are reported, never applied, selected or invoked.

@@ -67,7 +67,8 @@ Schedule A takes only ready slices.
 
 ## B-4 Job `timeout-minutes` and step `shell`
 
-- Status: **ready** (DR-002 resolved by D-033; GHA-derived fields stay in `wsr-types`).
+- Status: **delivered on merge of the B-4 PR** (Schedule A); see [slice record](inspection-timeout-shell.md).
+  `shell` expressions are `Invalid`: the pinned schema gives `shell` no expression context.
 
 - Behavior: literal positive number timeout and literal shell string reported as source data, never applied
   or selected; expressions shown as unevaluated `SourceText`, following the run-name precedent.

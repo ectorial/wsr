@@ -22,6 +22,9 @@ for delivery gates.
 - [x] Provisional typed inspection errors in `wsr-gha`: `inspect` failures carry an invalid versus
   valid-but-unsupported category and a source route, classified at detection against the pinned
   schema's keys; CLI diagnostics are unchanged. Not a stable, WIT or protocol contract.
+- [x] Job `timeout-minutes` and run-step `shell` in inspection: literal positive number or
+  unevaluated timeout text, literal nonempty shell, reported as not applied/not selected.
+  See [timeout and shell contract](../cli/README.md#job-timeouts-and-step-shells).
 - [x] Workflow and job `permissions` in inspection: `read-all`/`write-all` or a pinned-schema
   scope→level mapping, reported as requested and not granted. See [permissions contract](../cli/README.md#requested-permissions).
   No token, effective-permission computation or enforcement; full example-workflow inspection remains pending.
