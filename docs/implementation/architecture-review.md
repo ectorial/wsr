@@ -79,7 +79,8 @@ Findings are classified (a) bounded correction, (b) owner decision — see
   the proposal (step `shell` stays Invalid, and B-11's `defaults.run.shell` moves Unsupported→Invalid because
   the runner rejects unknown bare shells; `defaults.run.working-directory` null stays Invalid; step `id: true`
   becomes Unsupported) and found F28. Implementer: claude-sonnet-5-5 (high). Cross-review: Codex gpt-6.1-sol
-  (to be recorded).
+  (reasoning high): no code findings; P2 (B-17 conflated boolean and numeric fields) and P3 (slice record
+  misstated step `env`/`with` numbers as Unsupported) fixed before PR.
 - Verified clean: no legacy `WorkflowIR`/`WorkflowProvider` outside `wsr-types/src/lib.rs`; no IO in
   `wsr-gha`/`wsr-types`; D-033 label on `RunDefaults` and the condition field; ownership; sorted `env` keys; empty
   stdout on failure; exit codes; B-8 categories for the B-11/B-12 contexts match the pinned schema (20+ probes);

@@ -8,7 +8,8 @@ Status: **delivered** in the Schedule B architecture PR `arch/review-2026-11-13-
 The pinned reader ([template-reader.ts L411-445](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/templates/template-reader.ts))
 converts an unmatched null, boolean or number to a string (a null to `""`) and validates that string
 against the definition (null-token.ts L21-23 gives the empty string). WSR followed this unevenly:
-`if`, step `env`/`with` numbers and `defaults.run` working directories were already `Unsupported`,
+`if` and `defaults.run` working directories were already `Unsupported` (step `env`/`with` numbers and
+booleans were, and stay, accepted with their source type; only their null values change here),
 while `name`, `run`, `runs-on`, dispatch `description` and others reported the same conversions as
 `Invalid`. Under the [B-8 rule](inspection-classification.md) a schema-valid value WSR does not inspect
 is `Unsupported` (`non-string value is not inspected yet`, the existing message style), and a value the

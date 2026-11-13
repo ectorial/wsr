@@ -230,11 +230,14 @@ Schedule A takes only ready slices.
 
 - Status: **READY** (Schedule A).
 
-- Behavior: a boolean or number, or text with `${{`, is reported "(not applied)", reusing the job timeout decoder;
-  the contexts exist (`boolean-strategy-context`, `step-continue-on-error`, `step-timeout-minutes`). Keep stdout
+- Behavior: job and step `continue-on-error` take a boolean, step `timeout-minutes` a number (reuse the job
+  timeout decoder for it only); either may instead be `${{` text, reported unevaluated; all are reported
+  "(not applied)". The contexts exist (`boolean-strategy-context`, `step-continue-on-error`,
+  `step-timeout-minutes`; pinned schema L2308-2325). Keep stdout
   empty and exit 1 on failure, deterministic output, no evaluation, binding or execution claims, and a
   hostile-content escaping test.
-- Acceptance: CLI tests, `wsr-gha` category tests; `crates/wsr-gha/tests/diagnostics.rs` uses `continue-on-error`
+- Acceptance: CLI tests, `wsr-gha` category tests including rejection of `continue-on-error: 5` and
+  `timeout-minutes: true`; `crates/wsr-gha/tests/diagnostics.rs` uses `continue-on-error`
   as its `Unsupported` sample, so pick a new sample key there and record it as an intended contract change.
 - Expected red: ``unknown field `continue-on-error` `` and `` `timeout-minutes` `` (`Unsupported`).
 - Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs`, `crates/wsr/src/commands/inspect.rs`,
