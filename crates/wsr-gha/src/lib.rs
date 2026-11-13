@@ -66,6 +66,12 @@ struct Job {
         deserialize_with = "timeout_minutes"
     )]
     timeout_minutes: Option<SourceText>,
+    #[serde(
+        rename = "continue-on-error",
+        default,
+        deserialize_with = "continue_on_error"
+    )]
+    continue_on_error: Option<SourceText>,
     #[serde(default, deserialize_with = "present_value")]
     env: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_value")]
@@ -82,7 +88,6 @@ impl diagnostic::Level for Job {
     const SCHEMA: &'static [&'static str] = &[
         "cancel-timeout-minutes",
         "container",
-        "continue-on-error",
         "environment",
         "outputs",
         "secrets",
@@ -120,20 +125,25 @@ struct Step {
     with: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_string")]
     uses: Option<String>,
+    #[serde(
+        rename = "continue-on-error",
+        default,
+        deserialize_with = "continue_on_error"
+    )]
+    continue_on_error: Option<SourceText>,
+    #[serde(
+        rename = "timeout-minutes",
+        default,
+        deserialize_with = "timeout_minutes"
+    )]
+    timeout_minutes: Option<SourceText>,
 }
 
 impl diagnostic::Level for Step {
     const NAME: &'static str = "Step";
     // The union of the pinned schema's run, regular, wait, wait-all, cancel and parallel steps.
-    const SCHEMA: &'static [&'static str] = &[
-        "background",
-        "cancel",
-        "continue-on-error",
-        "parallel",
-        "timeout-minutes",
-        "wait",
-        "wait-all",
-    ];
+    const SCHEMA: &'static [&'static str] =
+        &["background", "cancel", "parallel", "wait", "wait-all"];
 }
 
 /// Inspect a static GHA source subset without performing IO or executing workflow content.
@@ -330,6 +340,8 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 id: step.id,
                 name: step.name,
                 condition: step.condition,
+                continue_on_error: step.continue_on_error,
+                timeout_minutes: step.timeout_minutes,
                 shell: step.shell,
                 working_directory,
                 env,
@@ -345,6 +357,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             condition: job.condition,
             permissions: job.permissions,
             timeout_minutes: job.timeout_minutes,
+            continue_on_error: job.continue_on_error,
             env,
             defaults,
             concurrency,
@@ -644,6 +657,20 @@ fn timeout_minutes<'de, D: serde::Deserializer<'de>>(
             }
         }
         _ => Err(diagnostic::raise_unrouted("expected a positive number")),
+    }
+}
+
+// boolean-strategy-context and step-continue-on-error take a boolean or an expression. The pinned
+// reader's string conversion of a number or null cannot yield a boolean, so those are invalid.
+fn continue_on_error<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<SourceText>, D::Error> {
+    match serde_yaml::Value::deserialize(deserializer)? {
+        serde_yaml::Value::Bool(flag) => Ok(Some(SourceText::Literal(flag.to_string()))),
+        serde_yaml::Value::String(text) if text.contains("${{") => {
+            Ok(Some(SourceText::Unevaluated(text)))
+        }
+        _ => Err(diagnostic::raise_unrouted("expected a boolean")),
     }
 }
 

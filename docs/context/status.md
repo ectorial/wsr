@@ -48,6 +48,8 @@ for delivery gates.
 - [x] Workflow `run-name` in inspection: strict optional string, literal versus unevaluated
   classification of the whole decoded text and escaped rendering. See [run-name contract](../cli/README.md#unevaluated-run-names).
   No expression parsing/validation, context lookup or default application.
+- [x] Job and step `continue-on-error` and step `timeout-minutes` in inspection: literal or
+  unevaluated, never applied (B-17). See [contract](../cli/README.md#continue-on-error-and-step-timeouts).
 - [x] Workflow and job `concurrency` in inspection: group, `cancel-in-progress` and `queue` as
   literal or unevaluated text, never applied (B-16). See [contract](../cli/README.md#workflow-and-job-concurrency).
 - [x] `on` events in inspection: scalar, sequence and empty-body mapping forms of every pinned-schema

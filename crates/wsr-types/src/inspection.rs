@@ -49,6 +49,9 @@ pub struct JobSummary {
     /// Optional source timeout: a literal positive YAML number rendered as text, or unevaluated
     /// expression text. Never applied.
     pub timeout_minutes: Option<SourceText>,
+    /// Optional `continue-on-error`: a literal boolean rendered as text, or unevaluated text.
+    /// Never applied.
+    pub continue_on_error: Option<SourceText>,
     /// Optional job-level environment entries by name, not merged with the workflow's; never bound.
     pub env: Option<BTreeMap<String, StepValue>>,
     /// Optional job-level `defaults.run`, not merged with the workflow's; never applied to steps.
@@ -68,6 +71,11 @@ pub struct StepSummary {
     pub name: Option<String>,
     /// Optional `if` text as written, bare or fenced; never parsed or evaluated.
     pub condition: Option<String>,
+    /// Optional `continue-on-error`: a literal boolean rendered as text, or unevaluated text.
+    /// Never applied.
+    pub continue_on_error: Option<SourceText>,
+    /// Optional step timeout, as for the job's. Never applied.
+    pub timeout_minutes: Option<SourceText>,
     /// Optional literal shell of a run step, never selected or invoked.
     pub shell: Option<String>,
     /// Optional working directory of a run step, never resolved.

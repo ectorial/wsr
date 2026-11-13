@@ -342,6 +342,17 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Continue-on-error and step timeouts (backlog B-17)
+
+`crates/wsr-gha/tests/continue_timeout.rs` asserts kept values (boolean and unevaluated
+`continue-on-error` at both levels; integer, fractional and unevaluated step timeouts), five
+`Invalid` `continue-on-error` values at both levels, five `Invalid` step timeouts and a non-positive
+`Unsupported` one. Two CLI tests pin a golden with hostile unevaluated text and an `executed` sentinel,
+and three exact diagnostics. Observed red: ``unknown field `continue-on-error` `` (Unsupported).
+Contract changes: `diagnostics.rs` Unsupported samples moved to job `cancel-timeout-minutes` and step
+`background`, its location test now uses `cancel-timeout-minutes`, and the job and two CLI step
+"expected one of" lists name the new keys. The CLI inspection suite lists 53 tests.
+
 ## Workflow and job concurrency (backlog B-16)
 
 `crates/wsr-gha/tests/concurrency.rs` asserts kept `Concurrency` values for five forms at both levels,

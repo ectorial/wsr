@@ -10,11 +10,12 @@ fn diagnose(source: &str) -> (Category, Option<String>) {
 #[test]
 fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() {
     for (source, route) in [
-        // Job `if` was this example until B-12 made conditions inspected; see conditions.rs.
+        // Job `if` (B-12) and then `continue-on-error` (B-17) were this example; see
+        // conditions.rs and continue_timeout.rs.
         (
-            "jobs:\n  b:\n    continue-on-error: true\n    runs-on: linux\n    steps:\n      - run: echo\n"
+            "jobs:\n  b:\n    cancel-timeout-minutes: 5\n    runs-on: linux\n    steps:\n      - run: echo\n"
                 .to_owned(),
-            "jobs.b.continue-on-error",
+            "jobs.b.cancel-timeout-minutes",
         ),
         // B-15 contract change: bare events now inspect; their configuration does not.
         (format!("on: {{push: {{branches: [main]}}}}\n{JOB}"), "on.push"),
@@ -23,9 +24,10 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
         // B-16 contract change: `concurrency` is now inspected.
         (format!("description: x\n{JOB}"), "description"),
         (
-            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - timeout-minutes: 1\n        run: b\n"
+            // B-17 contract change: step `timeout-minutes` is now inspected.
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - background: true\n        run: b\n"
                 .to_owned(),
-            "jobs.b.steps[2].timeout-minutes",
+            "jobs.b.steps[2].background",
         ),
         (
             "jobs:\n  b:\n    runs-on: {group: fleet}\n    steps:\n      - run: echo\n".to_owned(),
@@ -214,12 +216,12 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
 #[test]
 fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
     let error = wsr_gha::inspect(
-        b"jobs:\n  b:\n    runs-on: linux\n    continue-on-error: true\n    steps:\n      - run: echo\n",
+        b"jobs:\n  b:\n    runs-on: linux\n    cancel-timeout-minutes: 5\n    steps:\n      - run: echo\n",
     )
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "jobs.b: unknown field `continue-on-error`, expected one of `name`, `runs-on`, `needs`, `if`, `permissions`, `timeout-minutes`, `env`, `defaults`, `concurrency`, `steps` at line 4 column 5"
+        "jobs.b: unknown field `cancel-timeout-minutes`, expected one of `name`, `runs-on`, `needs`, `if`, `permissions`, `timeout-minutes`, `continue-on-error`, `env`, `defaults`, `concurrency`, `steps` at line 4 column 5"
     );
     let duplicate = wsr_gha::inspect(
         format!("on: {{workflow_dispatch: null, workflow_dispatch: {{}}}}\n{JOB}").as_bytes(),

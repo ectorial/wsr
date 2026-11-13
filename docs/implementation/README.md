@@ -13,6 +13,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | [Typed-error iteration](inspection-typed-errors.md) | Backlog B-0: provisional typed inspection errors with category and route |
 | [Diagnostic-route iteration](inspection-diagnostic-routes.md) | Backlog B-1: one-based route grammar and job-ID-first validation order |
 | [Classification iteration](inspection-classification.md) | Backlog B-8: expression category by schema context, schema-valid values no longer Invalid, job-ID-first route safety |
+| [Continue-on-error iteration](inspection-continue-timeout.md) | Backlog B-17: job/step `continue-on-error` and step `timeout-minutes`, never applied |
 | [Concurrency iteration](inspection-concurrency.md) | Backlog B-16: workflow and job `concurrency`, never applied |
 | [Trigger-event iteration](inspection-trigger-events.md) | Backlog B-15: bare `on` events in source order; event configuration unsupported |
 | [Shell and action-reference iteration](inspection-shell-uses.md) | Backlog B-14: unknown shells and malformed `uses` references rejected as invalid |

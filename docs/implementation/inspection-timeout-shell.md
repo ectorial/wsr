@@ -22,7 +22,8 @@ Per the [pinned workflow schema](https://github.com/actions/languageservices/blo
 Cross-reviewed by Codex gpt-6.1-sol (high): no blockers; two nits fixed (shell-check precedence,
 positivity attributed to this subset rather than the schema).
 
-Step `timeout-minutes` and job `cancel-timeout-minutes` remain unsupported.
+Job `cancel-timeout-minutes` remains unsupported; step `timeout-minutes` was added by
+[B-17](inspection-continue-timeout.md).
 
 ```text
   Timeout minutes: 5 (not applied)
