@@ -345,7 +345,8 @@ goldens are unchanged. The CLI inspection suite lists 45 tests.
 ## Trigger events (backlog B-15)
 
 `crates/wsr-gha/tests/triggers.rs` asserts source-order `Trigger` lists for scalar, sequence and
-mapping forms, six `Unsupported` configured-event cases and thirteen `Invalid` shapes with routes.
+mapping forms, eight `Unsupported` cases (configured events, repeated and empty lists) and eleven
+`Invalid` shapes with routes.
 CLI tests pin three golden reports (with an `executed` sentinel), seven exact escaped diagnostics, and
 successful inspection of temporary copies of `check-docs`, `check-fmt`, `check-lint` and `test`.
 Observed red: `on: unsupported trigger; only workflow_dispatch is inspected yet` and `on: expected a

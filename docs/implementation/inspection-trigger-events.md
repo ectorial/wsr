@@ -2,7 +2,9 @@
 
 Status: **delivered on merge of its PR**, branch `feat/b15-trigger-events` from `c4472b5`
 (Schedule A). Implemented by Claude (claude-opus-5-5, orchestrator, burn mode; interface-touching:
-`wsr-types` `Trigger`, D-033). Evidence lives in the [checkpoint](inspection-progress.md).
+`wsr-types` `Trigger`, D-033); cross-reviewed by Codex gpt-6.1-sol (high): no blockers; one P2 fixed
+(a valid cron in the Unsupported sample) and one P3 fixed (empty collections `Unsupported`, not
+`Invalid`). The pinned parser uses `workflow-root-strict`. Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Scope
 
@@ -20,9 +22,11 @@ event names; `on-mapping-strict` maps each to a definition that is `null` or a m
 - Bare names in a scalar or sequence, and null or `{}` bodies where the definition allows them, are
   reported. `{}` on a null-only event and null `schedule` are `Invalid`.
 - Non-empty bodies (filters, `workflow_call` inputs/secrets/outputs) and any `schedule` sequence are
-  `Unsupported`; their inner keys are not validated. A repeated sequence entry is `Unsupported`.
-- Unknown names (strict `on`), expressions (no context), non-string entries, `null`, other body shapes
-  and an empty sequence or mapping are `Invalid`; sequence diagnostics route to `on[n]`.
+  `Unsupported`; their inner keys are not validated. A repeated sequence entry (the pinned parser
+  accepts it) and an empty sequence or mapping (the strict schema sets no minimum; GitHub rejection
+  is not established) are `Unsupported`.
+- Unknown names (strict `on`), expressions (no context), non-string entries, `null` and other body
+  shapes are `Invalid`; sequence diagnostics route to `on[n]`.
 
 ## Acceptance and expected red
 

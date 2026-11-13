@@ -19,7 +19,7 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
         // B-15 contract change: bare events now inspect; their configuration does not.
         (format!("on: {{push: {{branches: [main]}}}}\n{JOB}"), "on.push"),
         (format!("on: [push, push]\n{JOB}"), "on[2]"),
-        (format!("on: {{schedule: [{{cron: x}}]}}\n{JOB}"), "on.schedule"),
+        (format!("on: {{schedule: [{{cron: '0 0 * * *'}}]}}\n{JOB}"), "on.schedule"),
         (format!("concurrency: ci\n{JOB}"), "concurrency"),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - timeout-minutes: 1\n        run: b\n"

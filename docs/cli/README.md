@@ -90,8 +90,9 @@ non-dispatch bodies are null or `{}` (`on: {workflow_call: null, push: {}}`). Ev
 is accepted; an unknown name is invalid (`on[2]: unknown event 'bogus'`). Non-empty bodies
 (branch/path/type filters, `workflow_call` inputs, secrets and outputs) and any `schedule` sequence
 are unsupported (`on.push: event configuration is not inspected yet`), as is a repeated sequence
-entry. A body on a null-only event such as `create` (`expected null`), a null `schedule`, other body
-shapes, `null` and an empty sequence or mapping (`on: expected at least one event`) are invalid. No
+entry or an empty sequence or mapping (`on: an empty event list is not inspected yet`). A body on a
+null-only event such as `create` (`expected null`), a null `schedule`, other body shapes and `null`
+are invalid. No
 event is subscribed to, matched or delivered.
 
 ### Manual-trigger input declarations

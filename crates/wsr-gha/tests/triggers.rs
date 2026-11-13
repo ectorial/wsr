@@ -53,6 +53,9 @@ fn event_configuration_stays_unsupported() {
         ("{schedule: [{cron: '0 0 * * *'}]}", "on.schedule"),
         ("{schedule: []}", "on.schedule"),
         ("[push, push]", "on[2]"),
+        // The strict schema has no minimum size for either collection.
+        ("[]", "on"),
+        ("{}", "on"),
     ] {
         let error = wsr_gha::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
         assert_eq!(
@@ -69,8 +72,6 @@ fn unknown_events_and_malformed_bodies_are_invalid() {
         ("bogus", "on"),
         ("'${{ x }}'", "on"),
         ("null", "on"),
-        ("[]", "on"),
-        ("{}", "on"),
         ("[push, bogus]", "on[2]"),
         ("[push, 5]", "on[2]"),
         ("[push, [pull_request]]", "on[2]"),

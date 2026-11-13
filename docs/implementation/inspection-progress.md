@@ -1,6 +1,27 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-14 shell and action-reference validation implemented; PR pending checks
+## Current checkpoint — B-15 trigger events implemented; PR pending checks
+
+Same Schedule A run, after the PR #44 wake (lock retaken 2026-11-13). PR #44 squash-merged as
+`c4472b5` after all four required checks passed on `eb82681` with no reviews or comments; `wsr` and
+`wsr-gha` tests (106) verified on synced main. B-15 on `feat/b15-trigger-events` from `c4472b5`; slice
+record [inspection-trigger-events.md](inspection-trigger-events.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode; interface-touching: `wsr-types` `Trigger`, D-033);
+cross-reviewed by Codex gpt-6.1-sol (high): no blockers; one P2 fixed (valid cron in a sample), one
+P3 fixed (empty `on` collections Unsupported, not Invalid).
+
+- Red (observed): `triggers.rs` failed with `on: unsupported trigger; only workflow_dispatch is
+  inspected yet` (`workflow_call`) and `on: expected a mapping (other trigger forms are unsupported)`.
+- Contract changes: `WorkflowSummary.trigger` → `triggers: Vec<Trigger>` (`dispatch_inputs.rs`);
+  `diagnostics.rs` bare-`push` Unsupported samples → configured events, sequence routes → `on[n]`;
+  four CLI `on` diagnostics in the dispatch test; orphaned `Error::with_category` removed.
+- Green: 3 `wsr-gha` tests, 3 CLI tests (written after the `wsr-gha` green; acceptance), including
+  temporary copies of `check-docs`/`check-fmt`/`check-lint`/`test`; full suites (112); `cargo xtask ci`.
+
+B-15 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-16 (workflow and job `concurrency`).
+
+## Previous checkpoint — B-14 shell and action-reference validation delivered (PR #44, `c4472b5`)
 
 New Schedule A run (lock created 2026-11-13T21:24Z; no prior lock). PR #42 (B-12) was already merged
 as `6f58e96`; Schedule B's PR #43 (B-13) merged as `51bb95d`; main synced. B-14 on

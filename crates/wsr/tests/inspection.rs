@@ -742,8 +742,8 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
     for (trigger, diagnostic) in [
         // B-15 contract change: sequences and bare non-dispatch events now inspect.
         ("null", "on: expected an event name, sequence or mapping"),
-        ("[]", "on: expected at least one event"),
-        ("{}", "on: expected at least one event"),
+        ("[]", "on: an empty event list is not inspected yet"),
+        ("{}", "on: an empty event list is not inspected yet"),
         (
             "{push: {branches: [main]}}",
             "on.push: event configuration is not inspected yet",

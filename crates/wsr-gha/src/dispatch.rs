@@ -86,14 +86,14 @@ fn parse(value: &Value) -> Result<Vec<Trigger>, Error> {
                 triggers.push(trigger);
             }
             if triggers.is_empty() {
-                return Err(Error::invalid("on", "expected at least one event"));
+                return Err(Error::unsupported("on", EMPTY));
             }
             Ok(triggers)
         }
         Value::Mapping(events) => {
             fields(events, EVENTS, &[], "on")?;
             if events.is_empty() {
-                return Err(Error::invalid("on", "expected at least one event"));
+                return Err(Error::unsupported("on", EMPTY));
             }
             events
                 .iter()
@@ -128,6 +128,8 @@ fn parse(value: &Value) -> Result<Vec<Trigger>, Error> {
 }
 
 const CONFIGURATION: &str = "event configuration is not inspected yet";
+// The strict schema sets no minimum size; whether GitHub accepts no events is not established.
+const EMPTY: &str = "an empty event list is not inspected yet";
 
 /// A bare event name at `route`; `on-string-strict` admits every pinned event.
 fn bare(value: &Value, route: &str) -> Result<Trigger, Error> {
