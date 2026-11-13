@@ -14,6 +14,7 @@ mod diagnostic;
 mod dispatch;
 mod needs;
 mod permissions;
+mod step_inputs;
 use diagnostic::Fields;
 pub use diagnostic::{Category, Error};
 use needs::Needs;
@@ -92,6 +93,17 @@ struct Step {
     run: Option<String>,
     #[serde(default, deserialize_with = "present_string")]
     shell: Option<String>,
+    #[serde(
+        rename = "working-directory",
+        default,
+        deserialize_with = "present_string"
+    )]
+    working_directory: Option<String>,
+    // Interpreted after the step-kind checks, so a misplaced field reports its placement first.
+    #[serde(default, deserialize_with = "present_value")]
+    env: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "present_value")]
+    with: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_string")]
     uses: Option<String>,
 }
@@ -103,14 +115,11 @@ impl diagnostic::Level for Step {
         "background",
         "cancel",
         "continue-on-error",
-        "env",
         "if",
         "parallel",
         "timeout-minutes",
         "wait",
         "wait-all",
-        "with",
-        "working-directory",
     ];
 }
 
@@ -238,10 +247,44 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                     return Err(Error::invalid(field, "shell applies only to run steps"));
                 }
             }
+            let working_directory = match step.working_directory {
+                Some(_) if !matches!(kind, StepSummaryKind::Run) => {
+                    return Err(Error::invalid(
+                        format!("{location}.working-directory"),
+                        "working-directory applies only to run steps",
+                    ));
+                }
+                Some(text) if text.trim().is_empty() => {
+                    return Err(Error::invalid(
+                        format!("{location}.working-directory"),
+                        "expected a nonempty string",
+                    ));
+                }
+                Some(text) if text.contains("${{") => Some(SourceText::Unevaluated(text)),
+                Some(text) => Some(SourceText::Literal(text)),
+                None => None,
+            };
+            if step.with.is_some() && matches!(kind, StepSummaryKind::Run) {
+                return Err(Error::invalid(
+                    format!("{location}.with"),
+                    "with applies only to uses steps",
+                ));
+            }
+            let env = step
+                .env
+                .map(|value| step_inputs::decode(&format!("{location}.env"), value))
+                .transpose()?;
+            let with = step
+                .with
+                .map(|value| step_inputs::decode(&format!("{location}.with"), value))
+                .transpose()?;
             steps.push(StepSummary {
                 id: step.id,
                 name: step.name,
                 shell: step.shell,
+                working_directory,
+                env,
+                with,
                 kind,
             });
         }
@@ -372,6 +415,12 @@ fn present_string<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error> {
     string(deserializer).map(Some)
+}
+
+fn present_value<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<serde_yaml::Value>, D::Error> {
+    serde_yaml::Value::deserialize(deserializer).map(Some)
 }
 
 fn timeout_minutes<'de, D: serde::Deserializer<'de>>(

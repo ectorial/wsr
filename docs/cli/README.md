@@ -161,6 +161,33 @@ gives `shell` no expression context, so `${{` text fails, as does `shell` on a `
 No timeout is applied and no shell is selected, located or invoked. Step `timeout-minutes` and
 `cancel-timeout-minutes` remain unsupported.
 
+### Step environment, action inputs and working directories
+
+Step `env` (any step), `with` (`uses` steps only) and `working-directory` (`run` steps only)
+are reported after the step line, with keys sorted and values shown with their YAML type:
+
+```text
+  Step 1: uses actions/checkout@…
+    With (not passed to any action):
+      persist-credentials: false
+      python-version: "3.13"
+  Step 3: run (…)
+    Working directory: examples/python-basic (not resolved)
+    Env (not bound):
+      WSR_EXAMPLE_MODE: "${{ inputs.mode }}" (unevaluated)
+```
+
+Following the [pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json),
+values may be strings, numbers or booleans; strings are quoted and escaped, and text with a `${{`
+fence is marked unevaluated. An empty mapping renders as `{}`. No variable is bound, no input is
+passed to an action, no directory is resolved and no expression is evaluated.
+
+Non-mapping values, empty keys, null or nested values, keys duplicated ignoring case (as the pinned
+parser rejects), `with` on a `run` step, `working-directory` on a `uses` step and blank or
+non-string directories fail before stdout (`jobs.b.steps[1].env.A: expected a string, number or
+boolean`). A whole-mapping expression, an expression in a key or a number/boolean key is valid GHA
+that is reported as unsupported. Placement is checked before contents.
+
 ### Literal runner labels
 
 `runs-on` accepts a nonempty scalar string or nonempty list of nonempty strings.
@@ -210,7 +237,7 @@ ahead of an unknown dependency.
 Decoding and semantic diagnostics share one route grammar, `jobs.<id>.<field>[<n>]` with one-based
 list indices: `jobs.test.needs[2]: expected a string`, `jobs.b.runs-on[2]: expected a string
 label`, `jobs.b.steps[1].id: expected a string`. An unknown key is reported at its enclosing
-mapping, whose detail names the key (``jobs.b.steps[1]: unknown field `with`, …``). Decoding
+mapping, whose detail names the key (``jobs.b.steps[1]: unknown field `bogus`, …``). Decoding
 errors keep the parser's line/column. Identifiers in diagnostic text are quoted as `'…'` and
 escaped once (`jobs.b\u{1}: invalid job identifier 'b\u{1}'`); a duplicate job names its
 identifier. Errors raised by the YAML parser or decoder itself (syntax, a scalar where a step

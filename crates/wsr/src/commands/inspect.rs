@@ -4,7 +4,7 @@ use std::path::Path;
 
 use wsr_types::inspection::{
     DispatchInputType, InputDefault, ManualTrigger, PermissionLevel, Permissions,
-    RunnerRequirement, SourceText, StepSummaryKind,
+    RunnerRequirement, SourceText, StepSummaryKind, StepValue,
 };
 
 pub fn run(file: &Path) -> anyhow::Result<()> {
@@ -194,6 +194,25 @@ fn render(file: &Path) -> anyhow::Result<String> {
             if let Some(shell) = step.shell {
                 writeln!(out, "    Shell: {} (not selected)", shell.escape_debug())?;
             }
+            match step.working_directory {
+                Some(SourceText::Literal(path)) => writeln!(
+                    out,
+                    "    Working directory: {} (not resolved)",
+                    path.escape_debug()
+                )?,
+                Some(SourceText::Unevaluated(text)) => writeln!(
+                    out,
+                    "    Working directory: {} (unevaluated; expression syntax not validated; not resolved)",
+                    text.escape_debug()
+                )?,
+                None => {}
+            }
+            if let Some(env) = step.env {
+                render_values(&mut out, "Env (not bound)", env)?;
+            }
+            if let Some(with) = step.with {
+                render_values(&mut out, "With (not passed to any action)", with)?;
+            }
         }
     }
     Ok(out)
@@ -231,4 +250,27 @@ fn render_permissions(
             Ok(())
         }
     }
+}
+
+fn render_values(
+    out: &mut String,
+    label: &str,
+    values: std::collections::BTreeMap<String, StepValue>,
+) -> std::fmt::Result {
+    if values.is_empty() {
+        return writeln!(out, "    {label}: {{}}");
+    }
+    writeln!(out, "    {label}:")?;
+    for (key, value) in values {
+        write!(out, "      {}: ", key.escape_debug())?;
+        match value {
+            StepValue::Text(SourceText::Literal(text)) => writeln!(out, "{text:?}")?,
+            StepValue::Text(SourceText::Unevaluated(text)) => {
+                writeln!(out, "{text:?} (unevaluated)")?
+            }
+            StepValue::Boolean(value) => writeln!(out, "{value}")?,
+            StepValue::Number(value) => writeln!(out, "{value}")?,
+        }
+    }
+    Ok(())
 }
