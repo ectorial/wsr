@@ -1,6 +1,23 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-9 format-character escaping implemented; PR pending checks
+## Current checkpoint — B-10 dogfood workflow-set guard implemented; PR pending checks
+
+Same Schedule A run, after the PR #39 wake (lock retaken 2026-11-13). PR #39 squash-merged as
+`fb31d1c` after all four required checks passed on `8508157` with no reviews or comments; `wsr` and
+`wsr-gha` tests (78) verified on synced main. B-10 on `test/b10-dogfood-set` from `fb31d1c`; slice
+record [inspection-dogfood-guard.md](inspection-dogfood-guard.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no blockers;
+two P3s fixed (regular files only; non-UTF-8 names skipped). Test-only slice; no product code changed.
+
+- No product red (characterization guard). Guard red proven twice: the temp-copy test with
+  `example-extra.yml`, and an untracked `example-zz.yml` placed briefly in the real directory
+  (failed with the extra name, then removed).
+- Green: 3 dogfood tests; the golden table is now one `CASES` constant shared by the guard.
+
+B-10 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-11 (workflow/job `env` and `defaults.run`), then B-12.
+
+## Previous checkpoint — B-9 format-character escaping delivered (PR #39, `fb31d1c`)
 
 Schedule A run 2026-11-13 (lock created 16:24 UTC; no prior lock). Gate: stash@{0} intact, main clean
 at `3c8c95c`, only Dependabot PR #23 open. B-7 (#37) and Schedule B's B-8 (#38) were merged. B-9 on

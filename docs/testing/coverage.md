@@ -314,7 +314,7 @@ test's unknown step key moved from `with` to `bogus`. Values are never bound, pa
 
 ## Dogfood inspection acceptance (backlog B-6)
 
-`crates/wsr/tests/dogfood.rs` (1 test) asserts complete stdout, empty stderr and exit 0 for the real
+`crates/wsr/tests/dogfood.rs` asserts complete stdout, empty stderr and exit 0 for the real
 `example-python.yml` and `example-shell.yml`, via the real path and a copy beside a `wsr.toml`
 sentinel, with `PATH` replaced by marker-writing `sh`/`bash`/`python`/`python3`/`git`/`pwsh`; no marker,
 unchanged directory and unchanged sources. No red on current main; observed red on pre-B-5 `85a1c30`
@@ -327,6 +327,15 @@ exactly 511,999, 512,000 and 512,001 bytes and asserts exit 0, identical stdout 
 only above 512,000 bytes. Observed red: no warning at 512,001 bytes. The closed-stdout test's
 638,896-byte fixture now asserts exactly the warning on stderr instead of empty stderr. A closed-stderr
 test (red: exit 101, empty stdout) asserts exit 0 and the full report when the warning cannot be written.
+
+## Dogfood workflow-set guard (backlog B-10)
+
+`every_dogfood_example_has_a_golden_case` asserts the sorted `.github/workflows/example-*.yml` names
+equal the golden table's keys, so a new example cannot land without golden coverage.
+`dogfood_guard_detects_an_example_without_a_golden_case` copies the workflows to a temporary
+directory, adds `example-extra.yml` there and asserts the guard sees the mismatch. Characterization
+guard: no product red; an untracked `example-zz.yml` placed temporarily in the real directory made
+the guard fail, then was removed.
 
 ## Format characters on stderr (backlog B-9)
 
