@@ -41,10 +41,65 @@ const SHELL: &str = "Job: shell
       WSR_EXAMPLE_MODE: \"${{ inputs.mode }}\" (unevaluated)
 ";
 
+// Golden table: (file, workflow name, run-name prefix, job report).
+const CASES: [(&str, &str, &str, &str); 2] = [
+    (
+        "example-python.yml",
+        "Example Python reference",
+        "Python reference",
+        PYTHON,
+    ),
+    (
+        "example-shell.yml",
+        "Example shell reference",
+        "Shell reference",
+        SHELL,
+    ),
+];
+
+fn workflows() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows")
+}
+
 fn example(name: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../.github/workflows")
-        .join(name)
+    workflows().join(name)
+}
+
+fn example_names(directory: &Path) -> Vec<String> {
+    let mut names: Vec<_> = fs::read_dir(directory)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .filter(|name| name.starts_with("example-") && name.ends_with(".yml"))
+        .collect();
+    names.sort();
+    names
+}
+
+fn golden_names() -> Vec<String> {
+    let mut names: Vec<_> = CASES.iter().map(|case| case.0.to_owned()).collect();
+    names.sort();
+    names
+}
+
+// Backlog B-10: a new dogfood example cannot land without a golden case.
+#[test]
+fn every_dogfood_example_has_a_golden_case() {
+    assert_eq!(example_names(&workflows()), golden_names());
+}
+
+// The guard sees an example added beside the real ones (in a temporary copy, not the repo).
+#[test]
+fn dogfood_guard_detects_an_example_without_a_golden_case() {
+    let directory = tempfile::tempdir().unwrap();
+    for entry in fs::read_dir(workflows()).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_file() {
+            fs::copy(&path, directory.path().join(path.file_name().unwrap())).unwrap();
+        }
+    }
+    assert_eq!(example_names(directory.path()), golden_names());
+    fs::write(directory.path().join("example-extra.yml"), "on: push\n").unwrap();
+    assert_ne!(example_names(directory.path()), golden_names());
 }
 
 fn snapshot(directory: &Path) -> Vec<(PathBuf, Vec<u8>)> {
@@ -62,20 +117,7 @@ fn snapshot(directory: &Path) -> Vec<(PathBuf, Vec<u8>)> {
 
 #[test]
 fn dogfood_examples_inspect_with_expected_output_and_execute_nothing() {
-    for (name, title, run_name, job) in [
-        (
-            "example-python.yml",
-            "Example Python reference",
-            "Python reference",
-            PYTHON,
-        ),
-        (
-            "example-shell.yml",
-            "Example shell reference",
-            "Shell reference",
-            SHELL,
-        ),
-    ] {
+    for (name, title, run_name, job) in CASES {
         let expected = format!(
             "Workflow: {title}\nRun name: {run_name} — ${{{{ inputs.mode }}}} (unevaluated; expression syntax not validated)\n{HEAD}{job}"
         );

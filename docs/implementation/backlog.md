@@ -133,7 +133,7 @@ Schedule A takes only ready slices.
 
 ## B-10 Guard the dogfood workflow set (audit F20)
 
-- Status: **ready**.
+- Status: **delivered on merge of the B-10 PR** (Schedule A); see [slice record](inspection-dogfood-guard.md).
 
 - Behavior: `crates/wsr/tests/dogfood.rs` enumerates `.github/workflows/example-*.yml` and asserts the set
   equals the golden table keys, so a new example workflow cannot go without golden coverage.
