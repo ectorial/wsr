@@ -1,6 +1,26 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-15 trigger events implemented; PR pending checks
+## Current checkpoint — B-16 concurrency implemented; PR pending checks
+
+Same Schedule A run, after the PR #45 wake (lock retaken 2026-11-13). PR #45 squash-merged as
+`e95b0d4` after all four required checks passed on `bb1ec38` with no reviews or comments; `wsr` and
+`wsr-gha` tests (112) verified on synced main. B-16 on `feat/b16-concurrency` from `e95b0d4`; slice
+record [inspection-concurrency.md](inspection-concurrency.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode; interface-touching: `wsr-types` `Concurrency`, D-033);
+cross-reviewed by Codex gpt-6.1-sol (high): no blockers; one P2 fixed (expression keys Invalid per
+the pinned converter).
+
+- Red (observed): `concurrency.rs` failed with ``unknown field `concurrency`, expected one of `name`,
+  `run-name`, `on`, `permissions`, `env`, `defaults`, `jobs` ``.
+- Contract changes: `diagnostics.rs` workflow Unsupported sample `concurrency` → `description`; the
+  job "expected one of" list names `concurrency`.
+- Green: 3 `wsr-gha` tests, 2 CLI tests (written after the `wsr-gha` green; acceptance); full suites;
+  `cargo xtask ci`.
+
+B-16 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-17 (job/step `continue-on-error`, step `timeout-minutes`).
+
+## Previous checkpoint — B-15 trigger events delivered (PR #45, `e95b0d4`)
 
 Same Schedule A run, after the PR #44 wake (lock retaken 2026-11-13). PR #44 squash-merged as
 `c4472b5` after all four required checks passed on `eb82681` with no reviews or comments; `wsr` and

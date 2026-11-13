@@ -254,6 +254,28 @@ are invalid. A number or boolean `working-directory`, which the pinned reader co
 unsupported; a number or boolean `shell` is invalid because the runner rejects a bare shell that is not
 a built-in shell and has no `{0}`. A blank shell is invalid and a blank directory unsupported, as for steps.
 
+### Workflow and job concurrency
+
+Workflow and job `concurrency` print as a block after the level's run defaults:
+
+```text
+Concurrency (not applied):
+  Group: ci
+  Concurrency (not applied):
+    Group: ${{ github.ref }} (unevaluated; expression syntax not validated)
+    Cancel in progress: true
+    Queue: max
+```
+
+A string is the group; a mapping takes a required `group`, an optional boolean `cancel-in-progress`
+and an optional `queue` of `single` or `max`. Both pinned definitions (`workflow-concurrency`,
+`job-concurrency`) have expression contexts, so `${{` text in any value is unevaluated; an
+expression key is invalid because the pinned converter requires literal keys. The job string form and `group` must be non-empty: empty text or
+null is invalid there, while an empty or null workflow string is unsupported. A number or boolean
+group, and blank text, are unsupported. Unknown keys, a missing `group`, a non-boolean
+`cancel-in-progress` (including the string `'true'`), another `queue` value and other shapes are
+invalid. No group is formed and nothing is queued or cancelled.
+
 ### Unevaluated job and step conditions
 
 A job or step `if` string is reported as written, bare or `${{ }}`-fenced, after the job's runner

@@ -2008,3 +2008,62 @@ fn inspect_reusable_repository_workflows_from_temporary_copies() {
     }
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 4);
 }
+
+// Backlog B-16: workflow and job `concurrency` are reported as written, never applied.
+#[test]
+fn inspect_reports_concurrency_without_applying_it() {
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = "concurrency: \"ci-$(touch executed)\\e[31m\\u202E\"\njobs:\n  b:\n    runs-on: linux\n    concurrency:\n      group: ${{ github.ref }}\n      cancel-in-progress: true\n      queue: max\n    steps:\n      - run: touch executed\n";
+    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nConcurrency (not applied):\n  Group: ci-$(touch executed)\\u{1b}[31m\\u{202e}\nJob: b\n  Runner: linux\n  Concurrency (not applied):\n    Group: ${{ github.ref }} (unevaluated; expression syntax not validated)\n    Cancel in progress: true\n    Queue: max\n  Step 1: run\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn inspect_rejects_concurrency_outside_the_inspected_subset() {
+    let directory = tempfile::tempdir().unwrap();
+    for (value, diagnostic) in [
+        (
+            "{group: ''}",
+            "jobs.b.concurrency.group: expected a nonempty string",
+        ),
+        (
+            "{group: ci, cancel-in-progress: 'true'}",
+            "jobs.b.concurrency.cancel-in-progress: expected a boolean",
+        ),
+        (
+            "{group: ci, queue: many}",
+            "jobs.b.concurrency.queue: expected single or max",
+        ),
+        ("{queue: max}", "jobs.b.concurrency: missing field `group`"),
+        (
+            "{group: ci, \"b\\e\": 1}",
+            "jobs.b.concurrency: unknown field `b\\u{1b}`, expected `group`, `cancel-in-progress` or `queue`",
+        ),
+        (
+            "{group: 5}",
+            "jobs.b.concurrency.group: non-string value is not inspected yet",
+        ),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            format!("jobs:\n  b:\n    runs-on: linux\n    concurrency: {value}\n    steps:\n      - run: echo\n"),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{value}: {output:?}");
+        assert!(output.stdout.is_empty(), "{value}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{value}"
+        );
+    }
+}

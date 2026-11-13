@@ -10,6 +10,7 @@ use wsr_types::inspection::{
     JobSummary, RunnerRequirement, SourceText, StepSummary, StepSummaryKind, WorkflowSummary,
 };
 
+mod concurrency;
 mod defaults;
 mod diagnostic;
 mod dispatch;
@@ -35,13 +36,15 @@ struct Workflow {
     env: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_value")]
     defaults: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "present_value")]
+    concurrency: Option<serde_yaml::Value>,
     #[serde(deserialize_with = "unique_jobs")]
     jobs: BTreeMap<String, Job>,
 }
 
 impl diagnostic::Level for Workflow {
     const NAME: &'static str = "Workflow";
-    const SCHEMA: &'static [&'static str] = &["concurrency", "description"];
+    const SCHEMA: &'static [&'static str] = &["description"];
 }
 
 #[derive(Deserialize)]
@@ -67,6 +70,8 @@ struct Job {
     env: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_value")]
     defaults: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "present_value")]
+    concurrency: Option<serde_yaml::Value>,
     #[serde(deserialize_with = "steps")]
     steps: Vec<Step>,
 }
@@ -76,7 +81,6 @@ impl diagnostic::Level for Job {
     // The union of the pinned schema's job-factory and reusable workflow-job keys.
     const SCHEMA: &'static [&'static str] = &[
         "cancel-timeout-minutes",
-        "concurrency",
         "container",
         "continue-on-error",
         "environment",
@@ -159,6 +163,10 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         .defaults
         .map(|value| defaults::decode("defaults", value, Category::Invalid))
         .transpose()?;
+    let concurrency = workflow
+        .concurrency
+        .map(|value| concurrency::decode("concurrency", value, false))
+        .transpose()?;
     needs::validate(&workflow.jobs)?;
     let mut jobs = Vec::new();
     for (id, job) in workflow.jobs {
@@ -203,6 +211,10 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             .map(|value| {
                 defaults::decode(&format!("jobs.{id}.defaults"), value, Category::Unsupported)
             })
+            .transpose()?;
+        let concurrency = job
+            .concurrency
+            .map(|value| concurrency::decode(&format!("jobs.{id}.concurrency"), value, true))
             .transpose()?;
         let mut steps = Vec::new();
         let mut step_ids = BTreeMap::new();
@@ -335,6 +347,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             timeout_minutes: job.timeout_minutes,
             env,
             defaults,
+            concurrency,
             steps,
         });
     }
@@ -345,6 +358,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         permissions: workflow.permissions,
         env,
         defaults,
+        concurrency,
         jobs,
     })
 }

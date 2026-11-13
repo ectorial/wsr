@@ -16,6 +16,8 @@ pub struct WorkflowSummary {
     pub env: Option<BTreeMap<String, StepValue>>,
     /// Optional workflow-level `defaults.run`, never applied to jobs or steps.
     pub defaults: Option<RunDefaults>,
+    /// Optional workflow-level `concurrency`, never applied.
+    pub concurrency: Option<Concurrency>,
     /// Jobs in deterministic identifier order.
     pub jobs: Vec<JobSummary>,
 }
@@ -51,6 +53,8 @@ pub struct JobSummary {
     pub env: Option<BTreeMap<String, StepValue>>,
     /// Optional job-level `defaults.run`, not merged with the workflow's; never applied to steps.
     pub defaults: Option<RunDefaults>,
+    /// Optional job-level `concurrency`, not merged with the workflow's; never applied.
+    pub concurrency: Option<Concurrency>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }
@@ -74,6 +78,18 @@ pub struct StepSummary {
     pub with: Option<BTreeMap<String, StepValue>>,
     /// Source operation classification.
     pub kind: StepSummaryKind,
+}
+
+/// Declared `concurrency` (D-033 temporary GHA-derived type); a string form is the group. Never
+/// applied: no group is formed, queued or cancelled.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Concurrency {
+    /// Group text, literal or unevaluated.
+    pub group: SourceText,
+    /// `cancel-in-progress`: a literal boolean rendered as text, or unevaluated text.
+    pub cancel_in_progress: Option<SourceText>,
+    /// `queue`: literal `single` or `max`, or unevaluated text.
+    pub queue: Option<SourceText>,
 }
 
 /// Declared `defaults.run` settings; `defaults: {}` and `defaults: {run: {}}` both have neither.

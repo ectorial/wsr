@@ -342,6 +342,17 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Workflow and job concurrency (backlog B-16)
+
+`crates/wsr-gha/tests/concurrency.rs` asserts kept `Concurrency` values for five forms at both levels,
+twelve `Invalid` shapes at both levels plus the job-only empty and null strings, and five `Unsupported`
+values at both levels plus the workflow-only empty and null strings.
+`inspect_reports_concurrency_without_applying_it` pins a two-level golden with hostile text escaped and
+an `executed` sentinel; `inspect_rejects_concurrency_outside_the_inspected_subset` pins six exact
+diagnostics. Observed red: ``unknown field `concurrency` ``. Contract changes: the `diagnostics.rs`
+workflow Unsupported sample moved from `concurrency` to `description`, and the job "expected one of"
+list names `concurrency`. The CLI inspection suite lists 51 tests.
+
 ## Trigger events (backlog B-15)
 
 `crates/wsr-gha/tests/triggers.rs` asserts source-order `Trigger` lists for scalar, sequence and
