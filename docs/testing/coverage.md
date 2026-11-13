@@ -325,4 +325,5 @@ unchanged directory and unchanged sources. No red on current main; observed red 
 `inspect_warns_above_the_github_workflow_size_limit_and_still_reports` writes valid workflows of
 exactly 511,999, 512,000 and 512,001 bytes and asserts exit 0, identical stdout and a stderr warning
 only above 512,000 bytes. Observed red: no warning at 512,001 bytes. The closed-stdout test's
-638,896-byte fixture now asserts exactly the warning on stderr instead of empty stderr.
+638,896-byte fixture now asserts exactly the warning on stderr instead of empty stderr. A closed-stderr
+test (red: exit 101, empty stdout) asserts exit 0 and the full report when the warning cannot be written.

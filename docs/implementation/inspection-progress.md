@@ -6,7 +6,9 @@ Same Schedule A run, after the PR #36 wake (lock retaken 2026-11-13). PR #36 squ
 `07d1892` after all four required checks passed on `8b5b3a2` with no reviews or comments; `wsr` and
 `wsr-gha` tests verified on synced main. B-7 on `feat/inspect-size-warning` from `07d1892`; slice
 record [inspection-size-warning.md](inspection-size-warning.md). Implemented by Claude
-(claude-opus-5-5, orchestrator, burn mode).
+(claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no blockers;
+P2 fixed with observed red (closed stderr made the warning panic: exit 101, empty stdout) and the
+512,000-byte reading of GitHub's "500 KB" documented as WSR's interpretation.
 
 - Red (observed on `07d1892` build): no stderr warning at 512,001 bytes.
 - Green: the size test (3 boundary sizes); the closed-stdout test now expects exactly the warning

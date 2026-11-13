@@ -58,10 +58,10 @@ Clap invocation errors retain exit code 2. The output is pre-alpha, not a frozen
 
 The source must be a regular file (symlinks are followed); directories, FIFOs and devices such as
 `/dev/zero` exit 1 with a `not a regular file` diagnostic and are never read. WSR imposes no size
-limit (D-032). When a successfully inspected file exceeds GitHub's documented 500 KB limit (512,000
-bytes), one line is written to stderr before the unchanged report, and the exit code stays 0:
+limit (D-032). When a successfully inspected file exceeds GitHub's documented 500 KB limit, read by WSR
+as 512,000 bytes (GitHub does not define the unit), one line is written to stderr before the unchanged report, and the exit code stays 0:
 `warning: wsr inspect: ci.yml: 512001 bytes exceeds GitHub's documented 500 KB (512000-byte) workflow
-file limit; GitHub would not run this workflow`. Because workflow content is untrusted, diagnostics are written with control characters
+file limit; GitHub would not run this workflow`. A closed stderr does not stop the report. Because workflow content is untrusted, diagnostics are written with control characters
 escaped, so no raw terminal escape sequence reaches stderr. If stdout is closed early (for example
 `wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
 

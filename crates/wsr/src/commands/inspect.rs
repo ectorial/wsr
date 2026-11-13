@@ -7,7 +7,8 @@ use wsr_types::inspection::{
     RunnerRequirement, SourceText, StepSummaryKind, StepValue,
 };
 
-// GitHub's documented workflow file limit (D-032); WSR warns but imposes no limit of its own.
+// GitHub documents a 500 KB workflow file limit (D-032); 512,000 bytes is WSR's reading of it.
+// WSR warns but imposes no limit of its own.
 const GITHUB_WORKFLOW_LIMIT: usize = 512_000;
 
 pub fn run(file: &Path) -> anyhow::Result<()> {
@@ -16,7 +17,9 @@ pub fn run(file: &Path) -> anyhow::Result<()> {
     let (size, report) = render(file)
         .map_err(|error| anyhow::anyhow!(escape_control_characters(&error.to_string())))?;
     if size > GITHUB_WORKFLOW_LIMIT {
-        eprintln!(
+        // Advisory only: a closed stderr must not prevent the report.
+        let _ = writeln!(
+            std::io::stderr().lock(),
             "warning: wsr inspect: {}: {size} bytes exceeds GitHub's documented 500 KB ({GITHUB_WORKFLOW_LIMIT}-byte) workflow file limit; GitHub would not run this workflow",
             escape_control_characters(&file.display().to_string())
         );

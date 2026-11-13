@@ -1540,3 +1540,35 @@ fn inspect_warns_above_the_github_workflow_size_limit_and_still_reports() {
         assert_eq!(String::from_utf8(output.stderr).unwrap(), warning, "{size}");
     }
 }
+
+#[test]
+fn inspect_size_warning_does_not_panic_when_stderr_is_closed() {
+    use std::io::Read as _;
+    use std::process::Stdio;
+
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n# ";
+    let source = format!("{workflow}{}\n", "x".repeat(512_001 - workflow.len() - 1));
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let mut child = Command::new(env!("CARGO_BIN_EXE_wsr"))
+        .args(["inspect", "ci.yml"])
+        .current_dir(directory.path())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn inspection");
+    drop(child.stderr.take());
+    let mut stdout = String::new();
+    child
+        .stdout
+        .take()
+        .unwrap()
+        .read_to_string(&mut stdout)
+        .unwrap();
+    let status = child.wait().unwrap();
+    assert_eq!(status.code(), Some(0));
+    assert_eq!(
+        stdout,
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Step 1: run\n"
+    );
+}
