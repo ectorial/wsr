@@ -44,7 +44,7 @@ Schedule A takes only ready slices.
 
 ## B-2 Owning-crate tests for the GHA inspection compiler (audit F6)
 
-- Status: **implemented, PR pending checks** on `test/gha-compiler-characterization` (Schedule A); see
+- Status: **delivered** in [PR #31](https://github.com/ectorial/wsr/pull/31), `a939203` (Schedule A); see
   [slice record](inspection-compiler-tests.md).
 
 - Behavior: `wsr-gha` integration tests call `wsr_gha::inspect` directly for graph (missing, self, multi-job
@@ -55,7 +55,7 @@ Schedule A takes only ready slices.
 
 ## B-3 Workflow and job `permissions` (requested, not granted)
 
-- Status: **blocked on DR-002** (adds GHA-only summary fields to `wsr-types`).
+- Status: **ready** (DR-002 resolved by D-033; GHA-derived fields stay in `wsr-types`).
 
 - Behavior: accept literal `read-all`/`write-all` or a scope→`read|write|none` map at workflow and job level;
   render as requested permissions; expressions rejected as unevaluated/unsupported; unknown scopes rejected.
@@ -66,7 +66,7 @@ Schedule A takes only ready slices.
 
 ## B-4 Job `timeout-minutes` and step `shell`
 
-- Status: **blocked on DR-002** (adds GHA-only summary fields to `wsr-types`).
+- Status: **ready** (DR-002 resolved by D-033; GHA-derived fields stay in `wsr-types`).
 
 - Behavior: literal positive number timeout and literal shell string reported as source data, never applied
   or selected; expressions shown as unevaluated `SourceText`, following the run-name precedent.
@@ -76,7 +76,7 @@ Schedule A takes only ready slices.
 
 ## B-5 Step `env`, `with` and `working-directory`
 
-- Status: **blocked on DR-002** (adds GHA-only summary fields to `wsr-types`).
+- Status: **ready** (DR-002 resolved by D-033; GHA-derived fields stay in `wsr-types`).
 
 - Behavior: values reported as literal or unevaluated `SourceText` with escaped rendering; never bound, resolved
   or passed to anything; keys sorted deterministically; hostile values (control bytes, `${{`) escaped.
@@ -86,10 +86,21 @@ Schedule A takes only ready slices.
 
 ## B-6 Dogfood acceptance on `.github/workflows/example-*.yml`
 
-- Status: **blocked** (depends on B-3..B-5, hence DR-002).
+- Status: **ready after B-3..B-5**.
 
 - Behavior: `wsr inspect` succeeds on both example workflows with golden output; inspection performs no execution
   (sentinel files untouched). Translation-only; native reference success is not WSR support.
 - Acceptance: golden-output integration tests reading the real dogfood files.
 - Expected red: current `permissions` (and later field) rejections. Depends on B-3..B-5.
 - Files: `crates/wsr/tests/inspection.rs`, `docs/testing/coverage.md`, `docs/context/status.md`.
+
+## B-7 GitHub 500 KB workflow-size warning (D-032)
+
+- Status: **ready**.
+
+- Behavior: when the inspected file exceeds 500 KB (512,000 bytes), `wsr inspect` still succeeds and writes a
+  warning to stderr that GitHub would not run this workflow (documented 500 KB limit); stdout is unchanged.
+  No file-size rejection.
+- Acceptance: CLI tests at 511,999/512,000/512,001-byte sizes (exit 0, warning only above the limit, identical stdout).
+- Expected red: no warning for a 512,001-byte workflow.
+- Files: `crates/wsr/src/commands/inspect.rs`, `crates/wsr/tests/inspection.rs`, `docs/cli/README.md`.

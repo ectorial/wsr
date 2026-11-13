@@ -1,6 +1,6 @@
 # Inspection iteration: owning-crate compiler tests (backlog B-2)
 
-Status: **implemented, PR pending checks** on `test/gha-compiler-characterization` (Schedule A,
+Status: **delivered** in [PR #31](https://github.com/ectorial/wsr/pull/31) as `a939203` (Schedule A,
 [backlog B-2](backlog.md), audit F6). Baseline `main`: `1545ab3`. Evidence lives in the
 [checkpoint](inspection-progress.md).
 

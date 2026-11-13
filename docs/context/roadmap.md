@@ -24,12 +24,25 @@ can be synchronized before every design choice is resolved, provided open choice
 
 ## 1. Explain a workflow without executing it
 
+D-034 splits this stage into two gates.
+
+### 1a. Static inspection (D-031)
+
+Inspect explicit local GHA files through the temporary built-in compiler: deterministic source
+summaries, source diagnostics, explicit unsupported/dynamic classification, and the GitHub 500 KB
+warning (D-032), with no execution.
+
+**Gate:** the dogfood `example-*.yml` workflows inspect with expected output and inspection executes
+no repository-controlled commands.
+
+### 1b. Component compilation and planning
+
 Connect provider discovery/pinning and the compilation boundary to deterministic inspection,
 source diagnostics, a minimal canonical model, and plan validation. Classify unknown or unsupported
 behavior instead of silently discarding it. Define evaluation phases for dynamic expressions.
 
 **Gate:** representative fixtures produce expected diagnostics and plans; invalid plans are rejected;
-inspection executes no repository-controlled commands. The current `inspect` handler supports only the D-031 static source summary; this full compilation/planning gate remains unmet.
+inspection executes no repository-controlled commands. This compilation/planning gate remains unmet.
 
 ## 2. Prove component security
 
@@ -64,7 +77,7 @@ are tested; effective grants and environment identity are visible. No full compa
 Prove verified cache hits without upstream calls, exact-pin acquisition on misses, retained pin
 roots, revoked/corrupt-object rejection, tool dependency closure and setup-action timing.
 Then define foreground/background ownership and implement device-wide admission across repositories.
-max-jobs=0 removes the count cap while other admission checks remain. Queue reasons and repository
+D-032 admits jobs against the user's memory budget (default 5 GB, matching `ubuntu-slim`). Queue reasons and repository
 metrics must explain waits without cross-repository data leaks.
 
 **Gate:** networking-disabled execution works with prepared inputs, missing objects fail precisely,

@@ -34,8 +34,8 @@ can apply in every phase. The diagram is a conceptual lifecycle, not a frozen st
 | Dispatch | Selected job, authorized requirements and qualified environment | Started supervisor or recorded startup failure |
 | Supervision | Ordered steps, state channels, limits and cancellation | Step results, outputs, job result and cleanup events |
 
-Global max-jobs defaults to 0, meaning no job-count cap. A positive cap applies across repositories.
-Resource/platform/policy admission still applies. Queued ready jobs consume no active job slot.
+D-032 admits jobs against one global memory budget (default 5 GB, matching `ubuntu-slim`), not a job
+count. Platform/policy admission still applies. Queued ready jobs consume no admitted memory.
 Reserve a slot atomically when dispatch starts and retain it through cleanup; this is the proposed
 slot-accounting mechanism and requires failure/crash fixtures before implementation.
 

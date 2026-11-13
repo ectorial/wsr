@@ -604,11 +604,11 @@ information is explicit policy, with offline freshness recorded. No continuous m
 
 ### D-028 — Device scheduling and repository isolation
 
-**Decision:** ready jobs across repositories are subject to a global job-count policy. The owner
-selects max-jobs = 0 as the default meaning no configured count cap. A positive value bounds
-simultaneously active job slots. Dependency-blocked jobs are distinct from ready queued jobs.
+**Decision:** ready jobs across repositories are subject to one global admission policy. The
+job-count policy (max-jobs) is superseded by D-032's memory budget: concurrency follows from the
+memory the user allows, not from a configured count. Dependency-blocked jobs are distinct from ready queued jobs.
 Platform, policy and resource admission still apply. Record queue reasons for observability.
-Completion/cancellation releases a slot after supervised cleanup; exact reservation and crash
+Completion/cancellation releases its admitted memory after supervised cleanup; exact admission and crash
 reconciliation contracts must be settled before implementation.
 
 Scheduling chooses eligible jobs; dispatch allocates a qualified environment and starts their
@@ -652,7 +652,7 @@ This is a scoped exception to the Component-only activation path in D-007/D-009/
 replacement of the target architecture. It does not authorize workflow execution or resuming
 the paused Java worker.
 
-Keep parsing and validation in `wsr-gha`, provider-neutral source summaries in `wsr-types`, and
+Keep parsing and validation in `wsr-gha`, temporary GHA-derived source summaries in `wsr-types` (D-033), and
 file IO/rendering in the CLI host. Do not reinterpret legacy `WorkflowIR` as the accepted model.
 These summaries are not executable plans or a stable serialized protocol. Reject unsupported
 inputs explicitly; do not infer execution compatibility from a successful inspection.
@@ -661,6 +661,43 @@ The compiler and its acceptance fixtures must be reusable when packaged as a sig
 Component migration still requires WIT, trust, identity/pinning and resource-limit contracts.
 Inspection through this temporary path does not load repository configuration, bootstrap providers,
 fetch actions/tools, execute repository commands or mutate repository state.
+
+### D-032 — Memory-budgeted job concurrency aligned with `ubuntu-slim`
+
+**Decision (November 13, 2026):** the owner sets one total memory budget for jobs instead of a
+parallel job count. The default and minimum budget match GitHub's `ubuntu-slim` runner (5 GB, one
+job at a time). Larger budgets admit as many concurrent jobs as fit; larger runner profiles (D-029)
+may be added later.
+
+Each job has a 5 GB ceiling matching `ubuntu-slim`. The ceiling is a limit, not a reservation:
+nothing is set aside up front. A job is admitted when its expected use fits in the remaining
+budget; expected use is the measured peak from earlier runs (D-026) or a small default for a first
+run. The budget is a hard limit across running jobs. Under memory pressure, admission holds new jobs;
+if the budget is exceeded, the most recently started job is stopped, requeued and reported. A job
+exceeding its own ceiling is stopped alone. On macOS, Linux jobs run in a VM (D-020), so the budget
+maps to the VM's memory size.
+
+WSR imposes no workflow file-size limit. A workflow file over GitHub's documented 500 KB limit
+produces a warning that GitHub would not run it; inspection continues. Local inspection measured about
+6× the file size plus 5 MB of memory, inside the same budget; serde_yaml rejects alias-expansion bombs.
+
+Enforcement requires the isolation backend selected under Q-020. Until then these are documented
+targets, not guarantees. Exact admission defaults, accounting and crash reconciliation remain open.
+
+### D-033 — GHA-derived inspection summaries stay temporarily in `wsr-types`
+
+**Decision (November 13, 2026):** DR-002 option 1. The D-031 inspection types in
+`wsr_types::inspection` (manual triggers, dispatch input types, run-name, the `${{` fence) are
+labelled temporary GHA-derived source summaries, not provider-neutral model types. Further D-031
+inspection fields may be added there under the same label. The neutral model is settled with
+queue items 7 and 9 (canonical IR stability and source/translation stages); this decision does not
+freeze these types as canonical IR.
+
+### D-034 — Roadmap Gate 1 split
+
+**Decision (November 13, 2026):** DR-004 option 1. Gate 1 splits into 1a, D-031 static inspection,
+which can be completed and verified independently, and 1b, Component compilation and planning, which
+depends on the pin schema, the canonical-IR boundary and the Component host contract.
 
 ## 3. Superseded or unconfirmed prior claims
 
@@ -711,7 +748,7 @@ Questions are resolved in dependency order, one at a time:
 13. Local/cloud portability boundary and execution protocol.
 14. Workspace, filesystem, artifact, output, and service-container semantics.
 15. Capabilities, permissions, secrets, identity, and supply-chain trust.
-16. Scheduling mechanisms, matrices, cancellation, retry and failure semantics (global count policy in D-028).
+16. Scheduling mechanisms, matrices, cancellation, retry and failure semantics (memory-budgeted admission in D-032).
 17. Observability mechanisms and evidence/signing contracts (directions recorded in D-026 and D-030).
 18. Extensibility and versioning policy for providers, actions, IRs, protocols, and plugins.
 19. CLI/product workflows and migration from GitHub Actions or `act`.

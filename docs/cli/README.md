@@ -32,8 +32,8 @@ not grant access. Help text can be inspected with `cargo run -p wsr -- --help`.
 ## Static workflow inspection
 
 `cargo run -p wsr -- inspect path/to/workflow.yml` reads only the explicit local UTF-8 YAML
-source. The temporary built-in GHA compiler is authorized by D-031. It returns a provider-neutral
-source summary, not executable IR or a signed Component compilation result.
+source. The temporary built-in GHA compiler is authorized by D-031. It returns a temporary GHA-derived
+source summary (D-033), not executable IR or a signed Component compilation result.
 
 Current supported subset:
 
