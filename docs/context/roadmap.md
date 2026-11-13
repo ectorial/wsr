@@ -33,7 +33,8 @@ summaries, source diagnostics, explicit unsupported/dynamic classification, and 
 warning (D-032), with no execution.
 
 **Gate:** the dogfood `example-*.yml` workflows inspect with expected output and inspection executes
-no repository-controlled commands.
+no repository-controlled commands. Met by backlog B-3..B-7 (see [status](status.md)); this is static
+inspection only, not execution or Component support.
 
 ### 1b. Component compilation and planning
 

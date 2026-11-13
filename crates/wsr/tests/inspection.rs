@@ -1086,6 +1086,7 @@ fn inspect_does_not_panic_when_stdout_is_closed_early() {
             "  job{index:05}:\n    name: A reasonably long display name for job {index}\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello\n"
         ));
     }
+    let size = source.len();
     fs::write(directory.path().join("big.yml"), source).unwrap();
     let mut child = Command::new(env!("CARGO_BIN_EXE_wsr"))
         .args(["inspect", "big.yml"])
@@ -1101,7 +1102,13 @@ fn inspect_does_not_panic_when_stdout_is_closed_early() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(!stderr.contains("panicked"), "{stderr}");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
-    assert!(stderr.is_empty(), "{stderr}");
+    // Only the D-032 size warning, which is written before stdout.
+    assert_eq!(
+        stderr,
+        format!(
+            "warning: wsr inspect: big.yml: {size} bytes exceeds GitHub's documented 500 KB (512000-byte) workflow file limit; GitHub would not run this workflow\n"
+        )
+    );
 }
 
 #[cfg(unix)]
@@ -1508,5 +1515,28 @@ fn inspect_rejects_invalid_step_inputs() {
             format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
             "{source}"
         );
+    }
+}
+
+#[test]
+fn inspect_warns_above_the_github_workflow_size_limit_and_still_reports() {
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n# ";
+    let report = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Step 1: run\n";
+    for size in [511_999, 512_000, 512_001] {
+        let source = format!("{workflow}{}\n", "x".repeat(size - workflow.len() - 1));
+        assert_eq!(source.len(), size);
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(0), "{size}: {output:?}");
+        assert_eq!(String::from_utf8(output.stdout).unwrap(), report, "{size}");
+        let warning = if size > 512_000 {
+            format!(
+                "warning: wsr inspect: ci.yml: {size} bytes exceeds GitHub's documented 500 KB (512000-byte) workflow file limit; GitHub would not run this workflow\n"
+            )
+        } else {
+            String::new()
+        };
+        assert_eq!(String::from_utf8(output.stderr).unwrap(), warning, "{size}");
     }
 }

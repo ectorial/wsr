@@ -319,3 +319,10 @@ test's unknown step key moved from `with` to `bogus`. Values are never bound, pa
 sentinel, with `PATH` replaced by marker-writing `sh`/`bash`/`python`/`python3`/`git`/`pwsh`; no marker,
 unchanged directory and unchanged sources. No red on current main; observed red on pre-B-5 `85a1c30`
 (``unknown field `with` ``). Translation-only: not WSR execution, isolation or GHA compatibility.
+
+## GitHub workflow-size warning (backlog B-7)
+
+`inspect_warns_above_the_github_workflow_size_limit_and_still_reports` writes valid workflows of
+exactly 511,999, 512,000 and 512,001 bytes and asserts exit 0, identical stdout and a stderr warning
+only above 512,000 bytes. Observed red: no warning at 512,001 bytes. The closed-stdout test's
+638,896-byte fixture now asserts exactly the warning on stderr instead of empty stderr.

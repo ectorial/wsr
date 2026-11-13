@@ -7,11 +7,20 @@ use wsr_types::inspection::{
     RunnerRequirement, SourceText, StepSummaryKind, StepValue,
 };
 
+// GitHub's documented workflow file limit (D-032); WSR warns but imposes no limit of its own.
+const GITHUB_WORKFLOW_LIMIT: usize = 512_000;
+
 pub fn run(file: &Path) -> anyhow::Result<()> {
     // Workflow content is untrusted and reaches diagnostics (serde field names, `on:` keys),
     // so escape control characters before the message can be written to a terminal.
-    let report = render(file)
+    let (size, report) = render(file)
         .map_err(|error| anyhow::anyhow!(escape_control_characters(&error.to_string())))?;
+    if size > GITHUB_WORKFLOW_LIMIT {
+        eprintln!(
+            "warning: wsr inspect: {}: {size} bytes exceeds GitHub's documented 500 KB ({GITHUB_WORKFLOW_LIMIT}-byte) workflow file limit; GitHub would not run this workflow",
+            escape_control_characters(&file.display().to_string())
+        );
+    }
     let mut stdout = std::io::stdout().lock();
     match stdout
         .write_all(report.as_bytes())
@@ -35,7 +44,7 @@ fn escape_control_characters(text: &str) -> String {
         .collect()
 }
 
-fn render(file: &Path) -> anyhow::Result<String> {
+fn render(file: &Path) -> anyhow::Result<(usize, String)> {
     let metadata = std::fs::metadata(file)
         .map_err(|error| anyhow::anyhow!("wsr inspect: {}: {error}", file.display()))?;
     anyhow::ensure!(
@@ -215,7 +224,7 @@ fn render(file: &Path) -> anyhow::Result<String> {
             }
         }
     }
-    Ok(out)
+    Ok((raw.len(), out))
 }
 
 fn render_permissions(
