@@ -1,16 +1,20 @@
 # Dogfood acceptance iteration: `example-*.yml` golden inspection (backlog B-6)
 
 Status: **delivered on merge of its PR**, branch `test/dogfood-inspection` from `de3e910` (Schedule A).
-Implemented by Claude (claude-opus-5-5). Evidence lives in the [checkpoint](inspection-progress.md).
+Implemented by Claude (claude-opus-5-5); cross-reviewed by Codex gpt-6.1-sol (high): no blockers;
+two nits fixed (marker path via environment rather than shell quoting, plus a positive control; trap
+evidence scoped to Unix). Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Scope
 
 `crates/wsr/tests/dogfood.rs` reads the real `.github/workflows/example-python.yml` and
 `example-shell.yml` and asserts the complete `wsr inspect` stdout (golden text in the test), empty
 stderr and exit 0, for both the real path and a byte-identical copy beside a `wsr.toml` sentinel.
-`PATH` is replaced by a directory whose `sh`, `bash`, `python`, `python3`, `git` and `pwsh` each
-write a marker through `/usr/bin/touch`; the test asserts no marker, an unchanged sentinel directory
-and unchanged real example files. No product code changes: B-3..B-5 delivered the behavior.
+On Unix, `PATH` is replaced by a directory whose `sh`, `bash`, `python`, `python3`, `git` and `pwsh`
+each write a marker (named by `WSR_EXECUTION_MARKER`) through `/usr/bin/touch`; a positive control
+runs each trap once before inspection. The test asserts no marker, an unchanged sentinel directory
+and unchanged real example files. The trap evidence is Unix-only (CI runs `ubuntu-latest`) and does
+not cover commands spawned by absolute path; the golden assertions are cross-platform. No product code changes: B-3..B-5 delivered the behavior.
 
 This is static translation-only acceptance. The native GitHub reference runs and the existing
 native shell reference test are not WSR support; nothing here executes, binds, resolves or isolates.

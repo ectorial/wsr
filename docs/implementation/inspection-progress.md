@@ -6,7 +6,9 @@ Same Schedule A run, after the PR #35 wake (lock retaken 2026-11-13). PR #35 squ
 `de3e910` after all four required checks passed on `df98f13` with no reviews or comments; `wsr` and
 `wsr-gha` tests verified on synced main. B-6 on `test/dogfood-inspection` from `de3e910`; slice record
 [inspection-dogfood.md](inspection-dogfood.md). Implemented by Claude (claude-opus-5-5, orchestrator,
-burn mode). Test-only slice; no product code changed.
+burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no blockers; two nits fixed (marker via
+`WSR_EXECUTION_MARKER` plus a per-trap positive control; trap evidence scoped to Unix). Test-only
+slice; no product code changed.
 
 - Red: none on current main (behavior delivered by B-3..B-5). Observed on pre-B-5 `85a1c30` in a
   temporary worktree (removed): ``jobs.python.steps[1]: unknown field `with` ``.

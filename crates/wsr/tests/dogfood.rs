@@ -81,22 +81,28 @@ fn dogfood_examples_inspect_with_expected_output_and_execute_nothing() {
         );
         let source = fs::read(example(name)).unwrap();
 
-        // A copy beside sentinels, with every PATH command replaced by one that leaves a marker.
+        // A copy beside sentinels. On Unix, every PATH command is replaced by one that leaves a
+        // marker; the trap evidence is Unix-only, the golden assertions are not.
         let directory = tempfile::tempdir().unwrap();
         let bin = tempfile::tempdir().unwrap();
         let marker = directory.path().join("executed");
+        #[cfg(unix)]
         for command in ["sh", "bash", "python", "python3", "git", "pwsh"] {
+            use std::os::unix::fs::PermissionsExt;
             let path = bin.path().join(command);
             fs::write(
                 &path,
-                format!("#!/bin/sh\n/usr/bin/touch '{}'\n", marker.display()),
+                "#!/bin/sh\n/usr/bin/touch \"$WSR_EXECUTION_MARKER\"\n",
             )
             .unwrap();
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
-            }
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+            // Positive control: each trap leaves the marker when it is run.
+            let status = Command::new(&path)
+                .env("WSR_EXECUTION_MARKER", &marker)
+                .status()
+                .unwrap();
+            assert!(status.success() && marker.exists(), "{command} trap");
+            fs::remove_file(&marker).unwrap();
         }
         fs::write(directory.path().join(name), &source).unwrap();
         fs::write(directory.path().join("wsr.toml"), "invalid config sentinel").unwrap();
@@ -108,6 +114,7 @@ fn dogfood_examples_inspect_with_expected_output_and_execute_nothing() {
                 .arg(&file)
                 .current_dir(directory.path())
                 .env("PATH", bin.path())
+                .env("WSR_EXECUTION_MARKER", &marker)
                 .output()
                 .expect("run inspection");
             assert_eq!(output.status.code(), Some(0), "{name}: {output:?}");
