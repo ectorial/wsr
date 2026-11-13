@@ -12,6 +12,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | [Architecture review log](architecture-review.md) | Dated findings, classifications and dispositions from each Schedule B run (Schedule B owned) |
 | [Typed-error iteration](inspection-typed-errors.md) | Backlog B-0: provisional typed inspection errors with category and route |
 | [Diagnostic-route iteration](inspection-diagnostic-routes.md) | Backlog B-1: one-based route grammar and job-ID-first validation order |
+| [Compiler-test iteration](inspection-compiler-tests.md) | Backlog B-2: owning-crate characterization tests for `wsr_gha::inspect` |
 | [Run-name iteration](inspection-run-name.md) | Owner-approved literal/unevaluated run-name inspection and DX acceptance |
 | [Manual-input iteration](inspection-dispatch-inputs.md) | Authorized manual trigger/input-definition inspection and acceptance gates |
 | [Runner-label iteration](inspection-runner-labels.md) | Authorized literal runner-list slice, acceptance gates and token estimate |

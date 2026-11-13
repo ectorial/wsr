@@ -1,6 +1,23 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-1 diagnostic routes implemented; PR pending checks
+## Current checkpoint — B-2 compiler tests implemented; PR pending checks
+
+Same Schedule A run (lock retaken 2026-11-13 after the PR #30 wake). PR #30 squash-merged as
+`1545ab3` after all four required checks passed on `a533c3e` with no reviews or comments;
+`wsr-gha` and `wsr` tests verified on synced main. B-2 on `test/gha-compiler-characterization`
+from `1545ab3`: new `crates/wsr-gha/tests/compiler.rs` (8 tests) — characterization, no red
+expected; product code unchanged. Writing the alias-bomb case showed a top-level anchor fails as an
+unknown key before expansion, so the bomb sits in `needs`. `cargo xtask ci` and `git diff --check`
+pass locally. Implemented by Claude (claude-opus-5-5); cross-reviewed by Codex gpt-6.1-sol (high): no blockers;
+identifier-coverage gaps and overstated precedence claims fixed (step-ID syntax/length/expression,
+duplicate job, expression job ID with `needs`, unknown-before-cycle). Full-message equality on
+graph diagnostics kept deliberately: the cycle path is the behavior under test.
+
+Next action: watch the PR; merge on green with no unresolved findings. After B-2 every remaining
+backlog item (B-3..B-6) is blocked on DR-002; the next run should report that and exit unless the
+owner has decided DR-002 or Schedule B has appended a ready slice.
+
+## Previous checkpoint — B-1 diagnostic routes delivered (PR #30, `1545ab3`)
 
 Schedule A run 2026-11-13T02:57Z (no prior lock; lock taken). Baseline `d9712ec` = origin/main;
 Dependabot #23 untouched; no open Schedule B PR. Branch `fix/inspect-diagnostic-routes`; slice

@@ -27,7 +27,7 @@ Schedule A takes only ready slices.
 
 ## B-1 Consistent diagnostic routes and validation order (audit F3, F5)
 
-- Status: **implemented, PR pending checks** on `fix/inspect-diagnostic-routes` (Schedule A); see
+- Status: **delivered** in [PR #30](https://github.com/ectorial/wsr/pull/30), `1545ab3` (Schedule A); see
   [slice record](inspection-diagnostic-routes.md). Unknown keys render at the enclosing mapping as
   specified; dispatch input identifiers received the same route/quoting rule.
 
@@ -43,6 +43,9 @@ Schedule A takes only ready slices.
 - Files: `crates/wsr-gha/src/{lib.rs,needs.rs,dispatch.rs}`, `crates/wsr/tests/inspection.rs`, `docs/cli/README.md`.
 
 ## B-2 Owning-crate tests for the GHA inspection compiler (audit F6)
+
+- Status: **implemented, PR pending checks** on `test/gha-compiler-characterization` (Schedule A); see
+  [slice record](inspection-compiler-tests.md).
 
 - Behavior: `wsr-gha` integration tests call `wsr_gha::inspect` directly for graph (missing, self, multi-job
   cycle, diamond, repeated edge), job/step ID rules, shape errors, and hostile YAML (alias bomb, deep nesting).

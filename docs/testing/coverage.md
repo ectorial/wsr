@@ -267,3 +267,12 @@ after on `3793749`; the 31 CLI inspection tests are unchanged. Classification is
 Cross-review (Codex) found two over-broad `Unsupported` classifications; red cases `on: [push, bogus]`
 and `runs-on: {bogus: linux}` now stay `Invalid` unless every event is a schema event and every
 selector key is a well-shaped `group`/`labels`.
+
+## Owning-crate inspection compiler tests (backlog B-2)
+
+`crates/wsr-gha/tests/compiler.rs` (8 tests, `cargo test -p wsr-gha --test compiler --locked`) calls
+`wsr_gha::inspect` directly and asserts summary structure, category and typed route for the
+dependency graph (diamond, repeated edge, forward reference, missing, self and three-job cycle),
+job/step identifier rules, job-ID precedence over `needs`, unknown-target precedence over cycles, runner-list and step-kind summaries,
+shape errors, and hostile YAML (alias expansion, deep nesting). Characterization only: no red was
+expected or observed. It covers static source inspection, not evaluation, execution or isolation.
