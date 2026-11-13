@@ -749,11 +749,11 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
         ),
         (
             "{workflow_dispatch: {inputs: {42: {}}}}",
-            "inputs identifier: expected a string",
+            "on.workflow_dispatch.inputs: expected a string",
         ),
         (
             "{workflow_dispatch: {inputs: {'': {}}}}",
-            "inputs identifier: expected a nonempty string",
+            "on.workflow_dispatch.inputs.: expected a nonempty string",
         ),
         (
             "{workflow_dispatch: {inputs: {value: {}, value: {}}}}",
@@ -832,8 +832,16 @@ fn inspect_dispatch_preserves_empty_declarations_types_and_deterministic_order()
 fn inspect_dispatch_identifiers_and_dynamic_required_are_diagnosed() {
     let directory = tempfile::tempdir().unwrap();
     for (key, fields, diagnostic) in [
-        ("bad id", "{}", "invalid input identifier"),
-        ("1input", "{}", "invalid input identifier"),
+        (
+            "bad id",
+            "{}",
+            "on.workflow_dispatch.inputs.bad id: invalid input identifier 'bad id'",
+        ),
+        (
+            "1input",
+            "{}",
+            "on.workflow_dispatch.inputs.1input: invalid input identifier '1input'",
+        ),
         (
             "valid",
             "{required: '${{ inputs.flag }}'}",
@@ -965,6 +973,64 @@ fn inspect_run_name_rejects_wrong_shapes_and_blank_text_before_rendering() {
         assert!(
             error.contains("wsr inspect: ci.yml:") && error.contains(diagnostic),
             "{declaration}: {error}"
+        );
+    }
+}
+
+#[test]
+fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
+    let directory = tempfile::tempdir().unwrap();
+    let job = "    runs-on: linux\n    steps:\n      - run: echo\n";
+    for (source, diagnostic) in [
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        with: {}\n"
+                .to_owned(),
+            "jobs.b.steps[1]: unknown field `with`, expected one of `id`, `name`, `run`, `uses` at line 6 column 9",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: ~\n        run: echo\n"
+                .to_owned(),
+            "jobs.b.steps[1].id: expected a string at line 5 column 9",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n      - run: echo\n        name: 5\n"
+                .to_owned(),
+            "jobs.b.steps[2].name: expected a string at line 6 column 9",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: [linux, 42]\n    steps:\n      - run: echo\n".to_owned(),
+            "jobs.b.runs-on[2]: expected a string label at line 3 column 5",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    needs: [b, 1]\n    steps:\n      - run: echo\n"
+                .to_owned(),
+            "jobs.b.needs[2]: expected a string at line 3 column 5",
+        ),
+        (
+            format!("jobs:\n  'b c':\n    needs: missing\n{job}"),
+            "jobs.b c: invalid job identifier 'b c'",
+        ),
+        (
+            format!("jobs:\n  '${{{{ x }}}}':\n{job}"),
+            "jobs.${{ x }}: expression is unevaluated",
+        ),
+        (
+            format!("jobs:\n  \"b\\x01\":\n{job}"),
+            "jobs.b\\u{1}: invalid job identifier 'b\\u{1}'\n",
+        ),
+        (
+            format!("jobs:\n  b:\n{job}  b:\n{job}"),
+            "jobs.b: duplicate job identifier 'b' at line",
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
+        assert!(output.stdout.is_empty(), "{source}: {output:?}");
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains(&format!("wsr inspect: ci.yml: {diagnostic}")),
+            "{source}: {error}"
         );
     }
 }

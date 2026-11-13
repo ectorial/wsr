@@ -92,8 +92,9 @@ scalar, matching the pinned schema/converter's validation boundary; this does no
 input compatibility. Choice defaults are not checked for membership in options by this subset.
 
 Diagnostics identify the file and structural route, such as
-`on.workflow_dispatch.inputs.mode.options[2]`. YAML duplicate-key/parse errors retain available
-source context; semantic checks do not introduce exact source spans. The pinned official schema
+`on.workflow_dispatch.inputs.mode.options[2]` or `on.workflow_dispatch.inputs.bad id: invalid
+input identifier 'bad id'`. YAML duplicate-key/parse errors retain available source context;
+semantic checks do not introduce exact source spans. The pinned official schema
 and converter references and intentional source-preservation differences are recorded in the
 [iteration record](../implementation/inspection-dispatch-inputs.md).
 
@@ -159,9 +160,20 @@ job blocked by a cycle is not reported as a cycle member. Validation uses an exp
 stack rather than recursive calls, including a tested 4,096-job chain.
 
 Malformed types, null, empty identifiers and expressions in `needs` fail before any stdout summary.
-Semantic diagnostics use routes such as `jobs.test.needs` or `jobs.test.needs[2]` (one-based list
-index). YAML decoding errors may report the enclosing job route plus the field/index in the error
-message and line/column. Successful static validation does not establish scheduling, conditions,
+Job identifiers are validated before `needs` is resolved, so an invalid identifier is reported
+ahead of an unknown dependency.
+
+### Diagnostic routes
+
+Decoding and semantic diagnostics share one route grammar, `jobs.<id>.<field>[<n>]` with one-based
+list indices: `jobs.test.needs[2]: expected a string`, `jobs.b.runs-on[2]: expected a string
+label`, `jobs.b.steps[1].id: expected a string`. An unknown key is reported at its enclosing
+mapping, whose detail names the key (``jobs.b.steps[1]: unknown field `with`, …``). Decoding
+errors keep the parser's line/column. Identifiers in diagnostic text are quoted as `'…'` and
+escaped once (`jobs.b\u{1}: invalid job identifier 'b\u{1}'`); a duplicate job names its
+identifier. Errors raised by the YAML parser or decoder itself (syntax, a scalar where a step
+mapping belongs, duplicate keys inside a value, recursion/alias limits) keep the decoder's wording
+and zero-based path. Successful static validation does not establish scheduling, conditions,
 matrix expansion, skipped-job behavior or workflow execution.
 
 Inspection does not read `wsr.toml`, discover repositories, install providers, execute commands,

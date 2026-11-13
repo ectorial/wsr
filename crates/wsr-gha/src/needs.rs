@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 use serde_yaml::Value;
 
-use super::{Category, Error, diagnostic};
+use super::{Error, diagnostic};
 
 /// Preserve source shape so diagnostics can distinguish a scalar from a list entry.
 #[derive(Default)]
@@ -14,7 +14,6 @@ pub(super) enum Needs {
 
 impl Needs {
     fn location(&self, id: &str, index: usize) -> String {
-        let id = id.escape_debug();
         match self {
             Self::List(_) => format!("jobs.{id}.needs[{}]", index + 1),
             _ => format!("jobs.{id}.needs"),
@@ -116,18 +115,16 @@ impl<'de> Deserialize<'de> for Needs {
                 .enumerate()
                 .map(|(index, value)| match value {
                     Value::String(value) => Ok(value),
-                    _ => Err(diagnostic::raise(Error::new(
-                        Category::Invalid,
-                        Some(format!("needs[{}]", index + 1)),
-                        format!("needs[{}]: expected a string", index + 1),
+                    _ => Err(diagnostic::raise(Error::invalid(
+                        format!("needs[{}]", index + 1),
+                        "expected a string",
                     ))),
                 })
                 .collect::<Result<Vec<_>, _>>()
                 .map(Self::List),
-            _ => Err(diagnostic::raise(Error::new(
-                Category::Invalid,
-                Some("needs".into()),
-                "needs: expected a string or a sequence of strings".into(),
+            _ => Err(diagnostic::raise(Error::invalid(
+                "needs",
+                "expected a string or a sequence of strings",
             ))),
         }
     }

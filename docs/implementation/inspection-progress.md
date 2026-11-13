@@ -1,6 +1,14 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-0 typed inspection errors implemented; PR pending checks
+## Current checkpoint — B-0 typed inspection errors delivered (PR #29, `d9712ec`)
+
+PR #29 squash-merged as `d9712ec` after all four required checks passed on `1b266a2`, with no
+review comments. Merged diagnostics (4) and CLI inspection (31) tests verified on synced main.
+This edit is uncommitted owned work for the next slice branch.
+
+Next action: take B-1 (consistent diagnostic routes and validation order) from a fresh branch.
+
+## Previous checkpoint — B-0 typed inspection errors implemented; PR pending checks
 
 Schedule A run 2026-11-13T01:57Z (no prior lock). Baseline `3793749` = origin/main; Dependabot #23
 untouched; no open Schedule B PR. Local uncommitted run-name checkpoint edits were superseded by

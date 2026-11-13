@@ -9,6 +9,8 @@ Schedule A takes only ready slices.
 
 ## B-0 Provisional typed inspection errors in `wsr-gha` (audit F1)
 
+- Status: **delivered** in [PR #29](https://github.com/ectorial/wsr/pull/29), `d9712ec` (Schedule A).
+
 - Behavior: `wsr_gha::inspect` returns a provisional, explicitly non-stable typed error (in `wsr-gha`, not
   `wsr-types`) carrying a structured route and a category separating invalid source from valid-but-unsupported
   GHA. Classify at the point of detection, never from message wording; stop erasing typed failures through
