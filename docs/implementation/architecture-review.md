@@ -70,3 +70,34 @@ Findings are classified (a) bounded correction, (b) owner decision — see
 - PR: this PR (`arch/review-2026-11-13-run2`). Ready backlog depth after this PR: 4 (B-9..B-12).
 - Next focus: B-11/B-12 new-field slices follow the B-8 category rule (schema expression context decides
   Invalid vs Unsupported); Gate 1b remains blocked on pin schema, canonical-IR boundary and Component host contract.
+
+## 2026-11-13 run 3
+
+- Audited range: `e3a8373..6f58e96` (PRs #38–#42; #38 is run 2's architecture PR). No open Schedule A PR.
+  Auditor: claude-opus-5-5 (effort high), burn mode. Second opinion on F21: Codex gpt-6.1-sol (reasoning high),
+  which confirmed the conversion, class (a), medium diagnostic correctness/low operational impact; it corrected
+  the proposal (step `shell` stays Invalid, and B-11's `defaults.run.shell` moves Unsupported→Invalid because
+  the runner rejects unknown bare shells; `defaults.run.working-directory` null stays Invalid; step `id: true`
+  becomes Unsupported) and found F28. Implementer: claude-sonnet-5-5 (high). Cross-review: Codex gpt-6.1-sol
+  (to be recorded).
+- Verified clean: no legacy `WorkflowIR`/`WorkflowProvider` outside `wsr-types/src/lib.rs`; no IO in
+  `wsr-gha`/`wsr-types`; D-033 label on `RunDefaults` and the condition field; ownership; sorted `env` keys; empty
+  stdout on failure; exit codes; B-8 categories for the B-11/B-12 contexts match the pinned schema (20+ probes);
+  Cf/bidi escaping; F16 holds; no bind/apply/evaluate claims; dogfood golden byte-exact.
+
+| ID | Finding | Class | Disposition |
+| --- | --- | --- | --- |
+| F21 | numbers/booleans in string fields Invalid though pinned reader converts them | (a) | Fixed in this PR (B-13) |
+| F22 | null in empty-allowed string fields / env / with values Invalid | (a) | Fixed in this PR (B-13) |
+| F23 | `Condition:` line omits "expression syntax not validated" though any text is accepted | (a) | Fixed in this PR |
+| F24 | CLI guide says success has empty stderr, contradicting the 500 KB warning | (a) | Fixed in this PR |
+| F25 | literal backslash sequence in a key renders like an escaped control char in the route prefix | (c) | Documented choice; revisit with machine-readable diagnostics |
+| F26 | B-10 red proof placed an untracked fixture in the real .github/workflows | (c) | Nothing left behind; red proofs use temp copies only |
+| F27 | pinned schema only linked, not vendored | (c) | Optional SHA-256 note later |
+| F28 | quoted `shell: "true"` and `uses: "5"` accepted though the runner rejects them | (a) | Backlog B-14 |
+| F12 | carried: placeholder `wsr-expr` dependency, deprecated serde_yaml | (c) | Revisit before Component packaging |
+
+- No decision requests filed.
+- PR: this PR (`arch/review-2026-11-13-run3`). Ready backlog depth after this PR: 6 (B-14..B-19).
+- Next focus: B-15/B-16 unblock the repo's own non-dogfood workflows; keep the B-8/B-13 category rules for every
+  new field; Gate 1b remains blocked on pin schema, canonical-IR boundary and Component host contract.

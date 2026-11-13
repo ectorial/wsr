@@ -45,11 +45,18 @@ Current supported subset:
 - Step `name`, optional explicit `id`, and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
   in the summary; action references are reported verbatim, never resolved, fetched or opened.
 
-Names are optional strings (null is treated as absent). Required strings retain their YAML type;
-numbers and booleans are rejected. Display values escape control characters. Each successful report
+Names are optional strings (null is treated as absent). Scalars keep their YAML type: `5` and `"5"`
+are different, and the converted text of a number or boolean is never rendered. The pinned reader
+converts an unmatched null, boolean or number to a string and validates that string, so a
+conversion the schema accepts (a numeric `name`, `run`, `working-directory`, `runs-on` label,
+dispatch `description` or choice option, a boolean step `id`, a null `env` or `with` value) is
+unsupported (`non-string value is not inspected yet`), while one the schema or the runner rejects (a
+numeric `shell`, `uses`, dispatch `type`, `required` or typed `default`, a numeric job ID or step `id`)
+stays invalid. See [scalar conversion](../implementation/inspection-scalar-conversion.md).
+Display values escape control characters. Each successful report
 states that execution compatibility is not assessed; runner names do not establish environment support.
 
-Success exits 0 and writes a deterministic human-readable summary to stdout, with empty stderr.
+Success exits 0 and writes a deterministic human-readable summary to stdout, with empty stderr except the 500 KB size warning below.
 Unreadable/malformed source, invalid supported shapes, unknown fields and expressions in inspected
 strings exit 1, leave stdout empty and write a diagnostic to stderr. Diagnostics identify the file;
 YAML decoding errors include available line/column information and structural context. Semantic
@@ -89,8 +96,9 @@ Inspection neither supplies values nor prompts for required inputs, selects envi
 defaults or evaluates expressions.
 
 Declarations require unique string identifiers beginning with an ASCII letter/underscore, followed
-by letters/digits/underscores/hyphens. Metadata types are strict: no scalar coercion. Null metadata,
-unknown fields, duplicate keys and expressions fail before stdout. Choice declarations require
+by letters/digits/underscores/hyphens. Metadata types are strict, except that a null, boolean or number
+`description` or choice option and a null `default` of a non-boolean input are valid GHA that is
+unsupported here. Other null metadata, unknown fields, duplicate keys and expressions fail before stdout. Choice declarations require
 nonempty options; options on other types (including omitted type) fail. Boolean defaults must be
 booleans; string/choice/environment defaults must be strings. Omitted type uses the string rule
 for validation but is not inserted into the summary. Numeric-type defaults retain any supported
@@ -110,7 +118,7 @@ Their manual reference runs are not evidence of WSR execution support.
 ### Unevaluated run names
 
 An optional workflow `run-name` must be a nonempty string; null, booleans, numbers, lists,
-mappings and blank text fail before stdout with a `run-name` diagnostic. Its decoded text is
+mappings and blank text fail before stdout with a `run-name` diagnostic (a null, boolean or number is unsupported, the rest invalid). Its decoded text is
 reported on the line after the workflow name, with control characters escaped:
 
 ```text
@@ -188,11 +196,11 @@ values may be strings, numbers or booleans; strings are quoted and escaped, and 
 fence is marked unevaluated. An empty mapping renders as `{}`. No variable is bound, no input is
 passed to an action, no directory is resolved and no expression is evaluated.
 
-Non-mapping values, empty keys, null or nested values, keys duplicated ignoring case (as the pinned
+Non-mapping values, empty keys, nested values, keys duplicated ignoring case (as the pinned
 parser rejects), `with` on a `run` step, `working-directory` on a `uses` step and blank or
 non-string directories fail before stdout (`jobs.b.steps[1].env.A: expected a string, number or
-boolean`). A whole-mapping expression, an expression in a key or a number/boolean key is valid GHA
-that is reported as unsupported. Placement is checked before contents.
+boolean`). A whole-mapping expression, an expression in a key, a number/boolean key or a null value
+(the pinned reader converts it to an empty string) is valid GHA that is reported as unsupported. Placement is checked before contents.
 
 ### Workflow and job environment and run defaults
 
@@ -220,8 +228,9 @@ fence (or an expression key) is reported as unevaluated or unsupported. Workflow
 `defaults` itself have none, so an expression there is invalid (`defaults.run.shell: expression is unevaluated and not allowed in
 workflow defaults`). Unknown keys (``defaults.run: unknown field `bogus`, expected `shell` or
 `working-directory` ``, routed to the key), non-mappings, null or nested values and empty strings
-are invalid. Number and boolean values, which the pinned reader converts to strings, are unsupported.
-A blank shell is invalid and a blank directory unsupported, as for steps.
+are invalid. A number or boolean `working-directory`, which the pinned reader converts to a string, is
+unsupported; a number or boolean `shell` is invalid because the runner rejects a bare shell that is not
+a built-in shell and has no `{0}`. A blank shell is invalid and a blank directory unsupported, as for steps.
 
 ### Unevaluated job and step conditions
 
@@ -231,13 +240,14 @@ and needs or the step's header line, with `escape_debug` escaping:
 ```text
 Job: b
   Runner: linux
-  Condition: github.event_name == \'push\' (not evaluated)
+  Condition: github.event_name == \'push\' (not evaluated; expression syntax not validated)
   Step 1: run
-    Condition: ${{ failure() }} (not evaluated)
+    Condition: ${{ failure() }} (not evaluated; expression syntax not validated)
 ```
 
 The pinned schema's `job-if` and `step-if` are strings that GitHub evaluates as expressions with or
-without the fence. Inspection does not parse, validate or evaluate the text, and a condition does not
+without the fence. Inspection does not parse, validate or evaluate the text (any text is accepted, so
+the line says the syntax is not validated), and a condition does not
 change which jobs or steps are reported. A number or boolean (which the pinned reader converts to a
 string) and a null, empty or blank condition (which GitHub treats as `success()`) are unsupported
 (`jobs.b.if: non-string condition is not inspected yet at line 3 column 5`); sequences and mappings
@@ -251,8 +261,10 @@ Scalars retain `Runner: ubuntu-latest`; lists render as
 Source form, order, exact spelling and repetitions are preserved; a one-element list stays a list.
 No runner is discovered, selected or provisioned, and labels do not establish platform support.
 
-Null/non-string values, nested lists, empty lists and blank members fail before stdout.
-Runner-selector mappings are explicitly unsupported. Expressions are unevaluated and rejected,
+Null values, nested lists, empty lists and blank members fail before stdout; a number or boolean
+(scalar or list entry, converted to a string by the pinned reader) is unsupported rather than invalid.
+Runner-selector mappings, including one whose `group` or `labels` hold numbers or booleans, are
+explicitly unsupported. Expressions are unevaluated and rejected,
 including inside lists. Semantic diagnostics identify `jobs.build.runs-on[2]` for a second label;
 decoding errors retain available source context. No normalization or label resolution occurs.
 
@@ -265,7 +277,8 @@ order. IDs do not resolve outputs or expressions, select steps, or establish run
 
 An ID must be a nonempty string of fewer than 100 ASCII identifier characters: a letter or
 underscore first, then letters, digits, underscores or hyphens. The `__` prefix is reserved.
-Explicit null/non-string values and expressions fail. Duplicate IDs within one job fail with
+Explicit null, number and other non-string values and expressions fail; a boolean `true` or `false`
+converts to a valid identifier and is reported as unsupported. Duplicate IDs within one job fail with
 both the first and repeated structural step locations; exact spelling is used for comparison.
 Case variants and reuse across different jobs are accepted. Semantic diagnostic indices are
 one-based. Validation completes before stdout is rendered; existing graph checks remain in force.
