@@ -327,3 +327,10 @@ exactly 511,999, 512,000 and 512,001 bytes and asserts exit 0, identical stdout 
 only above 512,000 bytes. Observed red: no warning at 512,001 bytes. The closed-stdout test's
 638,896-byte fixture now asserts exactly the warning on stderr instead of empty stderr. A closed-stderr
 test (red: exit 101, empty stdout) asserts exit 0 and the full report when the warning cannot be written.
+
+## Format characters on stderr (backlog B-9)
+
+`inspect_errors_escape_unicode_format_characters_on_stderr` puts U+202E and U+200B in an unknown step
+key, and U+202E, U+200B, U+2066 and U+2069 in a job identifier (route and quoted text), and asserts
+the exact escaped diagnostic with no raw format character on stderr. Observed red: raw
+``unknown field `k\u{202e}q\u{200b}` `` bytes on stderr. The control-byte escaping test is unchanged.

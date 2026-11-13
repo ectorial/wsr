@@ -15,7 +15,7 @@ for delivery gates.
 
 ## Present in the current checkout
 
-- [x] Inspection host-boundary hardening: diagnostics escape control characters before reaching stderr,
+- [x] Inspection host-boundary hardening: diagnostics escape control and Unicode format (bidi, zero-width) characters before reaching stderr,
   only regular files are read (symlinks followed; FIFOs, devices and directories exit 1), and a closed
   stdout pipe ends quietly instead of panicking. See [CLI contract](../cli/README.md#static-workflow-inspection).
   No input size limit is enforced (D-032); files over GitHub's 500 KB limit get a stderr warning.

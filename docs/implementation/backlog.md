@@ -121,7 +121,7 @@ Schedule A takes only ready slices.
 
 ## B-9 Escape format characters in inspection stderr (audit F15)
 
-- Status: **ready**.
+- Status: **delivered on merge of the B-9 PR** (Schedule A); see [slice record](inspection-format-escape.md).
 
 - Behavior: host stderr escaping (`crates/wsr/src/commands/inspect.rs` `escape_control_characters`) also escapes
   Unicode format/bidi characters (general category Cf, e.g. U+202E, U+200B, U+2066–U+2069) the way stdout's
