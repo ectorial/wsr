@@ -28,7 +28,7 @@ struct Workflow {
     #[serde(rename = "run-name", default, deserialize_with = "converted_string")]
     run_name: Option<String>,
     #[serde(rename = "on", default, deserialize_with = "dispatch::deserialize")]
-    trigger: Option<wsr_types::inspection::ManualTrigger>,
+    triggers: Vec<wsr_types::inspection::Trigger>,
     #[serde(default, deserialize_with = "permissions::deserialize")]
     permissions: Option<wsr_types::inspection::Permissions>,
     #[serde(default, deserialize_with = "present_value")]
@@ -341,7 +341,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
     Ok(WorkflowSummary {
         name: workflow.name,
         run_name,
-        trigger: workflow.trigger,
+        triggers: workflow.triggers,
         permissions: workflow.permissions,
         env,
         defaults,

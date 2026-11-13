@@ -37,8 +37,9 @@ source summary (D-033), not executable IR or a signed Component compilation resu
 
 Current supported subset:
 
-- Optional literal workflow `name` and optional scalar/mapping manual trigger; the trigger is
-  reported, never evaluated. Absence of `on` is accepted for inspection fragments.
+- Optional literal workflow `name` and optional `on` events (scalar, sequence or mapping); events are
+  reported in source order, never evaluated or subscribed to. Absence of `on` is accepted for
+  inspection fragments. See [trigger events](#trigger-events).
 - Optional workflow `run-name` source text, reported but never evaluated; see [run names](#unevaluated-run-names).
 - A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
 - Job `name`, a nonempty literal string or string-list `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
@@ -75,17 +76,30 @@ Every character `char::escape_debug` escapes is escaped, including combining mar
 backslashes stay as written. If stdout is closed early (for example
 `wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
 
-Other trigger forms, runner-group objects, matrices, environment,
+Event configuration other than `workflow_dispatch` inputs, runner-group objects, matrices, environment,
 services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection remains pending.
 
+### Trigger events
+
+Each `on` event prints `Trigger: <event> (not evaluated)` in source order, from a scalar
+(`on: workflow_call`), a sequence (`on: [push, workflow_dispatch]`) or a mapping whose
+non-dispatch bodies are null or `{}` (`on: {workflow_call: null, push: {}}`). Every event name of the
+[pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
+is accepted; an unknown name is invalid (`on[2]: unknown event 'bogus'`). Non-empty bodies
+(branch/path/type filters, `workflow_call` inputs, secrets and outputs) and any `schedule` sequence
+are unsupported (`on.push: event configuration is not inspected yet`), as is a repeated sequence
+entry. A body on a null-only event such as `create` (`expected null`), a null `schedule`, other body
+shapes, `null` and an empty sequence or mapping (`on: expected at least one event`) are invalid. No
+event is subscribed to, matched or delivered.
+
 ### Manual-trigger input declarations
 
 `on: workflow_dispatch`, `on: {workflow_dispatch: null}`, an empty dispatch mapping,
-and a dispatch mapping with `inputs` are supported. Other events and event sequences remain
-explicitly unsupported. Missing `on`, null dispatch bodies, absent inputs and empty input mappings
-remain distinct in the source summary, though the trigger-only CLI line is the same.
+and a dispatch mapping with `inputs` are supported, alone or among other events. Missing `on`, null dispatch bodies, absent inputs and empty input mappings
+remain distinct in the source summary, though the trigger-only CLI line is the same; inputs print
+under the `workflow_dispatch` line.
 
 Inputs display in identifier order, with only explicitly declared description/type/required/default/
 options metadata. Types are string, boolean, number, choice and environment; omission is preserved.

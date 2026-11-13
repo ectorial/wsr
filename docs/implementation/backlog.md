@@ -198,7 +198,7 @@ Schedule A takes only ready slices.
 
 ## B-15 Non-dispatch `on:` events with empty bodies, starting with `workflow_call`
 
-- Status: **READY** (Schedule A).
+- Status: **delivered on merge of the B-15 PR** (Schedule A); see [slice record](inspection-trigger-events.md).
 
 - Behavior: report `Trigger: <event> (not evaluated)` for scalar, sequence and null or empty-body mapping forms
   of non-dispatch events, in source order; non-empty bodies (filters, `workflow_call` inputs and secrets) stay

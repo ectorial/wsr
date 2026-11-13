@@ -55,11 +55,6 @@ impl Error {
         self
     }
 
-    pub(crate) fn with_category(mut self, category: Category) -> Self {
-        self.category = category;
-        self
-    }
-
     pub fn category(&self) -> Category {
         self.category
     }

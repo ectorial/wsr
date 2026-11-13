@@ -740,10 +740,14 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
         assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
     }
     for (trigger, diagnostic) in [
-        ("null", "on: expected a mapping"),
-        ("[]", "on: expected a mapping"),
-        ("{}", "on: expected workflow_dispatch entry"),
-        ("{push: null}", "on.push: unsupported field or event"),
+        // B-15 contract change: sequences and bare non-dispatch events now inspect.
+        ("null", "on: expected an event name, sequence or mapping"),
+        ("[]", "on: expected at least one event"),
+        ("{}", "on: expected at least one event"),
+        (
+            "{push: {branches: [main]}}",
+            "on.push: event configuration is not inspected yet",
+        ),
         (
             "{workflow_dispatch: {unexpected: true}}",
             "on.workflow_dispatch.unexpected",
@@ -1901,4 +1905,106 @@ fn inspect_rejects_unknown_shells_and_malformed_action_references() {
         assert!(!directory.path().join("executed").exists());
         assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
     }
+}
+
+// Backlog B-15: bare `on:` events are reported in source order without being evaluated.
+#[test]
+fn inspect_reports_bare_trigger_events_in_source_order() {
+    let directory = tempfile::tempdir().unwrap();
+    let job = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: touch executed\n";
+    for (on, triggers) in [
+        ("workflow_call", "workflow_call"),
+        (
+            "[push, workflow_dispatch, pull_request]",
+            "push workflow_dispatch pull_request",
+        ),
+        (
+            "\n  workflow_call:\n  push: {}\n  workflow_dispatch:\n    inputs:\n      mode: {type: boolean}\n  create:",
+            "workflow_call push workflow_dispatch create",
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), format!("on: {on}\n{job}")).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(0), "{on}: {output:?}");
+        assert!(output.stderr.is_empty(), "{on}: {output:?}");
+        let lines: String = triggers
+            .split(' ')
+            .map(|event| {
+                let inputs = if event == "workflow_dispatch" && on.contains("inputs") {
+                    "  Input: mode\n    Type: boolean\n"
+                } else {
+                    ""
+                };
+                format!("Trigger: {event} (not evaluated)\n{inputs}")
+            })
+            .collect();
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap(),
+            format!(
+                "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\n{lines}Job: b\n  Runner: linux\n  Step 1: run\n"
+            ),
+            "{on}"
+        );
+        assert!(!directory.path().join("executed").exists());
+    }
+}
+
+#[test]
+fn inspect_rejects_unknown_and_configured_trigger_events() {
+    let directory = tempfile::tempdir().unwrap();
+    let job = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n";
+    for (on, diagnostic) in [
+        (
+            "\"push\\e[31m\\u202E\"",
+            "on: unknown event 'push\\u{1b}[31m\\u{202e}'",
+        ),
+        ("[push, \"x\\e\"]", "on[2]: unknown event 'x\\u{1b}'"),
+        ("[push, push]", "on[2]: repeated event is not inspected yet"),
+        (
+            "{workflow_call: {inputs: {}}}",
+            "on.workflow_call: event configuration is not inspected yet",
+        ),
+        ("{create: {}}", "on.create: expected null"),
+        ("{schedule: null}", "on.schedule: expected a sequence"),
+        ("{push: main}", "on.push: expected null or a mapping"),
+    ] {
+        fs::write(directory.path().join("ci.yml"), format!("on: {on}\n{job}")).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{on}: {output:?}");
+        assert!(output.stdout.is_empty(), "{on}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{on}"
+        );
+    }
+}
+
+// The repository's reusable check workflows, inspected as temporary copies only.
+#[test]
+fn inspect_reusable_repository_workflows_from_temporary_copies() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows");
+    let directory = tempfile::tempdir().unwrap();
+    for name in [
+        "check-docs.yml",
+        "check-fmt.yml",
+        "check-lint.yml",
+        "test.yml",
+    ] {
+        let source = fs::read_to_string(root.join(name)).unwrap();
+        fs::write(directory.path().join(name), &source).unwrap();
+        let output = inspect(directory.path(), name);
+        assert_eq!(output.status.code(), Some(0), "{name}: {output:?}");
+        assert!(output.stderr.is_empty(), "{name}: {output:?}");
+        let report = String::from_utf8(output.stdout).unwrap();
+        assert!(
+            report.contains("\nTrigger: workflow_call (not evaluated)\n"),
+            "{name}: {report}"
+        );
+        assert_eq!(
+            fs::read_to_string(directory.path().join(name)).unwrap(),
+            source
+        );
+    }
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 4);
 }
