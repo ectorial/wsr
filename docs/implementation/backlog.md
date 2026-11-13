@@ -144,7 +144,7 @@ Schedule A takes only ready slices.
 
 ## B-11 Workflow and job `env` and job `defaults.run`
 
-- Status: **ready**.
+- Status: **delivered on merge of the B-11 PR** (Schedule A); see [slice record](inspection-env-defaults.md).
 
 - Behavior: inspect workflow-level and job-level `env` maps and workflow/job `defaults.run.shell` and
   `working-directory` as source data (literal or unevaluated `SourceText`, sorted keys, escaped), reported as not

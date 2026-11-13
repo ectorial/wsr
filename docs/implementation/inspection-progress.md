@@ -1,6 +1,29 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-10 dogfood workflow-set guard implemented; PR pending checks
+## Current checkpoint — B-11 workflow/job env and run defaults implemented; PR pending checks
+
+Same Schedule A run, after the PR #40 wake (lock retaken 2026-11-13). PR #40 squash-merged as
+`5c6e284` after all four required checks passed on `334b19e` with no reviews or comments; `wsr` and
+`wsr-gha` tests (80) verified on synced main. B-11 on `feat/b11-env-defaults` from `5c6e284`; slice
+record [inspection-env-defaults.md](inspection-env-defaults.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode; interface-touching: new `wsr-types` fields under D-033);
+cross-reviewed by Codex gpt-6.1-sol (high): no blockers; three P2s fixed (number/boolean values
+Unsupported; job `defaults.run` expression keys Unsupported; unknown keys routed to the key).
+Follow-up for Schedule B: step `shell`/`working-directory` still treat numbers/booleans as Invalid.
+
+- Schema contexts read from the pinned `workflow-v1.0.json`: workflow-env, job-env and
+  job-defaults-run have contexts; workflow-defaults, workflow-defaults-run and job-defaults do not;
+  `shell`/`working-directory` require nonempty strings.
+- Red (observed): both new CLI tests failed with ``unknown field `env`, expected one of `name`,
+  `run-name`, `on`, `permissions`, `jobs` `` / exit 1.
+- Intended contract change: the unknown-job-key ``expected one of …`` list in
+  `wsr-gha/tests/diagnostics.rs` now names `env` and `defaults` (category/route/location unchanged).
+- Green: 2 CLI tests, 2 `wsr-gha` tests; full `wsr`/`wsr-gha` suites; `cargo xtask ci`.
+
+B-11 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-12 (job and step `if` as unevaluated conditions).
+
+## Previous checkpoint — B-10 dogfood workflow-set guard delivered (PR #40, `5c6e284`)
 
 Same Schedule A run, after the PR #39 wake (lock retaken 2026-11-13). PR #39 squash-merged as
 `fb31d1c` after all four required checks passed on `8508157` with no reviews or comments; `wsr` and

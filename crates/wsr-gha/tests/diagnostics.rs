@@ -210,7 +210,7 @@ fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "jobs.b: unknown field `if`, expected one of `name`, `runs-on`, `needs`, `permissions`, `timeout-minutes`, `steps` at line 4 column 5"
+        "jobs.b: unknown field `if`, expected one of `name`, `runs-on`, `needs`, `permissions`, `timeout-minutes`, `env`, `defaults`, `steps` at line 4 column 5"
     );
     let duplicate = wsr_gha::inspect(
         format!("on: {{workflow_dispatch: null, workflow_dispatch: {{}}}}\n{JOB}").as_bytes(),
