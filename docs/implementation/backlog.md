@@ -55,7 +55,8 @@ Schedule A takes only ready slices.
 
 ## B-3 Workflow and job `permissions` (requested, not granted)
 
-- Status: **ready** (DR-002 resolved by D-033; GHA-derived fields stay in `wsr-types`).
+- Status: **delivered on merge of the B-3 PR** (Schedule A); see [slice record](inspection-permissions.md).
+  Expressions are `Invalid`, not `Unsupported`: the pinned schema gives `permissions` no expression context.
 
 - Behavior: accept literal `read-all`/`write-all` or a scope→`read|write|none` map at workflow and job level;
   render as requested permissions; expressions rejected as unevaluated/unsupported; unknown scopes rejected.

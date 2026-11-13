@@ -1,6 +1,7 @@
 # Permissions iteration: requested `GITHUB_TOKEN` permissions (backlog B-3)
 
-Status: **in progress** on `feat/inspect-permissions` from `319fc07` (Schedule A). Evidence lives in
+Status: **delivered on merge of its PR**, branch `feat/inspect-permissions` from `319fc07` (Schedule A).
+Implemented by Claude (claude-opus-5-5); cross-reviewed by Codex gpt-6.1-sol (high). Evidence lives in
 the [checkpoint](inspection-progress.md).
 
 ## Scope

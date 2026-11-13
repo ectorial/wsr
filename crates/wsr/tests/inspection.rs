@@ -1230,15 +1230,16 @@ fn inspect_rejects_permissions_outside_the_pinned_schema() {
         ),
         (
             format!("jobs:\n  b:\n    permissions:\n      contents: admin\n{job}"),
-            "jobs.b.permissions.contents: expected read, write or none".to_owned(),
+            "jobs.b.permissions.contents: expected read, write or none at line 3 column 5"
+                .to_owned(),
         ),
         (
             format!("jobs:\n  b:\n    permissions:\n      models: write\n{job}"),
-            "jobs.b.permissions.models: expected read or none".to_owned(),
+            "jobs.b.permissions.models: expected read or none at line 3 column 5".to_owned(),
         ),
         (
             format!("jobs:\n  b:\n    permissions:\n      id-token: read\n{job}"),
-            "jobs.b.permissions.id-token: expected write or none".to_owned(),
+            "jobs.b.permissions.id-token: expected write or none at line 3 column 5".to_owned(),
         ),
         (
             format!("permissions: ${{{{ inputs.level }}}}\njobs:\n  b:\n{job}"),
@@ -1258,11 +1259,10 @@ fn inspect_rejects_permissions_outside_the_pinned_schema() {
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
-        let error = String::from_utf8(output.stderr).unwrap();
-        assert!(
-            error.starts_with(&format!("error: wsr inspect: ci.yml: {diagnostic}")),
-            "{source}: {error}"
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{source}"
         );
-        assert!(!error.contains("granted"), "{source}: {error}");
     }
 }

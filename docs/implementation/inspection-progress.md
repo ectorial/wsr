@@ -1,6 +1,25 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — owner decisions D-032..D-034 recorded; backlog ready
+## Current checkpoint — B-3 requested permissions implemented; PR pending checks
+
+Schedule A run 2026-11-13T15:24Z (no prior lock; lock taken). Baseline `319fc07` = origin/main;
+Dependabot #23 untouched; no open Schedule B PR. Branch `feat/inspect-permissions`; slice record
+[inspection-permissions.md](inspection-permissions.md). Implemented by Claude (claude-opus-5-5,
+orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no blockers; two nits fixed
+(backlog B-3 now states expressions are `Invalid`; rejection tests assert complete stderr).
+
+- Red (observed on `319fc07` build): both new CLI tests failed with ``unknown field `permissions`,
+  expected one of `name`, `run-name`, `on`, `jobs` ``.
+- Green: 2 CLI tests (4 accepted forms, 11 exact-stderr rejections), 3 `wsr-gha` permissions tests;
+  B-0 diagnostics contract updated intentionally (unsupported-key case `permissions` → `concurrency`;
+  job unknown-field list now names `permissions`). `cargo xtask ci` and `git diff --check` pass locally.
+- Dogfood: both `example-*.yml` now pass `permissions` and stop at `jobs.<id>: unknown field
+  `timeout-minutes``, which B-4 owns.
+
+B-3 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings, then take B-4 (job `timeout-minutes`, step `shell`) from a fresh branch.
+
+## Previous checkpoint — owner decisions D-032..D-034 recorded; backlog ready
 
 PR #31 squash-merged as `a939203` after all four required checks passed on `c397622`. The owner
 resolved DR-002 (D-033), DR-003 (D-032) and DR-004 (D-034); B-3..B-5 and B-7 are ready and B-6
