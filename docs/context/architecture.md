@@ -100,8 +100,8 @@ container path or a diagnostic. Linux system execution from macOS requires a com
 
 ## Concurrency and state
 
-D-028 applies a global running-job count policy across repositories, default max-jobs=0 for no count
-cap. Resource and policy checks remain. Ready queue, blocked dependencies, provisioning and running
+D-028/D-032 admit jobs across repositories against one memory budget (default and minimum 5 GB,
+matching `ubuntu-slim`; per-job 5 GB ceiling, not a reservation). Policy checks remain. Ready queue, blocked dependencies, provisioning and running
 work have distinct wait reasons. Background service/foreground ownership, queue fairness and crash
 recovery remain proposals to specify. No crate layout or daemon API is selected by these diagrams.
 

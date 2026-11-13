@@ -27,8 +27,8 @@ flowchart LR
 
 Normal precedence is explicit invocation over applicable repository defaults over built-ins.
 Trusted policy constrains the result. A repository may request lower resource use but cannot widen
-device limits or grants. Global max-jobs=0 means no configured count cap, with other admission
-checks still effective. Exact keys/locations and merge rules require specification.
+device limits or grants. The global memory budget (D-032) defaults to 5 GB, matching `ubuntu-slim`;
+other admission checks still apply. Exact keys/locations and merge rules require specification.
 
 ## Init versus run
 

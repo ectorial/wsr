@@ -1,4 +1,5 @@
-//! Provider-neutral source summaries for inspection, not an executable or stable serialized IR.
+//! Temporary GHA-derived source summaries for D-031 inspection (D-033), not provider-neutral
+//! model types and not an executable or stable serialized IR.
 
 /// A workflow's statically inspected source structure.
 #[derive(Debug)]

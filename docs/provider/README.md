@@ -10,7 +10,7 @@ flowchart LR
 ## Current scaffold
 
 [wsr-gha](../../crates/wsr-gha/src/lib.rs) provides a temporary built-in static inspection compiler
-under D-031. It returns provider-neutral source summaries, not executable canonical IR.
+under D-031. It returns temporary GHA-derived source summaries (D-033), not executable canonical IR.
 [Supported inputs and diagnostics](../cli/README.md#static-workflow-inspection) are bounded explicitly.
 The existing [WorkflowProvider trait](../../crates/wsr-types/src/lib.rs) remains legacy; signed
 Component provider execution and full GHA lowering are not implemented.

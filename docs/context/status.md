@@ -82,7 +82,7 @@ Bun is now the intended GHA JavaScript compatibility runtime; this adds no imple
 - [ ] Source snapshots, shared content store, artifacts, and structured execution evidence.
 - [ ] Job/step state management, cancellation, timeout cleanup, and failure semantics.
 - [ ] Engine reuse inside GitHub Actions.
-- [ ] Global ready-job queue, max-jobs policy, dispatch and cross-repository coordination.
+- [ ] Global ready-job queue, memory-budget admission (D-032), dispatch and cross-repository coordination.
 - [ ] Background lifecycle, authenticated local control and crash reconciliation.
 - [ ] Verified runner/tool catalog provisioning and complete dependency closure.
 - [ ] Cached action retention, offline acquisition rules and revocation enforcement.

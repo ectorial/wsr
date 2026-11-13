@@ -1,6 +1,20 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-2 compiler tests implemented; PR pending checks
+## Current checkpoint — owner decisions D-032..D-034 recorded; backlog ready
+
+PR #31 squash-merged as `a939203` after all four required checks passed on `c397622`. The owner
+resolved DR-002 (D-033), DR-003 (D-032) and DR-004 (D-034); B-3..B-5 and B-7 are ready and B-6
+follows B-3..B-5.
+
+Incident (2026-11-13T02:11Z): during B-0, an empty-ref `git stash apply` applied the protected July
+29 prototype stash to the project-root checkout. The run reset tracked files and removed the files the
+partial apply created; stash `daee088` stayed intact and no work was lost. Workers no longer use
+`git stash`, `git clean` or hard resets in the project root, and record delivery inside the feature
+PR instead of leaving uncommitted edits on `main`.
+
+Next action: take B-3 from a fresh branch.
+
+## Previous checkpoint — B-2 compiler tests implemented; PR pending checks
 
 Same Schedule A run (lock retaken 2026-11-13 after the PR #30 wake). PR #30 squash-merged as
 `1545ab3` after all four required checks passed on `a533c3e` with no reviews or comments;
