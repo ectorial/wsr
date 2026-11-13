@@ -1153,3 +1153,116 @@ fn inspect_rejects_non_regular_files_without_reading_them() {
         );
     }
 }
+
+#[test]
+fn inspect_reports_requested_permissions_without_granting_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let job = "    runs-on: linux\n    steps:\n      - run: touch executed\n";
+    let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\n";
+    for (source, report) in [
+        (
+            format!("permissions: read-all\njobs:\n  b:\n{job}"),
+            format!(
+                "{head}Permissions: read-all (requested; not granted)\nJob: b\n  Runner: linux\n  Step 1: run\n"
+            ),
+        ),
+        (
+            format!("permissions: {{}}\njobs:\n  b:\n{job}"),
+            format!(
+                "{head}Permissions: {{}} (requested; not granted)\nJob: b\n  Runner: linux\n  Step 1: run\n"
+            ),
+        ),
+        (
+            format!(
+                "permissions:\n  pull-requests: none\n  contents: read\n  id-token: write\njobs:\n  a:\n{job}  b:\n    permissions: write-all\n    needs: a\n{job}"
+            ),
+            format!(
+                "{head}Permissions (requested; not granted):\n  contents: read\n  id-token: write\n  pull-requests: none\nJob: a\n  Runner: linux\n  Step 1: run\nJob: b\n  Runner: linux\n  Needs: a\n  Permissions: write-all (requested; not granted)\n  Step 1: run\n"
+            ),
+        ),
+        (
+            format!(
+                "jobs:\n  b:\n    permissions:\n      models: read\n      actions: write\n{job}"
+            ),
+            format!(
+                "{head}Job: b\n  Runner: linux\n  Permissions (requested; not granted):\n    actions: write\n    models: read\n  Step 1: run\n"
+            ),
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(0), "{source}: {output:?}");
+        assert!(output.stderr.is_empty(), "{source}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap(),
+            report,
+            "{source}"
+        );
+        assert!(!directory.path().join("executed").exists());
+    }
+}
+
+#[test]
+fn inspect_rejects_permissions_outside_the_pinned_schema() {
+    let directory = tempfile::tempdir().unwrap();
+    let job = "    runs-on: linux\n    steps:\n      - run: echo\n";
+    let levels = "expected read-all, write-all or a mapping of permission scopes";
+    for (source, diagnostic) in [
+        (
+            format!("permissions: read\njobs:\n  b:\n{job}"),
+            format!("permissions: {levels}"),
+        ),
+        (
+            format!("permissions: ~\njobs:\n  b:\n{job}"),
+            format!("permissions: {levels}"),
+        ),
+        (
+            format!("permissions: [contents]\njobs:\n  b:\n{job}"),
+            format!("permissions: {levels}"),
+        ),
+        (
+            format!("permissions:\n  secrets: read\njobs:\n  b:\n{job}"),
+            "permissions.secrets: unknown permission scope 'secrets'".to_owned(),
+        ),
+        (
+            format!("permissions:\n  1: read\njobs:\n  b:\n{job}"),
+            "permissions: expected a string permission scope".to_owned(),
+        ),
+        (
+            format!("jobs:\n  b:\n    permissions:\n      contents: admin\n{job}"),
+            "jobs.b.permissions.contents: expected read, write or none at line 3 column 5"
+                .to_owned(),
+        ),
+        (
+            format!("jobs:\n  b:\n    permissions:\n      models: write\n{job}"),
+            "jobs.b.permissions.models: expected read or none at line 3 column 5".to_owned(),
+        ),
+        (
+            format!("jobs:\n  b:\n    permissions:\n      id-token: read\n{job}"),
+            "jobs.b.permissions.id-token: expected write or none at line 3 column 5".to_owned(),
+        ),
+        (
+            format!("permissions: ${{{{ inputs.level }}}}\njobs:\n  b:\n{job}"),
+            "permissions: expression is unevaluated and not allowed in permissions".to_owned(),
+        ),
+        (
+            format!("permissions:\n  contents: ${{{{ inputs.level }}}}\njobs:\n  b:\n{job}"),
+            "permissions.contents: expression is unevaluated and not allowed in permissions"
+                .to_owned(),
+        ),
+        (
+            format!("permissions:\n  \"x\\x1b[31m\": read\njobs:\n  b:\n{job}"),
+            "permissions.x\\u{1b}[31m: unknown permission scope 'x\\u{1b}[31m'".to_owned(),
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
+        assert!(output.stdout.is_empty(), "{source}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{source}"
+        );
+    }
+}

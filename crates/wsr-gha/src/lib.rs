@@ -13,6 +13,7 @@ use wsr_types::inspection::{
 mod diagnostic;
 mod dispatch;
 mod needs;
+mod permissions;
 use diagnostic::Fields;
 pub use diagnostic::{Category, Error};
 use needs::Needs;
@@ -26,19 +27,15 @@ struct Workflow {
     run_name: Option<String>,
     #[serde(rename = "on", default, deserialize_with = "dispatch::deserialize")]
     trigger: Option<wsr_types::inspection::ManualTrigger>,
+    #[serde(default, deserialize_with = "permissions::deserialize")]
+    permissions: Option<wsr_types::inspection::Permissions>,
     #[serde(deserialize_with = "unique_jobs")]
     jobs: BTreeMap<String, Job>,
 }
 
 impl diagnostic::Level for Workflow {
     const NAME: &'static str = "Workflow";
-    const SCHEMA: &'static [&'static str] = &[
-        "concurrency",
-        "defaults",
-        "description",
-        "env",
-        "permissions",
-    ];
+    const SCHEMA: &'static [&'static str] = &["concurrency", "defaults", "description", "env"];
 }
 
 #[derive(Deserialize)]
@@ -50,6 +47,8 @@ struct Job {
     runner: RunnerRequirement,
     #[serde(default)]
     needs: Needs,
+    #[serde(default, deserialize_with = "permissions::deserialize")]
+    permissions: Option<wsr_types::inspection::Permissions>,
     #[serde(deserialize_with = "steps")]
     steps: Vec<Step>,
 }
@@ -67,7 +66,6 @@ impl diagnostic::Level for Job {
         "environment",
         "if",
         "outputs",
-        "permissions",
         "secrets",
         "services",
         "snapshot",
@@ -229,6 +227,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             name: job.name,
             runner: job.runner,
             needs: job.needs.into_values(),
+            permissions: job.permissions,
             steps,
         });
     }
@@ -236,6 +235,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         name: workflow.name,
         run_name,
         trigger: workflow.trigger,
+        permissions: workflow.permissions,
         jobs,
     })
 }

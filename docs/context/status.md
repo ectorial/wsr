@@ -22,6 +22,9 @@ for delivery gates.
 - [x] Provisional typed inspection errors in `wsr-gha`: `inspect` failures carry an invalid versus
   valid-but-unsupported category and a source route, classified at detection against the pinned
   schema's keys; CLI diagnostics are unchanged. Not a stable, WIT or protocol contract.
+- [x] Workflow and job `permissions` in inspection: `read-all`/`write-all` or a pinned-schema
+  scope→level mapping, reported as requested and not granted. See [permissions contract](../cli/README.md#requested-permissions).
+  No token, effective-permission computation or enforcement; full example-workflow inspection remains pending.
 - [x] Workflow `run-name` in inspection: strict optional string, literal versus unevaluated
   classification of the whole decoded text and escaped rendering. See [run-name contract](../cli/README.md#unevaluated-run-names).
   No expression parsing/validation, context lookup or default application; full example-workflow

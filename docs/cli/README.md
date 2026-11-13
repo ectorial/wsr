@@ -63,7 +63,7 @@ escaped, so no raw terminal escape sequence reaches stderr. If stdout is closed 
 `wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
 
 Other trigger forms, runner-group objects, matrices, conditions, environment,
-permissions, defaults, services and other GHA constructs are rejected explicitly in this first slice.
+defaults, services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection and canonical dogfood fixtures remain pending.
 
@@ -118,6 +118,29 @@ no context or input is looked up and no default replaces `inputs.mode`. Omission
 The [pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
 defines `run-name` as a string with `github`, `inputs` and `vars` contexts; WSR does not bind them.
 Other fields keep their literal-only expression rejection.
+
+### Requested permissions
+
+Workflow-level and job-level `permissions` accept the `read-all`/`write-all` shorthands or a
+mapping (possibly empty) from a scope in the
+[pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
+to `read`, `write` or `none`; `id-token` and `copilot-requests` take only `write`/`none`,
+`models` and `vulnerability-alerts` only `read`/`none`. The workflow request follows the trigger
+lines, and a job's request follows its runner and needs lines, with scopes sorted by name:
+
+```text
+Permissions: read-all (requested; not granted)
+Permissions (requested; not granted):
+  contents: read
+Permissions: {} (requested; not granted)
+```
+
+These are source requests only. Inspection grants no token, does not combine a job's request with
+the workflow's or with repository defaults, and does not enforce any permission. Null and other
+scalars, sequences, unknown or non-string scopes, levels outside a scope's set and duplicate scopes
+fail before stdout (`permissions.secrets: unknown permission scope 'secrets'`,
+`jobs.b.permissions.models: expected read or none`). The pinned schema gives `permissions` no
+expression context, so `${{` text fails as an unevaluated expression the field does not allow.
 
 ### Literal runner labels
 

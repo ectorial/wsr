@@ -276,3 +276,14 @@ dependency graph (diamond, repeated edge, forward reference, missing, self and t
 job/step identifier rules, job-ID precedence over `needs`, unknown-target precedence over cycles, runner-list and step-kind summaries,
 shape errors, and hostile YAML (alias expansion, deep nesting). Characterization only: no red was
 expected or observed. It covers static source inspection, not evaluation, execution or isolation.
+
+## Requested permissions (backlog B-3)
+
+Two CLI tests in `crates/wsr/tests/inspection.rs` and three in `crates/wsr-gha/tests/permissions.rs`.
+Observed red: both CLI tests failed with ``unknown field `permissions` `` before implementation.
+Coverage: `read-all`, `write-all`, empty and populated mappings at workflow and job level with sorted
+scope output and no merging; invalid scalars, null, sequences, unknown, non-string and escaped
+control-byte scopes, scope-restricted levels (`models`, `id-token`, `vulnerability-alerts`,
+`copilot-requests`), non-string levels, expressions and duplicate scopes, with category `Invalid`
+and field routes. The B-0 unsupported-key case moved from `permissions` to `concurrency`, and the
+job unknown-field message now lists `permissions`. Requests are reported, never granted or enforced.

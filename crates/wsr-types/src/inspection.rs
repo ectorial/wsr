@@ -10,6 +10,8 @@ pub struct WorkflowSummary {
     pub run_name: Option<SourceText>,
     /// Optional static trigger name, not an evaluated invocation event.
     pub trigger: Option<ManualTrigger>,
+    /// Optional workflow-level token permissions request, never granted by inspection.
+    pub permissions: Option<Permissions>,
     /// Jobs in deterministic identifier order.
     pub jobs: Vec<JobSummary>,
 }
@@ -34,6 +36,8 @@ pub struct JobSummary {
     pub runner: RunnerRequirement,
     /// Static source dependency identifiers, retaining declared order and repetitions.
     pub needs: Vec<String>,
+    /// Optional job-level token permissions request, not merged with the workflow's.
+    pub permissions: Option<Permissions>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }
@@ -65,6 +69,28 @@ pub enum RunnerRequirement {
     Label(String),
     /// Source list, retaining order, spelling and repetitions.
     Labels(Vec<String>),
+}
+
+/// Requested `GITHUB_TOKEN` permissions as declared, not an effective or granted token.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Permissions {
+    /// The `read-all` shorthand.
+    ReadAll,
+    /// The `write-all` shorthand.
+    WriteAll,
+    /// Declared scopes in name order; empty for an explicitly empty mapping.
+    Scopes(std::collections::BTreeMap<String, PermissionLevel>),
+}
+
+/// A requested level for one permission scope.
+#[derive(Debug, PartialEq, Eq)]
+pub enum PermissionLevel {
+    /// `read`.
+    Read,
+    /// `write`.
+    Write,
+    /// `none`.
+    None,
 }
 
 /// Source form of the supported manual trigger, never an invocation.

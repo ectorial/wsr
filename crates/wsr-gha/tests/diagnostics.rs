@@ -18,7 +18,7 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
         (format!("on: {{push: null}}\n{JOB}"), "on.push"),
         (format!("on: [push]\n{JOB}"), "on"),
         (format!("on: push\n{JOB}"), "on"),
-        (format!("permissions: read-all\n{JOB}"), "permissions"),
+        (format!("concurrency: ci\n{JOB}"), "concurrency"),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - shell: bash\n        run: b\n"
                 .to_owned(),
@@ -126,7 +126,7 @@ fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "jobs.b: unknown field `if`, expected one of `name`, `runs-on`, `needs`, `steps` at line 4 column 5"
+        "jobs.b: unknown field `if`, expected one of `name`, `runs-on`, `needs`, `permissions`, `steps` at line 4 column 5"
     );
     let duplicate = wsr_gha::inspect(
         format!("on: {{workflow_dispatch: null, workflow_dispatch: {{}}}}\n{JOB}").as_bytes(),
