@@ -1012,25 +1012,25 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
         ),
         (
             format!("jobs:\n  '${{{{ x }}}}':\n{job}"),
-            "jobs.${{ x }}: expression is unevaluated",
+            "jobs.${{ x }}: expression is unevaluated; dynamic inspection is not supported yet",
         ),
         (
             format!("jobs:\n  \"b\\x01\":\n{job}"),
-            "jobs.b\\u{1}: invalid job identifier 'b\\u{1}'\n",
+            "jobs.b\\u{1}: invalid job identifier 'b\\u{1}'",
         ),
         (
             format!("jobs:\n  b:\n{job}  b:\n{job}"),
-            "jobs.b: duplicate job identifier 'b' at line",
+            "jobs.b: duplicate job identifier 'b' at line 2 column 3",
         ),
     ] {
         fs::write(directory.path().join("ci.yml"), &source).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
-        let error = String::from_utf8(output.stderr).unwrap();
-        assert!(
-            error.contains(&format!("wsr inspect: ci.yml: {diagnostic}")),
-            "{source}: {error}"
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{source}"
         );
     }
 }

@@ -27,6 +27,10 @@ Schedule A takes only ready slices.
 
 ## B-1 Consistent diagnostic routes and validation order (audit F3, F5)
 
+- Status: **implemented, PR pending checks** on `fix/inspect-diagnostic-routes` (Schedule A); see
+  [slice record](inspection-diagnostic-routes.md). Unknown keys render at the enclosing mapping as
+  specified; dispatch input identifiers received the same route/quoting rule.
+
 - Behavior: every inspection diagnostic uses one route grammar `jobs.<id>.<field>[<n>]` with one-based
   indices, for both decode and semantic errors (steps, `runs-on`, `needs` entries). Job identifiers are
   validated before `needs` resolution. One quoting style for identifiers (`'…'` with a single escaping
