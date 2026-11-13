@@ -1572,7 +1572,15 @@ fn inspect_rejects_invalid_workflow_and_job_env_and_run_defaults() {
         ),
         (
             format!("defaults: {{run: {{working-directory: 3}}}}\n{job}"),
+            "defaults.run.working-directory: non-string value is not inspected yet".to_owned(),
+        ),
+        (
+            format!("defaults: {{run: {{working-directory: [a]}}}}\n{job}"),
             "defaults.run.working-directory: expected a string".to_owned(),
+        ),
+        (
+            in_job("defaults: {run: {'${{ matrix.key }}': bash}}"),
+            format!("jobs.b.defaults.run.${{{{ matrix.key }}}}: {dynamic}"),
         ),
         (
             in_job("defaults: {run: '${{ x }}'}"),

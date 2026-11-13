@@ -24,14 +24,30 @@ pub(crate) fn decode(
         }
         let route = format!("{route}.run");
         for (key, value) in entries(&route, value, run, "workflow defaults")? {
+            if key.contains("${{") {
+                // The pinned reader admits expression keys where the mapping has a context.
+                let field = format!("{route}.{key}");
+                return Err(match run {
+                    Category::Unsupported => Error::unsupported(field, EXPRESSION),
+                    Category::Invalid => Error::invalid(field, not_allowed("workflow defaults")),
+                });
+            }
             let slot = match key.as_str() {
                 "shell" => &mut defaults.shell,
                 "working-directory" => &mut defaults.working_directory,
                 _ => return Err(unknown(&route, &key, "`shell` or `working-directory`")),
             };
             let field = format!("{route}.{key}");
-            let serde_yaml::Value::String(text) = value else {
-                return Err(Error::invalid(field, "expected a string"));
+            let text = match value {
+                serde_yaml::Value::String(text) => text,
+                // The pinned reader converts number and boolean literals to strings.
+                serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
+                    return Err(Error::unsupported(
+                        field,
+                        "non-string value is not inspected yet",
+                    ));
+                }
+                _ => return Err(Error::invalid(field, "expected a string")),
             };
             *slot = Some(if text.contains("${{") {
                 if run == Category::Invalid {
@@ -80,11 +96,13 @@ fn entries(
     }
 }
 
+/// An unknown key, routed to itself and shown at its enclosing mapping, as decoder errors are.
 fn unknown(route: &str, key: &str, expected: &str) -> Error {
     Error::invalid(
-        route,
+        format!("{route}.{key}"),
         format_args!("unknown field `{key}`, expected {expected}"),
     )
+    .shown_at(route)
 }
 
 fn not_allowed(place: &str) -> String {

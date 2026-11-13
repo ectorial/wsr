@@ -1,7 +1,10 @@
 # Env and defaults iteration: workflow/job `env` and `defaults.run` (backlog B-11)
 
 Status: **delivered on merge of its PR**, branch `feat/b11-env-defaults` from `5c6e284` (Schedule A).
-Implemented by Claude (claude-opus-5-5, orchestrator, burn mode). Evidence lives in the
+Implemented by Claude (claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol
+(high): no blockers; three P2s fixed (number/boolean values Unsupported, as the pinned reader converts
+them to strings; expression keys in job `defaults.run` Unsupported; unknown keys routed to the key and
+shown at the enclosing mapping, via a new `Error::shown_at`). Evidence lives in the
 [checkpoint](inspection-progress.md).
 
 ## Scope
@@ -25,12 +28,17 @@ Categories follow B-8 and the [pinned schema](https://github.com/actions/languag
 
 `shell` and `working-directory` require nonempty strings, so `''` is invalid. Whitespace-only text
 follows the step precedent: a blank shell is invalid (rejected by the runner), a blank directory
-unsupported. Unknown keys, non-mappings and non-string values are invalid.
+unsupported. Unknown keys, non-mappings, null and nested values are invalid; number and boolean
+values are unsupported (converted to strings by the pinned reader; WSR does not report them). An
+expression key is unsupported in job `defaults.run` and invalid in the workflow's.
+
+Step-level `shell`/`working-directory` still report numbers and booleans as invalid (`expected a
+string`), predating this slice; reconciling them is left to a Schedule B finding, not changed here.
 
 ## Acceptance and expected red
 
-CLI tests for the full report (including hostile text and a no-execution sentinel) and 15 exact
-diagnostics; `wsr-gha` tests for summary values and 17 category/route cases. Expected red:
+CLI tests for the full report (including hostile text and a no-execution sentinel) and 17 exact
+diagnostics; `wsr-gha` tests for summary values and 20 category/route cases. Expected red:
 ``unknown field `env` `` (and `defaults`), previously reported as valid-but-unsupported schema keys. Intended contract change: the decoder's
 ``expected one of …`` list for an unknown job key now names `env` and `defaults`, so the exact message
 in `crates/wsr-gha/tests/diagnostics.rs` (`typed_errors_keep_parser_locations_and_duplicate_key_evidence`)

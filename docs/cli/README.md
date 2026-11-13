@@ -216,11 +216,12 @@ Job: b
 `defaults: {}` and `defaults: {run: {}}` both render `Run defaults (not applied): {}`. Following the
 pinned schema, workflow and job `env` and job `defaults.run` have expression contexts: an expression
 replacing the whole mapping is unsupported, and job `shell`/`working-directory` text with a `${{`
-fence is reported as unevaluated. Workflow `defaults.run` and `defaults` itself have none, so an
-expression there is invalid (`defaults.run.shell: expression is unevaluated and not allowed in
+fence (or an expression key) is reported as unevaluated or unsupported. Workflow `defaults.run` and
+`defaults` itself have none, so an expression there is invalid (`defaults.run.shell: expression is unevaluated and not allowed in
 workflow defaults`). Unknown keys (``defaults.run: unknown field `bogus`, expected `shell` or
-`working-directory` ``), non-mappings, non-string values and empty strings are invalid; a blank
-shell is invalid and a blank directory unsupported, as for steps.
+`working-directory` ``, routed to the key), non-mappings, null or nested values and empty strings
+are invalid. Number and boolean values, which the pinned reader converts to strings, are unsupported.
+A blank shell is invalid and a blank directory unsupported, as for steps.
 
 ### Literal runner labels
 

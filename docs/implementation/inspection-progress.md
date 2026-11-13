@@ -6,7 +6,10 @@ Same Schedule A run, after the PR #40 wake (lock retaken 2026-11-13). PR #40 squ
 `5c6e284` after all four required checks passed on `334b19e` with no reviews or comments; `wsr` and
 `wsr-gha` tests (80) verified on synced main. B-11 on `feat/b11-env-defaults` from `5c6e284`; slice
 record [inspection-env-defaults.md](inspection-env-defaults.md). Implemented by Claude
-(claude-opus-5-5, orchestrator, burn mode; interface-touching: new `wsr-types` fields under D-033).
+(claude-opus-5-5, orchestrator, burn mode; interface-touching: new `wsr-types` fields under D-033);
+cross-reviewed by Codex gpt-6.1-sol (high): no blockers; three P2s fixed (number/boolean values
+Unsupported; job `defaults.run` expression keys Unsupported; unknown keys routed to the key).
+Follow-up for Schedule B: step `shell`/`working-directory` still treat numbers/booleans as Invalid.
 
 - Schema contexts read from the pinned `workflow-v1.0.json`: workflow-env, job-env and
   job-defaults-run have contexts; workflow-defaults, workflow-defaults-run and job-defaults do not;

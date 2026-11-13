@@ -83,7 +83,7 @@ fn env_and_run_default_failures_have_category_and_route() {
         ),
         (
             format!("defaults: {{shell: bash}}\n{job}"),
-            (Category::Invalid, "defaults"),
+            (Category::Invalid, "defaults.shell"),
         ),
         (
             format!("defaults: {{run: '${{{{ x }}}}'}}\n{job}"),
@@ -95,10 +95,22 @@ fn env_and_run_default_failures_have_category_and_route() {
         ),
         (
             format!("defaults: {{run: {{env: x}}}}\n{job}"),
-            (Category::Invalid, "defaults.run"),
+            (Category::Invalid, "defaults.run.env"),
+        ),
+        (
+            format!("defaults: {{run: {{'${{{{ x }}}}': bash}}}}\n{job}"),
+            (Category::Invalid, "defaults.run.${{ x }}"),
+        ),
+        (
+            in_job("defaults: {run: {'${{ x }}': bash}}"),
+            (Category::Unsupported, "jobs.b.defaults.run.${{ x }}"),
         ),
         (
             format!("defaults: {{run: {{shell: true}}}}\n{job}"),
+            (Category::Unsupported, "defaults.run.shell"),
+        ),
+        (
+            format!("defaults: {{run: {{shell: ~}}}}\n{job}"),
             (Category::Invalid, "defaults.run.shell"),
         ),
         (

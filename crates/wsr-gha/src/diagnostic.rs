@@ -49,6 +49,12 @@ impl Error {
         }
     }
 
+    /// Display the error at `label`, such as the enclosing mapping of an unknown key the detail names.
+    pub(crate) fn shown_at(mut self, label: impl Into<String>) -> Self {
+        self.label = Some(label.into());
+        self
+    }
+
     pub(crate) fn with_category(mut self, category: Category) -> Self {
         self.category = category;
         self

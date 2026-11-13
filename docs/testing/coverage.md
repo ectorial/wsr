@@ -333,8 +333,8 @@ test (red: exit 101, empty stdout) asserts exit 0 and the full report when the w
 `inspect_reports_workflow_and_job_env_and_run_defaults_without_applying_them` asserts the complete
 report for workflow and job `env` (sorted, typed, hostile ESC/bidi/zero-width text escaped) and
 literal, unevaluated and empty `defaults.run`, with a `touch executed` sentinel untouched.
-`inspect_rejects_invalid_workflow_and_job_env_and_run_defaults` pins 15 exact diagnostics.
-`crates/wsr-gha/tests/env_defaults.rs` asserts summary values and, for 17 sources, category and route
+`inspect_rejects_invalid_workflow_and_job_env_and_run_defaults` pins 17 exact diagnostics.
+`crates/wsr-gha/tests/env_defaults.rs` asserts summary values and, for 20 sources, category and route
 by schema expression context. Observed red: ``unknown field `env` `` for every case.
 
 ## Dogfood workflow-set guard (backlog B-10)
