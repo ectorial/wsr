@@ -296,7 +296,7 @@ invalid. No group is formed and nothing is queued or cancelled.
 
 ### Job outputs
 
-Job `outputs` print by name in sorted order after the job's concurrency, as `Outputs (not resolved):`
+Job `outputs` print by name in sorted order after the job's concurrency and environment, as `Outputs (not resolved):`
 lines in the step-input value format (`result: "${{ steps.s.outputs.r }}" (unevaluated)`), or
 `Outputs (not resolved): {}`. Values are `string-runner-context` text with an expression context, so
 `${{` text is unevaluated; the
@@ -307,6 +307,25 @@ boolean keys (the pinned reader rejects raw scalar keys), keys repeated ignoring
 and nested values are invalid; number, boolean and null values, which the pinned reader converts to
 strings, are unsupported. No output is
 resolved or exposed to `needs`.
+
+### Job environments
+
+A job `environment` prints after its concurrency as a block:
+
+```text
+  Environment (not selected; no protection rules evaluated):
+    Name: ${{ inputs.target }} (unevaluated; expression syntax not validated)
+    URL: https://example.test
+    Deployment: false
+```
+
+A string is the name; a mapping takes a required `name`, an optional `url` and an optional boolean
+`deployment`. The pinned `job-environment` has an expression context, so `${{` text in any value is
+unevaluated; an expression key is invalid because the pinned converter requires literal keys.
+Empty or blank names and URLs, and number, boolean or null ones (which the pinned reader converts
+to strings), are unsupported. Unknown keys, a missing `name`, a non-boolean `deployment` (including
+the string `'false'`), nested values and other shapes are invalid. No environment is selected or
+created, no protection rule, secret or variable is evaluated, and no URL is opened.
 
 ### Unevaluated job and step conditions
 

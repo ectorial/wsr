@@ -1,6 +1,24 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-18 job outputs implemented; PR pending checks
+## Current checkpoint — B-19 job environment implemented; PR pending checks
+
+Same Schedule A run, after the PR #48 wake (lock retaken 2026-11-13). PR #48 squash-merged as
+`e39fe9e` after all four required checks passed on `f581333` with no reviews or comments; `wsr` and
+`wsr-gha` tests (126) verified on synced main. B-19 on `feat/b19-job-environment` from `e39fe9e`;
+slice record [inspection-job-environment.md](inspection-job-environment.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode; `wsr-types` `Environment` under D-033); cross-reviewed by
+Codex gpt-6.1-sol (high): no findings.
+
+- Red (observed): `environment.rs` failed with ``jobs.b: unknown field `environment` `` (Unsupported).
+- Contract change: the job "expected one of" list in `diagnostics.rs` names `environment`.
+- Green: 3 `wsr-gha` tests, 2 CLI tests (written after the `wsr-gha` green; acceptance); full suites
+  (131); `cargo xtask ci`.
+
+B-19 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings. After that no ready slice remains (B-0..B-19 delivered); report and exit until Schedule B
+or the owner adds one. Open follow-ups for Schedule B are in the B-17 and B-18 checkpoints below.
+
+## Previous checkpoint — B-18 job outputs delivered (PR #48, `e39fe9e`)
 
 Same Schedule A run, after the PR #47 wake (lock retaken 2026-11-13). PR #47 squash-merged as
 `5ec43bf` after all four required checks passed on `e4a96c2` with no reviews or comments; `wsr` and

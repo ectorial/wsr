@@ -48,6 +48,8 @@ for delivery gates.
 - [x] Workflow `run-name` in inspection: strict optional string, literal versus unevaluated
   classification of the whole decoded text and escaped rendering. See [run-name contract](../cli/README.md#unevaluated-run-names).
   No expression parsing/validation, context lookup or default application.
+- [x] Job `environment` in inspection: name, `url` and `deployment` as literal or unevaluated text,
+  never selected; no protection rules evaluated (B-19). See [contract](../cli/README.md#job-environments).
 - [x] Job `outputs` in inspection: sorted names with literal or unevaluated text, never resolved
   (B-18). See [contract](../cli/README.md#job-outputs).
 - [x] Job and step `continue-on-error` and step `timeout-minutes` in inspection: literal or

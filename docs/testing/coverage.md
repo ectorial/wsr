@@ -342,6 +342,14 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Job environments (backlog B-19)
+
+`crates/wsr-gha/tests/environment.rs` asserts kept `Environment` values for four forms, nine `Invalid`
+shapes and seven `Unsupported` conversions or empty names. Two CLI tests pin a two-job golden with
+hostile name text escaped plus an `executed` sentinel, and five exact diagnostics. Observed red:
+``jobs.b: unknown field `environment` ``. Contract change: the job "expected one of" list in
+`diagnostics.rs` names `environment`. The CLI inspection suite lists 57 tests.
+
 ## Job outputs (backlog B-18)
 
 `crates/wsr-gha/tests/outputs.rs` asserts kept sorted text (literal, empty, unevaluated; `{}`; absent),

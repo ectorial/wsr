@@ -260,7 +260,9 @@ Schedule A takes only ready slices.
 
 ## B-19 Job `environment`
 
-- Status: **READY** (Schedule A).
+- Status: **delivered on merge of the B-19 PR** (Schedule A); see [slice record](inspection-job-environment.md).
+  The pinned mapping also has `deployment` (boolean), which is inspected. With B-14..B-19 delivered, no
+  ready slice remains.
 
 - Behavior: a string or `{name, url}` (check the pinned schema), reported "(not selected; no protection rules
   evaluated)"; `name` is required; contexts per the schema decide `Invalid` versus `Unsupported` as in B-8. Keep

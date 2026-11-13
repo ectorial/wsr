@@ -14,6 +14,7 @@ mod concurrency;
 mod defaults;
 mod diagnostic;
 mod dispatch;
+mod environment;
 mod needs;
 mod outputs;
 mod permissions;
@@ -81,6 +82,8 @@ struct Job {
     concurrency: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_value")]
     outputs: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "present_value")]
+    environment: Option<serde_yaml::Value>,
     #[serde(deserialize_with = "steps")]
     steps: Vec<Step>,
 }
@@ -91,7 +94,6 @@ impl diagnostic::Level for Job {
     const SCHEMA: &'static [&'static str] = &[
         "cancel-timeout-minutes",
         "container",
-        "environment",
         "secrets",
         "services",
         "snapshot",
@@ -232,6 +234,10 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             .outputs
             .map(|value| outputs::decode(&format!("jobs.{id}.outputs"), value))
             .transpose()?;
+        let environment = job
+            .environment
+            .map(|value| environment::decode(&format!("jobs.{id}.environment"), value))
+            .transpose()?;
         let mut steps = Vec::new();
         let mut step_ids = BTreeMap::new();
         for (index, step) in job.steps.into_iter().enumerate() {
@@ -368,6 +374,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             defaults,
             concurrency,
             outputs,
+            environment,
             steps,
         });
     }
