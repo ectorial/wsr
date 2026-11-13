@@ -328,6 +328,16 @@ only above 512,000 bytes. Observed red: no warning at 512,001 bytes. The closed-
 638,896-byte fixture now asserts exactly the warning on stderr instead of empty stderr. A closed-stderr
 test (red: exit 101, empty stdout) asserts exit 0 and the full report when the warning cannot be written.
 
+## Job and step conditions (backlog B-12)
+
+`inspect_reports_job_and_step_conditions_without_evaluating_them` asserts the complete report for
+bare, fenced and mixed job/step `if` text, hostile `$(touch executed)`/ESC/bidi text escaped, and an
+untouched `executed` sentinel. `inspect_rejects_conditions_outside_the_inspected_subset` pins six
+exact diagnostics. `crates/wsr-gha/tests/conditions.rs` asserts kept text and six category/route
+cases. Observed red: ``jobs.b: unknown field `if` `` (Unsupported). Contract change: the B-0 job-`if`
+Unsupported example in `diagnostics.rs` now uses `continue-on-error`, and the decoders' "expected one
+of" lists name `if`.
+
 ## Workflow and job env and run defaults (backlog B-11)
 
 `inspect_reports_workflow_and_job_env_and_run_defaults_without_applying_them` asserts the complete

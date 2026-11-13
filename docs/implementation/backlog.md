@@ -158,7 +158,8 @@ Schedule A takes only ready slices.
 
 ## B-12 Job and step `if` as unevaluated conditions
 
-- Status: **ready**.
+- Status: **delivered on merge of the B-12 PR** (Schedule A); see [slice record](inspection-conditions.md).
+  With B-9..B-12 delivered, no ready slice remains.
 
 - Behavior: replace the current `Unsupported` rejection of job and step `if:` with a successful report of the
   condition as unevaluated source text (bare and `${{ }}` forms, both shown as written), stating it is not

@@ -181,6 +181,13 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                     .join(", ")
             )?;
         }
+        if let Some(condition) = job.condition {
+            writeln!(
+                out,
+                "  Condition: {} (not evaluated)",
+                condition.escape_debug()
+            )?;
+        }
         if let Some(permissions) = job.permissions {
             render_permissions(&mut out, "  ", permissions)?;
         }
@@ -217,6 +224,13 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                 write!(out, " ({})", name.escape_debug())?;
             }
             writeln!(out)?;
+            if let Some(condition) = step.condition {
+                writeln!(
+                    out,
+                    "    Condition: {} (not evaluated)",
+                    condition.escape_debug()
+                )?;
+            }
             if let Some(shell) = step.shell {
                 writeln!(out, "    Shell: {} (not selected)", shell.escape_debug())?;
             }

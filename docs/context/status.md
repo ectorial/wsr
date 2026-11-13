@@ -26,6 +26,9 @@ for delivery gates.
   literal/unevaluated text, sorted keys, step-kind restrictions; never bound, passed or resolved.
   See [step-input contract](../cli/README.md#step-environment-action-inputs-and-working-directories).
   Both canonical example workflows inspect successfully.
+- [x] Job and step `if` in inspection: string conditions reported as written (bare or fenced),
+  never parsed or evaluated; they do not affect reported jobs or steps. See
+  [contract](../cli/README.md#unevaluated-job-and-step-conditions).
 - [x] Workflow and job `env` and `defaults.run` in inspection: same value rules as step `env`;
   `shell`/`working-directory` defaults as literal/unevaluated text by schema context; never bound,
   merged or applied. See [contract](../cli/README.md#workflow-and-job-environment-and-run-defaults).

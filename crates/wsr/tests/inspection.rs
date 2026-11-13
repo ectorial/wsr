@@ -985,7 +985,7 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        bogus: {}\n"
                 .to_owned(),
-            "jobs.b.steps[1]: unknown field `bogus`, expected one of `id`, `name`, `run`, `shell`, `working-directory`, `env`, `with`, `uses` at line 6 column 9",
+            "jobs.b.steps[1]: unknown field `bogus`, expected one of `id`, `name`, `if`, `run`, `shell`, `working-directory`, `env`, `with`, `uses` at line 6 column 9",
         ),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: ~\n        run: echo\n"
@@ -1089,7 +1089,7 @@ fn inspect_errors_escape_unicode_format_characters_on_stderr() {
     for (source, diagnostic) in [
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        \"k\\u202Eq\\u200B\": 1\n".to_owned(),
-            "jobs.b.steps[1]: unknown field `k\\u{202e}q\\u{200b}`, expected one of `id`, `name`, `run`, `shell`, `working-directory`, `env`, `with`, `uses` at line 6 column 9",
+            "jobs.b.steps[1]: unknown field `k\\u{202e}q\\u{200b}`, expected one of `id`, `name`, `if`, `run`, `shell`, `working-directory`, `env`, `with`, `uses` at line 6 column 9",
         ),
         (
             format!("jobs:\n  \"b\\u202E\\u200B\\u2066\\u2069\":\n{job}"),
@@ -1589,6 +1589,94 @@ fn inspect_rejects_invalid_workflow_and_job_env_and_run_defaults() {
         (
             in_job("defaults: {run: {working-directory: ''}}"),
             "jobs.b.defaults.run.working-directory: expected a nonempty string".to_owned(),
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
+        assert!(output.stdout.is_empty(), "{source}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{source}"
+        );
+    }
+}
+
+// Backlog B-12: job and step `if` are reported as written, never evaluated.
+#[test]
+fn inspect_reports_job_and_step_conditions_without_evaluating_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = r#"jobs:
+  b:
+    if: github.event_name == 'push'
+    runs-on: linux
+    steps:
+      - if: ${{ failure() }}
+        run: touch executed
+      - uses: ./action
+        if: "$(touch executed)\x1b[31m\u202e"
+  c:
+    runs-on: linux
+    if: ${{ inputs.mode == 'fail' }} && always()
+    steps: [{run: echo}]
+"#;
+    let report = r#"Workflow: (unnamed)
+Inspection only; execution compatibility is not assessed.
+Job: b
+  Runner: linux
+  Condition: github.event_name == \'push\' (not evaluated)
+  Step 1: run
+    Condition: ${{ failure() }} (not evaluated)
+  Step 2: uses ./action
+    Condition: $(touch executed)\u{1b}[31m\u{202e} (not evaluated)
+Job: c
+  Runner: linux
+  Condition: ${{ inputs.mode == \'fail\' }} && always() (not evaluated)
+  Step 1: run
+"#;
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(String::from_utf8(output.stdout).unwrap(), report);
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn inspect_rejects_conditions_outside_the_inspected_subset() {
+    let directory = tempfile::tempdir().unwrap();
+    let in_job = |field: &str| {
+        format!("jobs:\n  b:\n    runs-on: linux\n    {field}\n    steps:\n      - run: echo\n")
+    };
+    let in_step = |field: &str| {
+        format!("jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        {field}\n")
+    };
+    for (source, diagnostic) in [
+        (
+            in_job("if: true"),
+            "jobs.b.if: non-string condition is not inspected yet at line 3 column 5",
+        ),
+        (
+            in_step("if: 0"),
+            "jobs.b.steps[1].if: non-string condition is not inspected yet at line 5 column 9",
+        ),
+        (
+            in_job("if: ''"),
+            "jobs.b.if: expected a nonempty condition at line 3 column 5",
+        ),
+        (
+            in_step("if: ' '"),
+            "jobs.b.steps[1].if: expected a nonempty condition at line 5 column 9",
+        ),
+        (
+            in_job("if: ~"),
+            "jobs.b.if: expected a string at line 3 column 5",
+        ),
+        (
+            in_step("if: [a]"),
+            "jobs.b.steps[1].if: expected a string at line 5 column 9",
         ),
     ] {
         fs::write(directory.path().join("ci.yml"), &source).unwrap();

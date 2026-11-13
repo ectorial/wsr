@@ -13,6 +13,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | [Typed-error iteration](inspection-typed-errors.md) | Backlog B-0: provisional typed inspection errors with category and route |
 | [Diagnostic-route iteration](inspection-diagnostic-routes.md) | Backlog B-1: one-based route grammar and job-ID-first validation order |
 | [Classification iteration](inspection-classification.md) | Backlog B-8: expression category by schema context, schema-valid values no longer Invalid, job-ID-first route safety |
+| [Conditions iteration](inspection-conditions.md) | Backlog B-12: job and step `if` reported as written, never evaluated |
 | [Env and defaults iteration](inspection-env-defaults.md) | Backlog B-11: workflow/job `env` and `defaults.run`, never bound, merged or applied |
 | [Dogfood-guard iteration](inspection-dogfood-guard.md) | Backlog B-10: every `example-*.yml` must have a golden inspection case |
 | [Format-escape iteration](inspection-format-escape.md) | Backlog B-9: Unicode format/bidi characters escaped in inspection stderr |
