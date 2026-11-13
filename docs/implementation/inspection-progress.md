@@ -1,26 +1,25 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — manual dispatch input iteration
+## Current checkpoint — run-name inspection implemented; PR pending checks
 
-Baseline `91fd3d5` matched origin/main; 5 CLI and 20 inspection tests passed. No unfinished
-feature PR; unrelated Dependabot #23 left untouched. Owner authorized next iteration and reported
-a manual usage reset. Branch `feat/inspect-dispatch-inputs`; previous plan/checkpoint edits are
-owned work included with the feature. No further reset action or usage assumption was made.
+Schedule A run 2026-11-13T00:57Z (no prior lock). Baseline `1c565a4` = origin/main; Dependabot #23
+untouched. Branch `feat/inspect-run-name` from origin/main; prior planning edits included as owned work.
+Implementer: Claude (claude-opus-5-5, orchestrator). Cross-review: Codex gpt-6.1-sol high — no code
+findings; one P3 (stale checkpoint) fixed here.
 
-Implemented scalar/mapping manual trigger declarations, distinct source-presence states, typed
-input metadata/defaults, deterministic rendering and strict validation. No input binding or default
-application. Pinned schema/converter boundary is recorded in the [iteration](inspection-dispatch-inputs.md).
-Observed red/green: mapping support, choice options/default validation and identifier validation.
-Focused green: 25 CLI inspection tests + 5 CLI regressions and two new public parser-summary tests.
-`cargo xtask ci`, local Markdown targets and `git diff --check` passed. Next: finish review, push/create
-feature PR, satisfy required hosted checks and merge the verified head with no unresolved findings.
-Then provide the owner a DX before/after report including parser changes and evidence limits.
+Delivered per [run-name iteration](inspection-run-name.md): strict optional `run-name`
+string, `SourceText::{Literal, Unevaluated}` summary, escaped rendering after the workflow name.
+Red: three new CLI tests failed with `unknown field run-name`. Green: 28 CLI inspection tests,
+public parser summary test (`crates/wsr-gha/tests/run_name.rs`), `cargo xtask ci` and
+`git diff --check`. Pinned schema `4043eda` defines `run-name` as a string with
+`github`/`inputs`/`vars` contexts; WSR binds none of them.
 
-No execution, provider activation, action acquisition, environment lookup or repository mutation.
-No dependencies/tooling/schedules changed. Canonical example workflows still have unsupported
-run-name, permissions, timeout, shell/environment, action inputs and working-directory fields.
-Full milestone acceptance and final audit remain pending; Java worker stays paused. Prior runner
-labels delivered in PR #25 as `91fd3d5`. Older checkpoint sections below are historical.
+Next action: wait for required hosted checks on the PR, merge the verified head with no unresolved
+findings, sync main, mark the iteration delivered. Then backlog item 1 continues with explicit
+unsupported/dynamic diagnostics and source traceability gaps (permissions, job timeout, step shell,
+env, action inputs, working-directory), then real `.github/workflows/example-*.yml` acceptance.
+No expression evaluation, execution or runtime support is claimed. Java worker remains paused.
+Older checkpoint sections below retain historical state.
 
 ## Bootstrap — November 6, 2026
 

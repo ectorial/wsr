@@ -39,6 +39,7 @@ Current supported subset:
 
 - Optional literal workflow `name` and optional scalar/mapping manual trigger; the trigger is
   reported, never evaluated. Absence of `on` is accepted for inspection fragments.
+- Optional workflow `run-name` source text, reported but never evaluated; see [run names](#unevaluated-run-names).
 - A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
 - Job `name`, a nonempty literal string or string-list `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
 - Step `name`, optional explicit `id`, and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
@@ -92,6 +93,24 @@ and converter references and intentional source-preservation differences are rec
 
 The canonical example workflows still contain unsupported fields outside these declarations.
 Their manual reference runs are not evidence of WSR execution support.
+
+### Unevaluated run names
+
+An optional workflow `run-name` must be a nonempty string; null, booleans, numbers, lists,
+mappings and blank text fail before stdout with a `run-name` diagnostic. Its decoded text is
+reported on the line after the workflow name, with control characters escaped:
+
+```text
+Run name: Local reference (literal)
+Run name: Shell reference — ${{ inputs.mode }} (unevaluated; expression syntax not validated)
+```
+
+Text containing a `${{` opening fence is classified as unevaluated and retained whole, including
+multiple, multiline or unterminated fences. This is not an expression parser: no syntax is validated,
+no context or input is looked up and no default replaces `inputs.mode`. Omission adds no line.
+The [pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
+defines `run-name` as a string with `github`, `inputs` and `vars` contexts; WSR does not bind them.
+Other fields keep their literal-only expression rejection.
 
 ### Literal runner labels
 

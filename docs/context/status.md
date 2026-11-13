@@ -15,6 +15,10 @@ for delivery gates.
 
 ## Present in the current checkout
 
+- [x] Workflow `run-name` in inspection: strict optional string, literal versus unevaluated
+  classification of the whole decoded text and escaped rendering. See [run-name contract](../cli/README.md#unevaluated-run-names).
+  No expression parsing/validation, context lookup or default application; full example-workflow
+  inspection remains pending.
 - [x] Manual-trigger mappings and input declarations in inspection: typed metadata/defaults,
   deterministic reports, explicit unsupported/dynamic diagnostics and distinct declaration states.
   See [manual-input contract](../cli/README.md#manual-trigger-input-declarations). No input binding,

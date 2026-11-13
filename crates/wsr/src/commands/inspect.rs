@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use wsr_types::inspection::{
-    DispatchInputType, InputDefault, ManualTrigger, RunnerRequirement, StepSummaryKind,
+    DispatchInputType, InputDefault, ManualTrigger, RunnerRequirement, SourceText, StepSummaryKind,
 };
 
 pub fn run(file: &Path) -> anyhow::Result<()> {
@@ -17,6 +17,14 @@ pub fn run(file: &Path) -> anyhow::Result<()> {
             .unwrap_or("(unnamed)")
             .escape_debug()
     );
+    match summary.run_name {
+        Some(SourceText::Literal(text)) => println!("Run name: {} (literal)", text.escape_debug()),
+        Some(SourceText::Unevaluated(text)) => println!(
+            "Run name: {} (unevaluated; expression syntax not validated)",
+            text.escape_debug()
+        ),
+        None => {}
+    }
     println!("Inspection only; execution compatibility is not assessed.");
     if let Some(trigger) = summary.trigger {
         println!("Trigger: workflow_dispatch (not evaluated)");

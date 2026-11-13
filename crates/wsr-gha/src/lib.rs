@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 
 use serde::Deserialize;
 use wsr_types::inspection::{
-    JobSummary, RunnerRequirement, StepSummary, StepSummaryKind, WorkflowSummary,
+    JobSummary, RunnerRequirement, SourceText, StepSummary, StepSummaryKind, WorkflowSummary,
 };
 
 mod dispatch;
@@ -19,6 +19,8 @@ use needs::Needs;
 struct Workflow {
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
+    #[serde(rename = "run-name", default, deserialize_with = "present_string")]
+    run_name: Option<String>,
     #[serde(rename = "on", default, deserialize_with = "dispatch::deserialize")]
     trigger: Option<wsr_types::inspection::ManualTrigger>,
     #[serde(deserialize_with = "unique_jobs")]
@@ -60,6 +62,14 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
         anyhow::bail!("jobs: expected at least one job");
     }
     check_literal(workflow.name.as_deref(), "name")?;
+    let run_name = match workflow.run_name {
+        Some(text) if text.trim().is_empty() => {
+            anyhow::bail!("run-name: expected a nonempty string")
+        }
+        Some(text) if text.contains("${{") => Some(SourceText::Unevaluated(text)),
+        Some(text) => Some(SourceText::Literal(text)),
+        None => None,
+    };
     needs::validate(&workflow.jobs)?;
     let mut jobs = Vec::new();
     for (id, job) in workflow.jobs {
@@ -148,6 +158,7 @@ pub fn inspect(raw: &[u8]) -> anyhow::Result<WorkflowSummary> {
     }
     Ok(WorkflowSummary {
         name: workflow.name,
+        run_name,
         trigger: workflow.trigger,
         jobs,
     })
