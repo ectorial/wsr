@@ -13,8 +13,10 @@ It asserts summary structure, category and typed route, not host rendering:
 - Graph: diamonds, repeated edges, forward references and `[]` accepted with declared order;
   missing target (`jobs.a.needs[2]`), self dependency (`jobs.a.needs`) and a three-job cycle
   (`jobs.c.needs[1]`, `a -> b -> c -> a`) rejected.
-- Identifiers: invalid job IDs and an expression job ID (unsupported) are reported before an
-  unknown dependency; reserved `__` and duplicate step IDs rejected at `steps[n].id`.
+- Identifiers: invalid and expression (unsupported) job IDs are reported before an unknown
+  dependency; a duplicate job ID is rejected at `jobs.<id>`. Step IDs with a bad first character,
+  100 characters, the reserved `__` prefix, an expression (unsupported) or a duplicate are rejected
+  at `steps[n].id`; 99 characters are accepted. An unknown target is reported before a cycle.
 - Summary: a runner label list keeps order and repetitions; step IDs, names and run/uses kinds kept.
 - Shapes: empty jobs, empty steps, empty `runs-on` list, run plus uses, mapping `needs`; a scalar
   step raised by the YAML decoder keeps no typed route (the B-1 gap).

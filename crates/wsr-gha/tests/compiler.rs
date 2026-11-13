@@ -82,8 +82,11 @@ fn dependency_graph_rejects_missing_self_and_multi_job_cycles_at_their_routes() 
     }
 }
 
+const STEP_ID: &str =
+    "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: ID\n        run: a\n";
+
 #[test]
-fn job_and_step_identifier_rules_are_enforced_before_dependencies() {
+fn job_and_step_identifier_rules_are_enforced() {
     for (source, category, route) in [
         (
             workflow(&[("'b c'", "    needs: missing\n")]),
@@ -96,9 +99,30 @@ fn job_and_step_identifier_rules_are_enforced_before_dependencies() {
             "jobs.1b",
         ),
         (
-            workflow(&[("'${{ x }}'", "")]),
+            workflow(&[("'${{ x }}'", "    needs: missing\n")]),
             Category::Unsupported,
             "jobs.${{ x }}",
+        ),
+        (
+            format!("{}{}", workflow(&[("b", "")]), job("b", "")),
+            Category::Invalid,
+            "jobs.b",
+        ),
+        (
+            STEP_ID
+            .replace("ID", "1s"),
+            Category::Invalid,
+            "jobs.b.steps[1].id",
+        ),
+        (
+            STEP_ID.replace("ID", &"s".repeat(100)),
+            Category::Invalid,
+            "jobs.b.steps[1].id",
+        ),
+        (
+            STEP_ID.replace("ID", "'${{ x }}'"),
+            Category::Unsupported,
+            "jobs.b.steps[1].id",
         ),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: __x\n        run: a\n"
@@ -120,6 +144,27 @@ fn job_and_step_identifier_rules_are_enforced_before_dependencies() {
             "{message}"
         );
     }
+}
+
+#[test]
+fn step_identifier_length_boundary_is_accepted() {
+    let summary = wsr_gha::inspect(STEP_ID.replace("ID", &"s".repeat(99)).as_bytes()).unwrap();
+    assert_eq!(
+        summary.jobs[0].steps[0].id.as_deref().map(str::len),
+        Some(99)
+    );
+}
+
+#[test]
+fn unknown_dependencies_are_reported_before_cycles() {
+    let (category, route, _) = failure(&workflow(&[
+        ("a", "    needs: [b]\n"),
+        ("b", "    needs: [a, missing]\n"),
+    ]));
+    assert_eq!(
+        (category, route.as_deref()),
+        (Category::Invalid, Some("jobs.b.needs[2]"))
+    );
 }
 
 #[test]
