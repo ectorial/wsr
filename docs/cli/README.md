@@ -154,7 +154,7 @@ job's runner, needs and permissions lines and after the step line:
     Shell: bash (not selected)
 ```
 
-A timeout must be a finite positive YAML number, rendered from the number value, or text with a
+A timeout must be a finite positive YAML number (a WSR subset rule; the schema sets no minimum), rendered from the number value, or text with a
 `${{` fence, which stays unevaluated as for `run-name`. A shell must be a nonempty string on a
 `run` step; the [pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
 gives `shell` no expression context, so `${{` text fails, as does `shell` on a `uses` step.

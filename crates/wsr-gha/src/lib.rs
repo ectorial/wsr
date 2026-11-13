@@ -212,6 +212,16 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             if let Some(reference) = &step.uses {
                 check_required(reference, &format!("{location}.uses"))?;
             }
+            let kind = match (step.run, step.uses) {
+                (Some(_), None) => StepSummaryKind::Run,
+                (None, Some(reference)) => StepSummaryKind::Uses(reference),
+                _ => {
+                    return Err(Error::invalid(
+                        location,
+                        "expected exactly one of run or uses",
+                    ));
+                }
+            };
             if let Some(shell) = &step.shell {
                 let field = format!("{location}.shell");
                 // The pinned schema gives `shell` no expression context and only run steps a shell.
@@ -224,20 +234,10 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 if shell.trim().is_empty() {
                     return Err(Error::invalid(field, "expected a nonempty string"));
                 }
-                if step.run.is_none() {
+                if !matches!(kind, StepSummaryKind::Run) {
                     return Err(Error::invalid(field, "shell applies only to run steps"));
                 }
             }
-            let kind = match (step.run, step.uses) {
-                (Some(_), None) => StepSummaryKind::Run,
-                (None, Some(reference)) => StepSummaryKind::Uses(reference),
-                _ => {
-                    return Err(Error::invalid(
-                        location,
-                        "expected exactly one of run or uses",
-                    ));
-                }
-            };
             steps.push(StepSummary {
                 id: step.id,
                 name: step.name,

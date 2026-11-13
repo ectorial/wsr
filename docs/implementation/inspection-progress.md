@@ -6,11 +6,13 @@ Same Schedule A run, after the PR #33 wake (lock retaken 2026-11-13). PR #33 squ
 `40f1354` after all four required checks passed on `e2cc637` with no reviews or comments; `wsr` and
 `wsr-gha` tests verified on synced main. B-4 on `feat/inspect-timeout-shell` from `40f1354`; slice
 record [inspection-timeout-shell.md](inspection-timeout-shell.md). Implemented by Claude
-(claude-opus-5-5, orchestrator, burn mode).
+(claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no blockers;
+two nits fixed (shell checks now follow the run/uses rule, with precedence tests; positivity documented
+as a subset rule, not the schema's).
 
 - Red (observed on `40f1354` build): both new CLI tests failed with ``jobs.b: unknown field
   `timeout-minutes` ``.
-- Green: 2 CLI tests (3 accepted cases, 12 exact-stderr rejections), 2 `wsr-gha` tests. Intended
+- Green: 2 CLI tests (3 accepted cases, 14 exact-stderr rejections), 2 `wsr-gha` tests. Intended
   contract updates: unknown-field lists name `shell`/`timeout-minutes`; B-0 unsupported step-key case
   `shell` → step `timeout-minutes`.
 - Dogfood: `example-python.yml` now stops at step `with`, `example-shell.yml` at step `env` (B-5).

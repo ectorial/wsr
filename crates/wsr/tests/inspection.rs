@@ -1334,6 +1334,15 @@ fn inspect_rejects_invalid_job_timeouts_and_step_shells() {
                 .to_owned(),
             "jobs.b.steps[1].shell: shell applies only to run steps",
         ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        uses: ./action\n        shell: ''\n"
+                .to_owned(),
+            "jobs.b.steps[1]: expected exactly one of run or uses",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - shell: bash\n".to_owned(),
+            "jobs.b.steps[1]: expected exactly one of run or uses",
+        ),
     ] {
         fs::write(directory.path().join("ci.yml"), &source).unwrap();
         let output = inspect(directory.path(), "ci.yml");
