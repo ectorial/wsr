@@ -37,7 +37,8 @@ fn conditions_outside_the_subset_have_category_and_route() {
             step("if: '  '"),
             (Category::Unsupported, "jobs.b.steps[1].if"),
         ),
-        (job("if: ~"), (Category::Invalid, "jobs.b.if")),
+        (job("if: ~"), (Category::Unsupported, "jobs.b.if")),
+        (step("if: [a]"), (Category::Invalid, "jobs.b.steps[1].if")),
         (
             step("if: {a: b}"),
             (Category::Invalid, "jobs.b.steps[1].if"),

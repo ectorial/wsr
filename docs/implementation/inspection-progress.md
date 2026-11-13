@@ -6,7 +6,8 @@ Same Schedule A run, after the PR #41 wake (lock retaken 2026-11-13). PR #41 squ
 `b686358` after all four required checks passed on `b22ae10` with no reviews or comments; `wsr` and
 `wsr-gha` tests (84) verified on synced main. B-12 on `feat/b12-if-conditions` from `b686358`; slice
 record [inspection-conditions.md](inspection-conditions.md). Implemented by Claude (claude-opus-5-5,
-orchestrator, burn mode; interface-touching: `condition` fields in `wsr-types`, D-033).
+orchestrator, burn mode; interface-touching: `condition` fields in `wsr-types`, D-033);
+cross-reviewed by Codex gpt-6.1-sol (high): no blockers; one P2 fixed (null `if` is Unsupported).
 
 - Red (observed): both new CLI tests failed on ``jobs.b: unknown field `if` `` (Unsupported) / exit 1.
 - Contract change (cited by the backlog): B-0's job-`if` Unsupported example in

@@ -239,8 +239,9 @@ Job: b
 The pinned schema's `job-if` and `step-if` are strings that GitHub evaluates as expressions with or
 without the fence. Inspection does not parse, validate or evaluate the text, and a condition does not
 change which jobs or steps are reported. A number or boolean (which the pinned reader converts to a
-string) and an empty or blank string are unsupported (`jobs.b.if: non-string condition is not
-inspected yet at line 3 column 5`); null, sequences and mappings are invalid.
+string) and a null, empty or blank condition (which GitHub treats as `success()`) are unsupported
+(`jobs.b.if: non-string condition is not inspected yet at line 3 column 5`); sequences and mappings
+are invalid.
 
 ### Literal runner labels
 

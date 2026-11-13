@@ -333,8 +333,8 @@ test (red: exit 101, empty stdout) asserts exit 0 and the full report when the w
 `inspect_reports_job_and_step_conditions_without_evaluating_them` asserts the complete report for
 bare, fenced and mixed job/step `if` text, hostile `$(touch executed)`/ESC/bidi text escaped, and an
 untouched `executed` sentinel. `inspect_rejects_conditions_outside_the_inspected_subset` pins six
-exact diagnostics. `crates/wsr-gha/tests/conditions.rs` asserts kept text and six category/route
-cases. Observed red: ``jobs.b: unknown field `if` `` (Unsupported). Contract change: the B-0 job-`if`
+exact diagnostics. `crates/wsr-gha/tests/conditions.rs` asserts kept text and seven category/route
+cases (null is Unsupported). Observed red: ``jobs.b: unknown field `if` `` (Unsupported). Contract change: the B-0 job-`if`
 Unsupported example in `diagnostics.rs` now uses `continue-on-error`, and the decoders' "expected one
 of" lists name `if`.
 

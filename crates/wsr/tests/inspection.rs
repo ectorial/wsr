@@ -1672,7 +1672,7 @@ fn inspect_rejects_conditions_outside_the_inspected_subset() {
         ),
         (
             in_job("if: ~"),
-            "jobs.b.if: expected a string at line 3 column 5",
+            "jobs.b.if: expected a nonempty condition at line 3 column 5",
         ),
         (
             in_step("if: [a]"),

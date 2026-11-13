@@ -492,6 +492,11 @@ fn condition<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Option<String>, D::Error> {
     match serde_yaml::Value::deserialize(deserializer)? {
+        // The pinned reader admits a null or empty condition, which GitHub treats as `success()`.
+        serde_yaml::Value::Null => Err(diagnostic::raise_unrouted_as(
+            Category::Unsupported,
+            "expected a nonempty condition",
+        )),
         serde_yaml::Value::String(text) if text.trim().is_empty() => Err(
             diagnostic::raise_unrouted_as(Category::Unsupported, "expected a nonempty condition"),
         ),
