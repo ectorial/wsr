@@ -3,8 +3,8 @@ use std::io::{ErrorKind, Read as _, Write as _};
 use std::path::Path;
 
 use wsr_types::inspection::{
-    DispatchInputType, InputDefault, ManualTrigger, PermissionLevel, Permissions, RunDefaults,
-    RunnerRequirement, SourceText, StepSummaryKind, StepValue, Trigger,
+    Concurrency, DispatchInputType, InputDefault, ManualTrigger, PermissionLevel, Permissions,
+    RunDefaults, RunnerRequirement, SourceText, StepSummaryKind, StepValue, Trigger,
 };
 
 // GitHub documents a 500 KB workflow file limit (D-032); 512,000 bytes is WSR's reading of it.
@@ -158,6 +158,9 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
     if let Some(defaults) = summary.defaults {
         render_defaults(&mut out, "", defaults)?;
     }
+    if let Some(concurrency) = summary.concurrency {
+        render_concurrency(&mut out, "", concurrency)?;
+    }
     for job in summary.jobs {
         write!(out, "Job: {}", job.id.escape_debug())?;
         if let Some(name) = job.name {
@@ -214,6 +217,9 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
         }
         if let Some(defaults) = job.defaults {
             render_defaults(&mut out, "  ", defaults)?;
+        }
+        if let Some(concurrency) = job.concurrency {
+            render_concurrency(&mut out, "  ", concurrency)?;
         }
         for (index, step) in job.steps.into_iter().enumerate() {
             write!(out, "  Step {}", index + 1)?;
@@ -307,6 +313,32 @@ fn render_defaults(out: &mut String, indent: &str, defaults: RunDefaults) -> std
     for (label, text) in [
         ("Shell", defaults.shell),
         ("Working directory", defaults.working_directory),
+    ] {
+        match text {
+            Some(SourceText::Literal(text)) => {
+                writeln!(out, "{indent}  {label}: {}", text.escape_debug())?
+            }
+            Some(SourceText::Unevaluated(text)) => writeln!(
+                out,
+                "{indent}  {label}: {} (unevaluated; expression syntax not validated)",
+                text.escape_debug()
+            )?,
+            None => {}
+        }
+    }
+    Ok(())
+}
+
+fn render_concurrency(
+    out: &mut String,
+    indent: &str,
+    concurrency: Concurrency,
+) -> std::fmt::Result {
+    writeln!(out, "{indent}Concurrency (not applied):")?;
+    for (label, text) in [
+        ("Group", Some(concurrency.group)),
+        ("Cancel in progress", concurrency.cancel_in_progress),
+        ("Queue", concurrency.queue),
     ] {
         match text {
             Some(SourceText::Literal(text)) => {

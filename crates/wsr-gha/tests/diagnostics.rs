@@ -20,7 +20,8 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
         (format!("on: {{push: {{branches: [main]}}}}\n{JOB}"), "on.push"),
         (format!("on: [push, push]\n{JOB}"), "on[2]"),
         (format!("on: {{schedule: [{{cron: '0 0 * * *'}}]}}\n{JOB}"), "on.schedule"),
-        (format!("concurrency: ci\n{JOB}"), "concurrency"),
+        // B-16 contract change: `concurrency` is now inspected.
+        (format!("description: x\n{JOB}"), "description"),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - timeout-minutes: 1\n        run: b\n"
                 .to_owned(),
@@ -218,7 +219,7 @@ fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "jobs.b: unknown field `continue-on-error`, expected one of `name`, `runs-on`, `needs`, `if`, `permissions`, `timeout-minutes`, `env`, `defaults`, `steps` at line 4 column 5"
+        "jobs.b: unknown field `continue-on-error`, expected one of `name`, `runs-on`, `needs`, `if`, `permissions`, `timeout-minutes`, `env`, `defaults`, `concurrency`, `steps` at line 4 column 5"
     );
     let duplicate = wsr_gha::inspect(
         format!("on: {{workflow_dispatch: null, workflow_dispatch: {{}}}}\n{JOB}").as_bytes(),

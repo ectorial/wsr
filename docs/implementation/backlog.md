@@ -214,7 +214,8 @@ Schedule A takes only ready slices.
 
 ## B-16 Workflow and job `concurrency`
 
-- Status: **READY** (Schedule A).
+- Status: **delivered on merge of the B-16 PR** (Schedule A); see [slice record](inspection-concurrency.md).
+  The pinned mapping also has `queue` (`single`/`max`), which is inspected.
 
 - Behavior: a string or `{group, cancel-in-progress}` (check the pinned schema for any further keys) is reported
   "(not applied)"; expressions are `Unsupported` or unevaluated, since `workflow-concurrency` and
