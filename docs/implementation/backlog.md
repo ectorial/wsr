@@ -89,7 +89,8 @@ Schedule A takes only ready slices.
 
 ## B-6 Dogfood acceptance on `.github/workflows/example-*.yml`
 
-- Status: **ready** once the B-5 PR merges (B-3 #33, B-4 #34 merged); both examples already inspect.
+- Status: **delivered on merge of the B-6 PR** (Schedule A; B-3 #33, B-4 #34, B-5 #35 merged); see
+  [slice record](inspection-dogfood.md). No red on current main; red observed on pre-B-5 `85a1c30`.
 
 - Behavior: `wsr inspect` succeeds on both example workflows with golden output; inspection performs no execution
   (sentinel files untouched). Translation-only; native reference success is not WSR support.
