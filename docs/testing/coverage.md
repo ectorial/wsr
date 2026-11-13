@@ -345,7 +345,7 @@ goldens are unchanged. The CLI inspection suite lists 45 tests.
 ## Workflow and job concurrency (backlog B-16)
 
 `crates/wsr-gha/tests/concurrency.rs` asserts kept `Concurrency` values for five forms at both levels,
-eleven `Invalid` shapes at both levels plus the job-only empty and null strings, and six `Unsupported`
+twelve `Invalid` shapes at both levels plus the job-only empty and null strings, and five `Unsupported`
 values at both levels plus the workflow-only empty and null strings.
 `inspect_reports_concurrency_without_applying_it` pins a two-level golden with hostile text escaped and
 an `executed` sentinel; `inspect_rejects_concurrency_outside_the_inspected_subset` pins six exact

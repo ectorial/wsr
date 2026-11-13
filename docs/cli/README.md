@@ -269,8 +269,8 @@ Concurrency (not applied):
 
 A string is the group; a mapping takes a required `group`, an optional boolean `cancel-in-progress`
 and an optional `queue` of `single` or `max`. Both pinned definitions (`workflow-concurrency`,
-`job-concurrency`) have expression contexts, so `${{` text in any value is unevaluated and an
-expression key is unsupported. The job string form and `group` must be non-empty: empty text or
+`job-concurrency`) have expression contexts, so `${{` text in any value is unevaluated; an
+expression key is invalid because the pinned converter requires literal keys. The job string form and `group` must be non-empty: empty text or
 null is invalid there, while an empty or null workflow string is unsupported. A number or boolean
 group, and blank text, are unsupported. Unknown keys, a missing `group`, a non-boolean
 `cancel-in-progress` (including the string `'true'`), another `queue` value and other shapes are

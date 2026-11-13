@@ -31,10 +31,10 @@ pub(crate) fn decode(route: &str, value: Value, job: bool) -> Result<Concurrency
             return Err(Error::invalid(route, "expected a string key"));
         };
         if key.contains("${{") {
-            // The pinned reader admits expression keys where the mapping has a context.
-            return Err(Error::unsupported(
+            // The pinned reader admits the key, but the converter requires a literal string key.
+            return Err(Error::invalid(
                 route,
-                "expression is unevaluated; dynamic inspection is not supported yet",
+                "expression is unevaluated and not allowed as a concurrency key",
             ));
         }
         let field = format!("{route}.{key}");

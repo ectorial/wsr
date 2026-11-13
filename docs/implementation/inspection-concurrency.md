@@ -2,7 +2,8 @@
 
 Status: **delivered on merge of its PR**, branch `feat/b16-concurrency` from `e95b0d4` (Schedule A).
 Implemented by Claude (claude-opus-5-5, orchestrator, burn mode; interface-touching: `wsr-types`
-`Concurrency`, D-033). Evidence lives in the [checkpoint](inspection-progress.md).
+`Concurrency`, D-033); cross-reviewed by Codex gpt-6.1-sol (high): no blockers; one P2 fixed
+(expression keys `Invalid`, not `Unsupported`). Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Scope
 
@@ -16,7 +17,8 @@ Per the [pinned schema](https://github.com/actions/languageservices/blob/4043eda
 `concurrency-mapping` has required `group` (`non-empty-string`), `cancel-in-progress` (`boolean`) and
 `queue` (`concurrency-queue`: `single` or `max`). Hence:
 
-- `${{` text in any value is `Unevaluated`; an expression key is `Unsupported` (B-11 precedent).
+- `${{` text in any value is `Unevaluated`. An expression key is `Invalid`: the reader admits it, but
+  the pinned converter (`concurrency.ts`) asserts a literal string key first, unlike B-11's mappings.
 - B-13 conversions: a number or boolean group converts to a valid string, so `Unsupported`; a null
   group converts to an empty string, which is `Invalid` where the definition is non-empty (job
   string, `group`) and `Unsupported` for the workflow string. Blank non-empty text is schema-valid and

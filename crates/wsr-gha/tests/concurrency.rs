@@ -107,6 +107,8 @@ fn schema_rejected_concurrency_is_invalid() {
         ("{group: ci, queue: many}", ".queue"),
         ("{group: ci, queue: 5}", ".queue"),
         ("{group: ci, bogus: 1}", ".bogus"),
+        // The pinned converter asserts a literal string key before any expression guard.
+        ("{group: ci, '${{ x }}': y}", ""),
     ] {
         assert_category(
             workflow(value),
@@ -132,7 +134,6 @@ fn schema_valid_concurrency_outside_the_subset_is_unsupported() {
         ("' '", ""),
         ("{group: 5}", ".group"),
         ("{group: ' '}", ".group"),
-        ("{group: ci, '${{ x }}': y}", ""),
     ] {
         assert_category(
             workflow(value),
