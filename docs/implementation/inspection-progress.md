@@ -6,7 +6,8 @@ Same Schedule A run, after the PR #39 wake (lock retaken 2026-11-13). PR #39 squ
 `fb31d1c` after all four required checks passed on `8508157` with no reviews or comments; `wsr` and
 `wsr-gha` tests (78) verified on synced main. B-10 on `test/b10-dogfood-set` from `fb31d1c`; slice
 record [inspection-dogfood-guard.md](inspection-dogfood-guard.md). Implemented by Claude
-(claude-opus-5-5, orchestrator, burn mode). Test-only slice; no product code changed.
+(claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no blockers;
+two P3s fixed (regular files only; non-UTF-8 names skipped). Test-only slice; no product code changed.
 
 - No product red (characterization guard). Guard red proven twice: the temp-copy test with
   `example-extra.yml`, and an untracked `example-zz.yml` placed briefly in the real directory

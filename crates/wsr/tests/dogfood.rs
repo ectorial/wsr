@@ -68,7 +68,10 @@ fn example(name: &str) -> PathBuf {
 fn example_names(directory: &Path) -> Vec<String> {
     let mut names: Vec<_> = fs::read_dir(directory)
         .unwrap()
-        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .map(|entry| entry.unwrap())
+        .filter(|entry| entry.file_type().unwrap().is_file())
+        // A non-UTF-8 name cannot match `example-*.yml`; skip it rather than panic.
+        .filter_map(|entry| entry.file_name().into_string().ok())
         .filter(|name| name.starts_with("example-") && name.ends_with(".yml"))
         .collect();
     names.sort();

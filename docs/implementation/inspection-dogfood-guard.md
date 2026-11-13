@@ -1,7 +1,8 @@
 # Dogfood-guard iteration: every example workflow has a golden case (backlog B-10, audit F20)
 
 Status: **delivered on merge of its PR**, branch `test/b10-dogfood-set` from `fb31d1c` (Schedule A).
-Implemented by Claude (claude-opus-5-5, orchestrator, burn mode). Evidence lives in the
+Implemented by Claude (claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol
+(high): no blockers; two P3s fixed (only regular files count; non-UTF-8 names are skipped, not a panic). Evidence lives in the
 [checkpoint](inspection-progress.md).
 
 ## Scope
