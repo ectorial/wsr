@@ -14,6 +14,7 @@ mod diagnostic;
 mod dispatch;
 mod needs;
 mod permissions;
+mod step_inputs;
 use diagnostic::Fields;
 pub use diagnostic::{Category, Error};
 use needs::Needs;
@@ -92,6 +93,16 @@ struct Step {
     run: Option<String>,
     #[serde(default, deserialize_with = "present_string")]
     shell: Option<String>,
+    #[serde(
+        rename = "working-directory",
+        default,
+        deserialize_with = "present_string"
+    )]
+    working_directory: Option<String>,
+    #[serde(default, deserialize_with = "step_inputs::env")]
+    env: Option<BTreeMap<String, wsr_types::inspection::StepValue>>,
+    #[serde(default, deserialize_with = "step_inputs::with")]
+    with: Option<BTreeMap<String, wsr_types::inspection::StepValue>>,
     #[serde(default, deserialize_with = "present_string")]
     uses: Option<String>,
 }
@@ -103,14 +114,11 @@ impl diagnostic::Level for Step {
         "background",
         "cancel",
         "continue-on-error",
-        "env",
         "if",
         "parallel",
         "timeout-minutes",
         "wait",
         "wait-all",
-        "with",
-        "working-directory",
     ];
 }
 
@@ -238,10 +246,36 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                     return Err(Error::invalid(field, "shell applies only to run steps"));
                 }
             }
+            let working_directory = match step.working_directory {
+                Some(_) if !matches!(kind, StepSummaryKind::Run) => {
+                    return Err(Error::invalid(
+                        format!("{location}.working-directory"),
+                        "working-directory applies only to run steps",
+                    ));
+                }
+                Some(text) if text.trim().is_empty() => {
+                    return Err(Error::invalid(
+                        format!("{location}.working-directory"),
+                        "expected a nonempty string",
+                    ));
+                }
+                Some(text) if text.contains("${{") => Some(SourceText::Unevaluated(text)),
+                Some(text) => Some(SourceText::Literal(text)),
+                None => None,
+            };
+            if step.with.is_some() && matches!(kind, StepSummaryKind::Run) {
+                return Err(Error::invalid(
+                    format!("{location}.with"),
+                    "with applies only to uses steps",
+                ));
+            }
             steps.push(StepSummary {
                 id: step.id,
                 name: step.name,
                 shell: step.shell,
+                working_directory,
+                env: step.env,
+                with: step.with,
                 kind,
             });
         }

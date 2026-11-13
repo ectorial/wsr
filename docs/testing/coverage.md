@@ -297,3 +297,14 @@ stderr for boolean, negative, zero, `.inf`, string, null and sequence timeouts a
 blank, expression and `uses`-step shells. The step/job unknown-field messages now list `shell` and
 `timeout-minutes`; the B-0 unsupported step-key case moved from `shell` to step `timeout-minutes`.
 Values are reported, never applied, selected or invoked.
+
+## Step environment, action inputs and working directories (backlog B-5)
+
+Two CLI tests in `crates/wsr/tests/inspection.rs` and three in `crates/wsr-gha/tests/step_inputs.rs`.
+Observed red: both CLI tests failed with ``unknown field `with` `` before implementation. Coverage:
+string, number, boolean and unevaluated values with sorted keys; empty mappings; literal and
+unevaluated working directories; a hostile `$(touch executed)` value with an ESC byte rendered escaped
+and the directory sentinel unchanged; exact stderr for non-mapping, null and nested values, empty,
+numeric and expression keys, whole-mapping expressions, `with` on a run step, `working-directory`
+on a uses step and non-string/blank directories; duplicate keys keep decoder evidence. The B-1 route
+test's unknown step key moved from `with` to `bogus`. Values are never bound, passed or resolved.

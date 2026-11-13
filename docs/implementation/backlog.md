@@ -78,7 +78,8 @@ Schedule A takes only ready slices.
 
 ## B-5 Step `env`, `with` and `working-directory`
 
-- Status: **ready** (DR-002 resolved by D-033; GHA-derived fields stay in `wsr-types`).
+- Status: **delivered on merge of the B-5 PR** (Schedule A); see [slice record](inspection-step-inputs.md).
+  Numbers and booleans keep their YAML type (the schema's loose string values); B-6 is now ready.
 
 - Behavior: values reported as literal or unevaluated `SourceText` with escaped rendering; never bound, resolved
   or passed to anything; keys sorted deterministically; hostile values (control bytes, `${{`) escaped.
@@ -88,7 +89,7 @@ Schedule A takes only ready slices.
 
 ## B-6 Dogfood acceptance on `.github/workflows/example-*.yml`
 
-- Status: **ready after B-3..B-5**.
+- Status: **ready** once the B-5 PR merges (B-3 #33, B-4 #34 merged); both examples already inspect.
 
 - Behavior: `wsr inspect` succeeds on both example workflows with golden output; inspection performs no execution
   (sentinel files untouched). Translation-only; native reference success is not WSR support.

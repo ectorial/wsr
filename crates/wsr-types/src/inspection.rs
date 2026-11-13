@@ -54,8 +54,25 @@ pub struct StepSummary {
     pub name: Option<String>,
     /// Optional literal shell of a run step, never selected or invoked.
     pub shell: Option<String>,
+    /// Optional working directory of a run step, never resolved.
+    pub working_directory: Option<SourceText>,
+    /// Optional environment entries by name, never bound.
+    pub env: Option<BTreeMap<String, StepValue>>,
+    /// Optional action inputs by name, never passed to an action.
+    pub with: Option<BTreeMap<String, StepValue>>,
     /// Source operation classification.
     pub kind: StepSummaryKind,
+}
+
+/// A scalar `env`/`with` source value, retaining its YAML type; never evaluated.
+#[derive(Debug, PartialEq, Eq)]
+pub enum StepValue {
+    /// String text, classified as literal or unevaluated.
+    Text(SourceText),
+    /// Literal boolean.
+    Boolean(bool),
+    /// YAML number represented as text.
+    Number(String),
 }
 
 /// Source operation classification, not an execution capability claim.
@@ -76,6 +93,8 @@ pub enum RunnerRequirement {
     Labels(Vec<String>),
 }
 
+use std::collections::BTreeMap;
+
 /// Requested `GITHUB_TOKEN` permissions as declared, not an effective or granted token.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Permissions {
@@ -84,7 +103,7 @@ pub enum Permissions {
     /// The `write-all` shorthand.
     WriteAll,
     /// Declared scopes in name order; empty for an explicitly empty mapping.
-    Scopes(std::collections::BTreeMap<String, PermissionLevel>),
+    Scopes(BTreeMap<String, PermissionLevel>),
 }
 
 /// A requested level for one permission scope.

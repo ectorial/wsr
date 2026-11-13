@@ -22,6 +22,10 @@ for delivery gates.
 - [x] Provisional typed inspection errors in `wsr-gha`: `inspect` failures carry an invalid versus
   valid-but-unsupported category and a source route, classified at detection against the pinned
   schema's keys; CLI diagnostics are unchanged. Not a stable, WIT or protocol contract.
+- [x] Step `env`, `with` and `working-directory` in inspection: typed scalar values with
+  literal/unevaluated text, sorted keys, step-kind restrictions; never bound, passed or resolved.
+  See [step-input contract](../cli/README.md#step-environment-action-inputs-and-working-directories).
+  Both canonical example workflows now inspect successfully; their golden acceptance (B-6) is pending.
 - [x] Job `timeout-minutes` and run-step `shell` in inspection: literal positive number or
   unevaluated timeout text, literal nonempty shell, reported as not applied/not selected.
   See [timeout and shell contract](../cli/README.md#job-timeouts-and-step-shells).
