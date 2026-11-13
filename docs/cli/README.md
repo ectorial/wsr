@@ -235,7 +235,7 @@ Malformed types, null, empty identifiers and expressions in `needs` fail before 
 Job identifiers are validated before `needs` is resolved, so an invalid identifier is reported
 ahead of an unknown dependency.
 A job identifier is also validated before its body is decoded, so a hostile identifier cannot forge
-the route of a body diagnostic. An expression in a field the pinned schema gives no expression
+the route of a body diagnostic; when both are wrong, the identifier is the one reported. An expression in a field the pinned schema gives no expression
 context (workflow `name`, `on`, job and step identifiers, `needs`, `uses`, manual-input
 declarations) is invalid; where the schema allows expressions (job and step `name`, `run`,
 `runs-on`) it is valid GHA that inspection does not evaluate. See the

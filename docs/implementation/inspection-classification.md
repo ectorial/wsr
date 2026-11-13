@@ -9,8 +9,8 @@ The inspection fence still treats any `${{` in a literal-only field as unevaluat
 expression parsing. What changes is the category, which now follows the
 [pinned schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json):
 a definition with a `context` list allows expressions, so WSR reports `Unsupported` (valid GHA it
-does not evaluate); a definition without one allows none, so the same text is `Invalid`. CLI stderr
-text and exit codes are unchanged; only `wsr_gha::Category` differs. Call sites pass the category
+does not evaluate); a definition without one allows none, so the same text is `Invalid`. For F13 and
+F14, CLI stderr text and exit codes are unchanged; only `wsr_gha::Category` differs. Call sites pass the category
 explicitly (`check_literal`/`check_required`); the helper has no default.
 
 | Field | Pinned definition | Expression context | Category |
@@ -45,8 +45,12 @@ GitHub, and `Unsupported` as valid GHA outside WSR's inspection subset.
 
 `unique_jobs` decoded a job body before validating its ID, so job ID `a.steps[9]` with an unknown field
 reported `jobs.a.steps[9].bogus`, a route that names a different location. The ID is now validated before
-its body is decoded and reports `jobs.a.steps[9]: invalid job identifier 'a.steps[9]'`, with the same
-text as before (no parser location suffix).
+its body is decoded and reports `jobs.a.steps[9]: invalid job identifier 'a.steps[9]'`, with the
+identifier diagnostic's existing text (no parser location suffix). This is an intentional precedence
+change: a source with both an invalid job ID and a malformed body in that job now reports the
+identifier, not the body error, so stderr differs from `e3a8373` for that combination only. The
+exact-stderr CLI case in `crates/wsr/tests/inspection.rs` pins it; on `e3a8373` it fails, reporting
+``jobs.a.steps[9]: unknown field `bogus`, … at line 3 column 5``.
 
 ## Evidence
 
@@ -56,7 +60,7 @@ text as before (no parser location suffix).
   `empty_run_and_working_directory_are_schema_valid_but_unsupported` got `Invalid`. The
   with-context group (`..._are_unsupported_at_their_route`) and the blank-`shell` assertion were green
   characterization.
-- Green: `cargo test -p wsr-gha` and the unchanged `-p wsr` CLI tests, then `cargo xtask ci`.
+- Green: `cargo test -p wsr-gha` and the `-p wsr` CLI tests (unchanged except the F16 stderr case), then `cargo xtask ci`.
 
 ## Limitations
 
