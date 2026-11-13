@@ -1,7 +1,8 @@
 # Format-escape iteration: Unicode format characters in inspection stderr (backlog B-9, audit F15)
 
 Status: **delivered on merge of its PR**, branch `impl/b9-format-escape` from `3c8c95c` (Schedule A).
-Implemented by Claude (claude-opus-5-5, orchestrator, burn mode). Evidence lives in the
+Implemented by Claude (claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol
+(high): no blockers; P3 fixed (CLI guide names the short `\n`/`\t` escapes). Evidence lives in the
 [checkpoint](inspection-progress.md).
 
 ## Scope
