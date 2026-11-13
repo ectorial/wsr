@@ -1,6 +1,6 @@
 # Next inspection iteration: static job dependencies
 
-Status: **owner-authorized implementation plan; implemented locally, integration pending**.
+Status: **delivered** via [PR #22](https://github.com/ectorial/wsr/pull/22), commit `c04243e`.
 Requested after the frontend modeling review; the owner subsequently authorized implementation.
 This document does not change the saved schedule. The first static
 inspection slice was merged as PR #21, commit `f70ebf4`; the older preparation wording in the

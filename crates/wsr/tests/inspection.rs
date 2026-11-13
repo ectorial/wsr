@@ -968,3 +968,122 @@ fn inspect_run_name_rejects_wrong_shapes_and_blank_text_before_rendering() {
         );
     }
 }
+
+#[test]
+fn inspect_errors_never_write_raw_control_bytes_to_stderr() {
+    let directory = tempfile::tempdir().unwrap();
+    let steps = "    runs-on: linux\n    steps:\n      - run: echo hello\n";
+    for (location, source) in [
+        (
+            "top-level key",
+            format!("\"\\e[31mbad\": 1\njobs:\n  test:\n{steps}"),
+        ),
+        (
+            "job key",
+            format!("jobs:\n  test:\n    \"\\e[31mbad\": 1\n{steps}"),
+        ),
+        (
+            "step key",
+            "jobs:\n  test:\n    runs-on: linux\n    steps:\n      - run: echo hello\n        \"\\e[31mbad\": 1\n".to_string(),
+        ),
+        (
+            "on key",
+            format!("on:\n  \"\\e[31mbad\": null\njobs:\n  test:\n{steps}"),
+        ),
+        (
+            "job identifier",
+            format!("jobs:\n  \"\\e[31mbad\":\n{steps}"),
+        ),
+    ] {
+        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{location}: {output:?}");
+        assert!(output.stdout.is_empty(), "{location}: {output:?}");
+        assert!(
+            !output.stderr.contains(&0x1b),
+            "{location}: raw ESC on stderr: {:?}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(error.contains("\\u{1b}"), "{location}: {error}");
+    }
+}
+
+#[test]
+fn inspect_does_not_panic_when_stdout_is_closed_early() {
+    use std::process::Stdio;
+
+    let directory = tempfile::tempdir().unwrap();
+    let mut source = String::from("jobs:\n");
+    for index in 0..5000 {
+        source.push_str(&format!(
+            "  job{index:05}:\n    name: A reasonably long display name for job {index}\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello\n"
+        ));
+    }
+    fs::write(directory.path().join("big.yml"), source).unwrap();
+    let mut child = Command::new(env!("CARGO_BIN_EXE_wsr"))
+        .args(["inspect", "big.yml"])
+        .current_dir(directory.path())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn inspection");
+    // The report exceeds any pipe buffer, so closing the read end before it is
+    // consumed guarantees the child's write fails with a broken pipe.
+    drop(child.stdout.take());
+    let output = child.wait_with_output().expect("wait for inspection");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stderr.contains("panicked"), "{stderr}");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(stderr.is_empty(), "{stderr}");
+}
+
+#[cfg(unix)]
+fn inspect_non_regular(directory: &Path, file: &str) -> Output {
+    use std::process::Stdio;
+    use std::time::{Duration, Instant};
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_wsr"))
+        .args(["inspect", file])
+        .current_dir(directory)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn inspection");
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while child.try_wait().expect("poll inspection").is_none() {
+        if Instant::now() >= deadline {
+            child.kill().expect("kill hung inspection");
+            let output = child.wait_with_output().expect("reap inspection");
+            panic!("inspect {file} did not terminate within 2s: {output:?}");
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    child.wait_with_output().expect("collect inspection")
+}
+
+#[cfg(unix)]
+#[test]
+fn inspect_rejects_non_regular_files_without_reading_them() {
+    let directory = tempfile::tempdir().unwrap();
+    std::os::unix::fs::symlink("/dev/zero", directory.path().join("zero.yml")).unwrap();
+    let fifo = directory.path().join("pipe.yml");
+    let made_fifo = Command::new("mkfifo")
+        .arg(&fifo)
+        .status()
+        .is_ok_and(|status| status.success());
+    let mut files = vec!["zero.yml", "."];
+    if made_fifo {
+        files.push("pipe.yml");
+    }
+    for file in files {
+        let output = inspect_non_regular(directory.path(), file);
+        assert_eq!(output.status.code(), Some(1), "{file}: {output:?}");
+        assert!(output.stdout.is_empty(), "{file}: {output:?}");
+        let error = String::from_utf8(output.stderr).unwrap();
+        assert!(
+            error.contains(&format!("wsr inspect: {file}: not a regular file")),
+            "{file}: {error}"
+        );
+    }
+}

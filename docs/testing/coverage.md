@@ -231,3 +231,23 @@ metadata/events, indexed diagnostics, escaped text and unchanged repository/sour
 No existing assertions were removed. Source summaries retain declaration states independently of
 rendering. Numeric defaults are preserved rather than dropped; this is not complete input validation
 or event binding. Existing examples still require other source fields before end-to-end acceptance.
+
+## Run-name iteration and host hardening
+
+The real CLI inspection suite (`crates/wsr/tests/inspection.rs`) now lists 31 tests, verified with
+`cargo test -p wsr --test inspection -- --list`; `tests/cli.rs` keeps 5 placeholder/parser tests.
+The run-name iteration ([PR #27](https://github.com/ectorial/wsr/pull/27), `fd574dc`) took the suite
+to 28, plus the public parser-summary test in `crates/wsr-gha/tests/run_name.rs`. Observed red: three
+new CLI tests failed with `unknown field run-name`. Coverage: literal, omitted and unevaluated
+(`${{`) text, wrong shapes (null, boolean, number, sequence, mapping) and blank text rejected before
+rendering, and control-character escaping. Run-name text is reported, never evaluated or bound to inputs.
+
+Three host-boundary tests followed the architecture review ([log](../implementation/architecture-review.md),
+F2/F7/F8). Observed red before implementation: an ESC byte in an unknown top-level key reached stderr raw
+(serde's unknown-field message); a 5,000-job report piped to an immediately closed stdout panicked with
+`failed printing to stdout: Broken pipe`; and a symlink to `/dev/zero` was read until the test's 2 s guard
+killed it. After the fixes the tests assert: no 0x1b byte on stderr for top-level, job, step, `on:` and
+job-identifier locations (exit 1, empty stdout); exit 0 with empty stderr and no panic on a closed pipe;
+and exit 1 with `not a regular file` for a `/dev/zero` symlink, a directory and (when `mkfifo` exists)
+a FIFO. The non-regular-file test is `#[cfg(unix)]`. These establish static-input hardening only, not a size limit
+(an open [decision request](../implementation/decision-requests.md)), execution or sandboxing.

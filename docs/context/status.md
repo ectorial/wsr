@@ -15,6 +15,10 @@ for delivery gates.
 
 ## Present in the current checkout
 
+- [x] Inspection host-boundary hardening: diagnostics escape control characters before reaching stderr,
+  only regular files are read (symlinks followed; FIFOs, devices and directories exit 1), and a closed
+  stdout pipe ends quietly instead of panicking. See [CLI contract](../cli/README.md#static-workflow-inspection).
+  No input size limit is enforced (open decision request).
 - [x] Workflow `run-name` in inspection: strict optional string, literal versus unevaluated
   classification of the whole decoded text and escaped rendering. See [run-name contract](../cli/README.md#unevaluated-run-names).
   No expression parsing/validation, context lookup or default application; full example-workflow
