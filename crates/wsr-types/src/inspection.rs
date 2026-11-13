@@ -60,6 +60,8 @@ pub struct JobSummary {
     pub concurrency: Option<Concurrency>,
     /// Optional `outputs` text by name (D-033), never resolved or exposed to other jobs.
     pub outputs: Option<BTreeMap<String, SourceText>>,
+    /// Optional `environment`, never selected; no protection rules are evaluated.
+    pub environment: Option<Environment>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }
@@ -100,6 +102,17 @@ pub struct Concurrency {
     pub cancel_in_progress: Option<SourceText>,
     /// `queue`: literal `single` or `max`, or unevaluated text.
     pub queue: Option<SourceText>,
+}
+
+/// Declared job `environment` (D-033 temporary GHA-derived type); a string form is the name.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Environment {
+    /// Name text, literal or unevaluated.
+    pub name: SourceText,
+    /// `url` text, literal or unevaluated; never opened.
+    pub url: Option<SourceText>,
+    /// `deployment`: a literal boolean rendered as text, or unevaluated text.
+    pub deployment: Option<SourceText>,
 }
 
 /// Declared `defaults.run` settings; `defaults: {}` and `defaults: {run: {}}` both have neither.

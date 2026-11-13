@@ -2168,3 +2168,58 @@ fn inspect_rejects_job_outputs_outside_the_inspected_subset() {
         );
     }
 }
+
+// Backlog B-19: job `environment` is reported as written, never selected or protected.
+#[test]
+fn inspect_reports_job_environments_without_selecting_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = "jobs:\n  b:\n    runs-on: linux\n    environment: \"prod$(touch executed)\\e\\u202E\"\n    steps:\n      - run: touch executed\n  c:\n    runs-on: linux\n    environment:\n      name: ${{ inputs.target }}\n      url: https://example.test\n      deployment: false\n    outputs:\n      u: ${{ steps.d.outputs.url }}\n    steps:\n      - run: echo\n";
+    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Environment (not selected; no protection rules evaluated):\n    Name: prod$(touch executed)\\u{1b}\\u{202e}\n  Step 1: run\nJob: c\n  Runner: linux\n  Environment (not selected; no protection rules evaluated):\n    Name: ${{ inputs.target }} (unevaluated; expression syntax not validated)\n    URL: https://example.test\n    Deployment: false\n  Outputs (not resolved):\n    u: \"${{ steps.d.outputs.url }}\" (unevaluated)\n  Step 1: run\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn inspect_rejects_job_environments_outside_the_inspected_subset() {
+    let directory = tempfile::tempdir().unwrap();
+    for (environment, diagnostic) in [
+        ("{url: x}", "jobs.b.environment: missing field `name`"),
+        (
+            "{name: a, \"b\\e\": 1}",
+            "jobs.b.environment: unknown field `b\\u{1b}`, expected `name`, `url` or `deployment`",
+        ),
+        (
+            "{name: a, deployment: 'false'}",
+            "jobs.b.environment.deployment: expected a boolean",
+        ),
+        (
+            "{name: ''}",
+            "jobs.b.environment.name: expected a nonempty string",
+        ),
+        (
+            "5",
+            "jobs.b.environment: non-string value is not inspected yet",
+        ),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            format!("jobs:\n  b:\n    runs-on: linux\n    environment: {environment}\n    steps:\n      - run: echo\n"),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{environment}: {output:?}");
+        assert!(output.stdout.is_empty(), "{environment}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{environment}"
+        );
+    }
+}

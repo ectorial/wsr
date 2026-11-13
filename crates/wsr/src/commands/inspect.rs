@@ -222,6 +222,18 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
         if let Some(concurrency) = job.concurrency {
             render_concurrency(&mut out, "  ", concurrency)?;
         }
+        if let Some(environment) = job.environment {
+            render_fields(
+                &mut out,
+                "  ",
+                "Environment (not selected; no protection rules evaluated)",
+                [
+                    ("Name", Some(environment.name)),
+                    ("URL", environment.url),
+                    ("Deployment", environment.deployment),
+                ],
+            )?;
+        }
         if let Some(outputs) = job.outputs {
             let outputs = outputs
                 .into_iter()
@@ -370,12 +382,27 @@ fn render_concurrency(
     indent: &str,
     concurrency: Concurrency,
 ) -> std::fmt::Result {
-    writeln!(out, "{indent}Concurrency (not applied):")?;
-    for (label, text) in [
-        ("Group", Some(concurrency.group)),
-        ("Cancel in progress", concurrency.cancel_in_progress),
-        ("Queue", concurrency.queue),
-    ] {
+    render_fields(
+        out,
+        indent,
+        "Concurrency (not applied)",
+        [
+            ("Group", Some(concurrency.group)),
+            ("Cancel in progress", concurrency.cancel_in_progress),
+            ("Queue", concurrency.queue),
+        ],
+    )
+}
+
+/// A titled block of optional source-text lines.
+fn render_fields<const N: usize>(
+    out: &mut String,
+    indent: &str,
+    title: &str,
+    fields: [(&str, Option<SourceText>); N],
+) -> std::fmt::Result {
+    writeln!(out, "{indent}{title}:")?;
+    for (label, text) in fields {
         match text {
             Some(SourceText::Literal(text)) => {
                 writeln!(out, "{indent}  {label}: {}", text.escape_debug())?
