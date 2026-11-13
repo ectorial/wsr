@@ -85,6 +85,8 @@ fn dependency_graph_rejects_missing_self_and_multi_job_cycles_at_their_routes() 
 const STEP_ID: &str =
     "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: ID\n        run: a\n";
 
+// job-id and step-id have no schema expression context (pinned workflow-v1.0.json @ 4043eda), so
+// an expression in either is invalid rather than unsupported.
 #[test]
 fn job_and_step_identifier_rules_are_enforced() {
     for (source, category, route) in [
@@ -100,7 +102,7 @@ fn job_and_step_identifier_rules_are_enforced() {
         ),
         (
             workflow(&[("'${{ x }}'", "    needs: missing\n")]),
-            Category::Unsupported,
+            Category::Invalid,
             "jobs.${{ x }}",
         ),
         (
@@ -121,7 +123,7 @@ fn job_and_step_identifier_rules_are_enforced() {
         ),
         (
             STEP_ID.replace("ID", "'${{ x }}'"),
-            Category::Unsupported,
+            Category::Invalid,
             "jobs.b.steps[1].id",
         ),
         (

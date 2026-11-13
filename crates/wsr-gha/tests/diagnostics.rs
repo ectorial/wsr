@@ -42,15 +42,99 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
     }
 }
 
+fn dispatch_input(body: &str) -> String {
+    format!("on:\n  workflow_dispatch:\n    inputs:\n      a:\n        {body}\n{JOB}")
+}
+
+// The pinned schema (actions/languageservices @ 4043eda, workflow-v1.0.json) gives these
+// definitions no `context`, so no expression is allowed: workflow-name, `on`, job-id, `needs`,
+// step-id, step-uses and workflow-dispatch-input(-name). This corrects an earlier assertion that
+// classified them as Unsupported; the fence itself still does not parse expressions.
 #[test]
-fn expressions_in_literal_only_fields_are_unsupported_at_their_route() {
+fn expressions_in_fields_without_a_schema_expression_context_are_invalid_at_their_route() {
     for (source, route) in [
         (format!("name: ${{{{ x }}}}\n{JOB}"), "name"),
         (format!("on: ${{{{ x }}}}\n{JOB}"), "on"),
+        (format!("on: {{'${{{{ x }}}}': null}}\n{JOB}"), "on"),
+        (
+            "jobs:\n  ${{ x }}:\n    runs-on: linux\n    steps:\n      - run: a\n".to_owned(),
+            "jobs.${{ x }}",
+        ),
+        (
+            "jobs:\n  a:\n    runs-on: linux\n    steps:\n      - run: a\n  b:\n    needs: ${{ x }}\n    runs-on: linux\n    steps:\n      - run: a\n"
+                .to_owned(),
+            "jobs.b.needs",
+        ),
+        (
+            "jobs:\n  a:\n    runs-on: linux\n    steps:\n      - run: a\n  b:\n    needs: [a, '${{ x }}']\n    runs-on: linux\n    steps:\n      - run: a\n"
+                .to_owned(),
+            "jobs.b.needs[2]",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: ${{ x }}\n        run: a\n"
+                .to_owned(),
+            "jobs.b.steps[1].id",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - uses: ${{ x }}\n".to_owned(),
+            "jobs.b.steps[1].uses",
+        ),
+        (
+            format!("on:\n  workflow_dispatch:\n    inputs:\n      ${{{{ x }}}}: {{}}\n{JOB}"),
+            // The key is fenced as text at its enclosing mapping, as before.
+            "on.workflow_dispatch.inputs",
+        ),
+        (
+            dispatch_input("description: ${{ x }}"),
+            "on.workflow_dispatch.inputs.a.description",
+        ),
+        (
+            dispatch_input("type: ${{ x }}"),
+            "on.workflow_dispatch.inputs.a.type",
+        ),
+        (
+            dispatch_input("required: ${{ x }}"),
+            "on.workflow_dispatch.inputs.a.required",
+        ),
+        (
+            dispatch_input("default: ${{ x }}"),
+            "on.workflow_dispatch.inputs.a.default",
+        ),
+        (
+            dispatch_input("type: choice\n        options: ['${{ x }}']"),
+            "on.workflow_dispatch.inputs.a.options[1]",
+        ),
+    ] {
+        assert_eq!(
+            diagnose(&source),
+            (Category::Invalid, Some(route.to_owned())),
+            "{source}"
+        );
+    }
+}
+
+// Definitions with a schema expression context hold valid GHA that WSR does not evaluate:
+// string-strategy-context (job `name`), step-name, string-steps-context (`run`) and runs-on.
+#[test]
+fn expressions_in_fields_with_a_schema_expression_context_are_unsupported_at_their_route() {
+    for (source, route) in [
+        (
+            "jobs:\n  b:\n    name: ${{ x }}\n    runs-on: linux\n    steps:\n      - run: a\n"
+                .to_owned(),
+            "jobs.b.name",
+        ),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n        name: ${{ x }}\n"
                 .to_owned(),
             "jobs.b.steps[1].name",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: ${{ x }}\n".to_owned(),
+            "jobs.b.steps[1].run",
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: ${{ x }}\n    steps:\n      - run: a\n".to_owned(),
+            "jobs.b.runs-on",
         ),
         (
             "jobs:\n  b:\n    runs-on: [linux, '${{ x }}']\n    steps:\n      - run: a\n"
@@ -136,5 +220,19 @@ fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
     assert_eq!(
         duplicate.to_string(),
         "on: duplicate entry with key \"workflow_dispatch\" at line 1 column 5"
+    );
+}
+
+#[test]
+fn a_job_identifier_is_validated_before_its_body_so_it_cannot_forge_a_route() {
+    let error = wsr_gha::inspect(
+        b"jobs:\n  a.steps[9]:\n    bogus: 1\n    runs-on: linux\n    steps:\n      - run: echo\n",
+    )
+    .unwrap_err();
+    assert_eq!(error.category(), Category::Invalid);
+    assert_eq!(error.route(), Some("jobs.a.steps[9]"));
+    assert_eq!(
+        error.to_string(),
+        "jobs.a.steps[9]: invalid job identifier 'a.steps[9]'"
     );
 }

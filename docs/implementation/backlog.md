@@ -109,3 +109,62 @@ Schedule A takes only ready slices.
 - Acceptance: CLI tests at 511,999/512,000/512,001-byte sizes (exit 0, warning only above the limit, identical stdout).
 - Expected red: no warning for a 512,001-byte workflow.
 - Files: `crates/wsr/src/commands/inspect.rs`, `crates/wsr/tests/inspection.rs`, `docs/cli/README.md`.
+
+## B-8 Expression category by schema context (audit F13, F14, F16)
+
+- Status: **delivered** in the Schedule B architecture PR `arch/review-2026-11-13-run2`; see
+  [slice record](inspection-classification.md).
+
+- Behavior: an expression in a field the pinned schema gives no expression context is `Invalid`, where a
+  context exists it stays `Unsupported`; schema-valid `timeout-minutes: 0`, empty `working-directory` and empty
+  `run` are `Unsupported`; a job ID is validated before its body so it cannot forge a route.
+
+## B-9 Escape format characters in inspection stderr (audit F15)
+
+- Status: **ready**.
+
+- Behavior: host stderr escaping (`crates/wsr/src/commands/inspect.rs` `escape_control_characters`) also escapes
+  Unicode format/bidi characters (general category Cf, e.g. U+202E, U+200B, U+2066–U+2069) the way stdout's
+  `escape_debug` does, leaving quotes and backslashes as today.
+- Acceptance: CLI tests with U+202E and U+200B in an unknown step key and in a job ID never appear raw on
+  stderr; existing escaping tests unchanged.
+- Expected red: raw bytes on stderr.
+- Files: `crates/wsr/src/commands/inspect.rs`, `crates/wsr/tests/inspection.rs`, `docs/cli/README.md`.
+
+## B-10 Guard the dogfood workflow set (audit F20)
+
+- Status: **ready**.
+
+- Behavior: `crates/wsr/tests/dogfood.rs` enumerates `.github/workflows/example-*.yml` and asserts the set
+  equals the golden table keys, so a new example workflow cannot go without golden coverage.
+- Acceptance: the guard passes on the current two files; a temporary extra fixture in a temp copy (not in the
+  repo) makes it fail.
+- Expected red: none (characterization guard); prove with the temp-copy fixture.
+- Files: `crates/wsr/tests/dogfood.rs`, `docs/testing/coverage.md`.
+
+## B-11 Workflow and job `env` and job `defaults.run`
+
+- Status: **ready**.
+
+- Behavior: inspect workflow-level and job-level `env` maps and workflow/job `defaults.run.shell` and
+  `working-directory` as source data (literal or unevaluated `SourceText`, sorted keys, escaped), reported as not
+  bound and not applied, following B-5. D-033 label for any `wsr-types` additions. Categories follow B-8: the
+  schema expression context decides Invalid vs Unsupported; check the workflow `env` and `defaults` contexts in
+  the pinned schema.
+- Acceptance: per-field CLI tests, `wsr-gha` category tests, hostile-content sentinel.
+- Expected red: unknown field `env` / `defaults`.
+- Files: `crates/wsr-gha/src/lib.rs` (and `step_inputs.rs` reuse), `crates/wsr-types/src/inspection.rs`,
+  `crates/wsr/src/commands/inspect.rs`, tests, `docs/cli/README.md`.
+
+## B-12 Job and step `if` as unevaluated conditions
+
+- Status: **ready**.
+
+- Behavior: replace the current `Unsupported` rejection of job and step `if:` with a successful report of the
+  condition as unevaluated source text (bare and `${{ }}` forms, both shown as written), stating it is not
+  evaluated and does not affect inspection output. No expression parsing.
+- Acceptance: CLI tests for bare, fenced and hostile text; the former `Unsupported` category test in `wsr-gha` is
+  replaced with a success assertion (cite this slice as the contract change).
+- Expected red: the current `Unsupported` `if` diagnostic.
+- Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs`, `crates/wsr/src/commands/inspect.rs`,
+  tests, `docs/cli/README.md`.

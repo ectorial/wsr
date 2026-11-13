@@ -132,7 +132,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
     if workflow.jobs.is_empty() {
         return Err(Error::invalid("jobs", "expected at least one job"));
     }
-    check_literal(workflow.name.as_deref(), "name")?;
+    check_literal(workflow.name.as_deref(), "name", Category::Invalid)?;
     let run_name = match workflow.run_name {
         Some(text) if text.trim().is_empty() => {
             return Err(Error::invalid("run-name", "expected a nonempty string"));
@@ -141,21 +141,6 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         Some(text) => Some(SourceText::Literal(text)),
         None => None,
     };
-    // Identifiers are checked before `needs` resolves against them.
-    for id in workflow.jobs.keys() {
-        let route = format!("jobs.{id}");
-        check_literal(Some(id), &route)?;
-        if !id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
-            || !id
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
-        {
-            return Err(Error::invalid(
-                route,
-                format_args!("invalid job identifier '{}'", id.escape_debug()),
-            ));
-        }
-    }
     needs::validate(&workflow.jobs)?;
     let mut jobs = Vec::new();
     for (id, job) in workflow.jobs {
@@ -165,10 +150,14 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 "expected at least one step",
             ));
         }
-        check_literal(job.name.as_deref(), &format!("jobs.{id}.name"))?;
+        check_literal(
+            job.name.as_deref(),
+            &format!("jobs.{id}.name"),
+            Category::Unsupported,
+        )?;
         match &job.runner {
             RunnerRequirement::Label(label) => {
-                check_required(label, &format!("jobs.{id}.runs-on"))?
+                check_required(label, &format!("jobs.{id}.runs-on"), Category::Unsupported)?
             }
             RunnerRequirement::Labels(labels) => {
                 if labels.is_empty() {
@@ -178,7 +167,11 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                     ));
                 }
                 for (index, label) in labels.iter().enumerate() {
-                    check_required(label, &format!("jobs.{id}.runs-on[{}]", index + 1))?;
+                    check_required(
+                        label,
+                        &format!("jobs.{id}.runs-on[{}]", index + 1),
+                        Category::Unsupported,
+                    )?;
                 }
             }
         }
@@ -188,7 +181,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             let location = format!("jobs.{id}.steps[{}]", index + 1);
             if let Some(step_id) = &step.id {
                 let field = format!("{location}.id");
-                check_required(step_id, &field)?;
+                check_required(step_id, &field, Category::Invalid)?;
                 if step_id.len() >= 100
                     || step_id.starts_with("__")
                     || !step_id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
@@ -214,12 +207,21 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                     ));
                 }
             }
-            check_literal(step.name.as_deref(), &format!("{location}.name"))?;
+            check_literal(
+                step.name.as_deref(),
+                &format!("{location}.name"),
+                Category::Unsupported,
+            )?;
             if let Some(script) = &step.run {
-                check_required(script, &format!("{location}.run"))?;
+                let field = format!("{location}.run");
+                check_literal(Some(script), &field, Category::Unsupported)?;
+                // string-steps-context allows an empty script; WSR does not inspect one.
+                if script.trim().is_empty() {
+                    return Err(Error::unsupported(field, "expected a nonempty string"));
+                }
             }
             if let Some(reference) = &step.uses {
-                check_required(reference, &format!("{location}.uses"))?;
+                check_required(reference, &format!("{location}.uses"), Category::Invalid)?;
             }
             let kind = match (step.run, step.uses) {
                 (Some(_), None) => StepSummaryKind::Run,
@@ -254,8 +256,9 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                         "working-directory applies only to run steps",
                     ));
                 }
+                // string-steps-context allows an empty directory; WSR does not inspect one.
                 Some(text) if text.trim().is_empty() => {
-                    return Err(Error::invalid(
+                    return Err(Error::unsupported(
                         format!("{location}.working-directory"),
                         "expected a nonempty string",
                     ));
@@ -307,9 +310,12 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
     })
 }
 
-fn check_literal(value: Option<&str>, location: &str) -> Result<(), Error> {
+/// Reject an unevaluated expression. `expression` is the category the pinned schema gives it:
+/// `Unsupported` where the field has an expression context, `Invalid` where it has none.
+fn check_literal(value: Option<&str>, location: &str, expression: Category) -> Result<(), Error> {
     if value.is_some_and(|value| value.contains("${{")) {
-        return Err(Error::unsupported(
+        return Err(Error::new(
+            expression,
             location,
             "expression is unevaluated; dynamic inspection is not supported yet",
         ));
@@ -317,10 +323,27 @@ fn check_literal(value: Option<&str>, location: &str) -> Result<(), Error> {
     Ok(())
 }
 
-fn check_required(value: &str, location: &str) -> Result<(), Error> {
-    check_literal(Some(value), location)?;
+fn check_required(value: &str, location: &str, expression: Category) -> Result<(), Error> {
+    check_literal(Some(value), location, expression)?;
     if value.trim().is_empty() {
         return Err(Error::invalid(location, "expected a nonempty string"));
+    }
+    Ok(())
+}
+
+/// A job ID has no schema expression context and must be an identifier.
+fn check_job_id(id: &str) -> Result<(), Error> {
+    let route = format!("jobs.{id}");
+    check_literal(Some(id), &route, Category::Invalid)?;
+    if !id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+        || !id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err(Error::invalid(
+            route,
+            format_args!("invalid job identifier '{}'", id.escape_debug()),
+        ));
     }
     Ok(())
 }
@@ -342,6 +365,11 @@ fn unique_jobs<'de, D: serde::Deserializer<'de>>(
         ) -> Result<Self::Value, M::Error> {
             let mut jobs = BTreeMap::new();
             while let Some(id) = map.next_key::<serde_yaml::Value>()? {
+                // The identifier is validated before its body is decoded, so it cannot forge
+                // the route of a body diagnostic.
+                if let serde_yaml::Value::String(id) = &id {
+                    check_job_id(id).map_err(diagnostic::raise_unlocated)?;
+                }
                 let Fields(job) = map.next_value::<Fields<Job>>().inspect_err(|_| match &id {
                     serde_yaml::Value::String(id) => diagnostic::within(&format!("jobs.{id}")),
                     _ => diagnostic::within("jobs"),
@@ -430,10 +458,17 @@ fn timeout_minutes<'de, D: serde::Deserializer<'de>>(
         serde_yaml::Value::String(text) if text.contains("${{") => {
             Ok(Some(SourceText::Unevaluated(text)))
         }
-        serde_yaml::Value::Number(minutes)
-            if minutes.as_f64().is_some_and(|m| m.is_finite() && m > 0.0) =>
-        {
-            Ok(Some(SourceText::Literal(minutes.to_string())))
+        serde_yaml::Value::Number(minutes) if minutes.as_f64().is_some_and(|m| m.is_finite()) => {
+            // number-strategy-context has no minimum, so a non-positive number is valid GHA that
+            // WSR's inspection subset does not accept.
+            if minutes.as_f64().is_some_and(|m| m > 0.0) {
+                Ok(Some(SourceText::Literal(minutes.to_string())))
+            } else {
+                Err(diagnostic::raise_unrouted_as(
+                    Category::Unsupported,
+                    "expected a positive number",
+                ))
+            }
         }
         _ => Err(diagnostic::raise_unrouted("expected a positive number")),
     }
