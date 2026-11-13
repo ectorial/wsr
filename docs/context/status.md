@@ -18,7 +18,7 @@ for delivery gates.
 - [x] Inspection host-boundary hardening: diagnostics escape control characters before reaching stderr,
   only regular files are read (symlinks followed; FIFOs, devices and directories exit 1), and a closed
   stdout pipe ends quietly instead of panicking. See [CLI contract](../cli/README.md#static-workflow-inspection).
-  No input size limit is enforced (open decision request).
+  No input size limit is enforced (D-032); files over GitHub's 500 KB limit get a stderr warning.
 - [x] Provisional typed inspection errors in `wsr-gha`: `inspect` failures carry an invalid versus
   valid-but-unsupported category and a source route, classified at detection against the pinned
   schema's keys; CLI diagnostics are unchanged. Not a stable, WIT or protocol contract.
@@ -28,7 +28,10 @@ for delivery gates.
   Both canonical example workflows inspect successfully.
 - [x] Dogfood inspection acceptance: golden `wsr inspect` output for the real `.github/workflows/example-*.yml`
   with directory, `PATH`-command and source sentinels showing no execution (`crates/wsr/tests/dogfood.rs`).
-  Static inspection only, not execution support; roadmap Gate 1a still needs the 500 KB warning.
+  Static inspection only, not execution support.
+- [x] Roadmap Gate 1a (static inspection, D-031): dogfood acceptance (B-6) and the GitHub 500 KB
+  warning (B-7, [contract](../cli/README.md#static-workflow-inspection)). Gate 1b (Component
+  compilation and planning) remains unmet.
 - [x] Job `timeout-minutes` and run-step `shell` in inspection: literal positive number or
   unevaluated timeout text, literal nonempty shell, reported as not applied/not selected.
   See [timeout and shell contract](../cli/README.md#job-timeouts-and-step-shells).

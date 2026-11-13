@@ -100,7 +100,8 @@ Schedule A takes only ready slices.
 
 ## B-7 GitHub 500 KB workflow-size warning (D-032)
 
-- Status: **ready**.
+- Status: **delivered on merge of the B-7 PR** (Schedule A); see [slice record](inspection-size-warning.md).
+  With B-6 this completes roadmap Gate 1a; no ready slice remains.
 
 - Behavior: when the inspected file exceeds 500 KB (512,000 bytes), `wsr inspect` still succeeds and writes a
   warning to stderr that GitHub would not run this workflow (documented 500 KB limit); stdout is unchanged.
