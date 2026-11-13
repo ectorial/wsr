@@ -311,3 +311,11 @@ on a uses step and non-string/blank directories; case-insensitive duplicate keys
 run/uses/shell precedence over contents; hostile keys, values and directories with control bytes,
 quotes and backslashes in stdout and stderr; exact duplicate keys keep decoder evidence. The B-1 route
 test's unknown step key moved from `with` to `bogus`. Values are never bound, passed or resolved.
+
+## Dogfood inspection acceptance (backlog B-6)
+
+`crates/wsr/tests/dogfood.rs` (1 test) asserts complete stdout, empty stderr and exit 0 for the real
+`example-python.yml` and `example-shell.yml`, via the real path and a copy beside a `wsr.toml`
+sentinel, with `PATH` replaced by marker-writing `sh`/`bash`/`python`/`python3`/`git`/`pwsh`; no marker,
+unchanged directory and unchanged sources. No red on current main; observed red on pre-B-5 `85a1c30`
+(``unknown field `with` ``). Translation-only: not WSR execution, isolation or GHA compatibility.

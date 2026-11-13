@@ -25,7 +25,10 @@ for delivery gates.
 - [x] Step `env`, `with` and `working-directory` in inspection: typed scalar values with
   literal/unevaluated text, sorted keys, step-kind restrictions; never bound, passed or resolved.
   See [step-input contract](../cli/README.md#step-environment-action-inputs-and-working-directories).
-  Both canonical example workflows now inspect successfully; their golden acceptance (B-6) is pending.
+  Both canonical example workflows inspect successfully.
+- [x] Dogfood inspection acceptance: golden `wsr inspect` output for the real `.github/workflows/example-*.yml`
+  with directory, `PATH`-command and source sentinels showing no execution (`crates/wsr/tests/dogfood.rs`).
+  Static inspection only, not execution support; roadmap Gate 1a still needs the 500 KB warning.
 - [x] Job `timeout-minutes` and run-step `shell` in inspection: literal positive number or
   unevaluated timeout text, literal nonempty shell, reported as not applied/not selected.
   See [timeout and shell contract](../cli/README.md#job-timeouts-and-step-shells).
