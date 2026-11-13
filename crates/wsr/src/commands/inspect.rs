@@ -4,7 +4,7 @@ use std::path::Path;
 
 use wsr_types::inspection::{
     DispatchInputType, InputDefault, ManualTrigger, PermissionLevel, Permissions, RunDefaults,
-    RunnerRequirement, SourceText, StepSummaryKind, StepValue,
+    RunnerRequirement, SourceText, StepSummaryKind, StepValue, Trigger,
 };
 
 // GitHub documents a 500 KB workflow file limit (D-032); 512,000 bytes is WSR's reading of it.
@@ -99,7 +99,14 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
         out,
         "Inspection only; execution compatibility is not assessed."
     )?;
-    if let Some(trigger) = summary.trigger {
+    for trigger in summary.triggers {
+        let trigger = match trigger {
+            Trigger::Event(name) => {
+                writeln!(out, "Trigger: {} (not evaluated)", name.escape_debug())?;
+                continue;
+            }
+            Trigger::Manual(trigger) => trigger,
+        };
         writeln!(out, "Trigger: workflow_dispatch (not evaluated)")?;
         if let ManualTrigger::Mapping(Some(body)) = trigger {
             for input in body.inputs.into_iter().flatten() {

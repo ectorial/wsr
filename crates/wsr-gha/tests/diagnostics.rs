@@ -16,9 +16,10 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
                 .to_owned(),
             "jobs.b.continue-on-error",
         ),
-        (format!("on: {{push: null}}\n{JOB}"), "on.push"),
-        (format!("on: [push]\n{JOB}"), "on"),
-        (format!("on: push\n{JOB}"), "on"),
+        // B-15 contract change: bare events now inspect; their configuration does not.
+        (format!("on: {{push: {{branches: [main]}}}}\n{JOB}"), "on.push"),
+        (format!("on: [push, push]\n{JOB}"), "on[2]"),
+        (format!("on: {{schedule: [{{cron: '0 0 * * *'}}]}}\n{JOB}"), "on.schedule"),
         (format!("concurrency: ci\n{JOB}"), "concurrency"),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - timeout-minutes: 1\n        run: b\n"
@@ -168,8 +169,9 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
         (format!("bogus: 1\n{JOB}"), Some("bogus")),
         (format!("on: {{bogus: null}}\n{JOB}"), Some("on.bogus")),
         (format!("on: bogus\n{JOB}"), Some("on")),
-        (format!("on: [push, bogus]\n{JOB}"), Some("on")),
-        (format!("on: [1]\n{JOB}"), Some("on")),
+        // B-15 contract change: sequence entries are routed to themselves.
+        (format!("on: [push, bogus]\n{JOB}"), Some("on[2]")),
+        (format!("on: [1]\n{JOB}"), Some("on[1]")),
         (
             "jobs:\n  b:\n    runs-on: {bogus: linux}\n    steps:\n      - run: echo\n".to_owned(),
             Some("jobs.b.runs-on"),

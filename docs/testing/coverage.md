@@ -342,6 +342,19 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Trigger events (backlog B-15)
+
+`crates/wsr-gha/tests/triggers.rs` asserts source-order `Trigger` lists for scalar, sequence and
+mapping forms, eight `Unsupported` cases (configured events, repeated and empty lists) and eleven
+`Invalid` shapes with routes.
+CLI tests pin three golden reports (with an `executed` sentinel), seven exact escaped diagnostics, and
+successful inspection of temporary copies of `check-docs`, `check-fmt`, `check-lint` and `test`.
+Observed red: `on: unsupported trigger; only workflow_dispatch is inspected yet` and `on: expected a
+mapping (other trigger forms are unsupported)`. Contract changes: `WorkflowSummary.trigger` became
+`triggers` (`dispatch_inputs.rs` updated); the `diagnostics.rs` bare-`push` Unsupported samples became
+configured events and sequence routes now name the entry (`on[2]`); four CLI `on` diagnostics changed.
+The CLI inspection suite lists 49 tests.
+
 ## Shell and action-reference validation (backlog B-14)
 
 `crates/wsr-gha/tests/shell_uses.rs` asserts `Invalid` at the step, workflow-defaults and

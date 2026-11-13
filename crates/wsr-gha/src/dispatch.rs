@@ -2,12 +2,12 @@
 use serde::Deserialize;
 use serde_yaml::{Mapping, Value};
 use wsr_types::inspection::{
-    DispatchBody, DispatchInput, DispatchInputType, InputDefault, ManualTrigger,
+    DispatchBody, DispatchInput, DispatchInputType, InputDefault, ManualTrigger, Trigger,
 };
 
 use super::{Category, Error, diagnostic};
 
-/// Events the pinned schema accepts under `on`; only `workflow_dispatch` is inspected.
+/// Events the pinned schema accepts under `on`; only `workflow_dispatch` configuration is inspected.
 const EVENTS: &[&str] = &[
     "branch_protection_rule",
     "check_run",
@@ -48,40 +48,106 @@ const EVENTS: &[&str] = &[
     "workflow_run",
 ];
 
+/// Events whose pinned definition admits only a null body.
+const NULL_ONLY: &[&str] = &[
+    "create",
+    "delete",
+    "deployment",
+    "deployment_status",
+    "fork",
+    "gollum",
+    "page_build",
+    "public",
+    "status",
+];
+
 pub(super) fn deserialize<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
-) -> Result<Option<ManualTrigger>, D::Error> {
+) -> Result<Vec<Trigger>, D::Error> {
     let value = Value::deserialize(deserializer)?;
-    parse(&value).map(Some).map_err(diagnostic::raise)
+    parse(&value).map_err(diagnostic::raise)
 }
 
-fn parse(value: &Value) -> Result<ManualTrigger, Error> {
-    if let Value::String(event) = value {
-        super::check_literal(Some(event), "on", Category::Invalid)?;
-        if event != "workflow_dispatch" {
-            let detail = "unsupported trigger; only workflow_dispatch is inspected yet";
-            return Err(if EVENTS.contains(&event.as_str()) {
-                Error::unsupported("on", detail)
-            } else {
-                Error::invalid("on", detail)
-            });
+/// `on` in source order. Bare event names are reported; event configuration is not inspected.
+fn parse(value: &Value) -> Result<Vec<Trigger>, Error> {
+    match value {
+        Value::String(_) => Ok(vec![bare(value, "on")?]),
+        Value::Sequence(events) => {
+            let mut triggers = Vec::new();
+            for (index, value) in events.iter().enumerate() {
+                let route = format!("on[{}]", index + 1);
+                let trigger = bare(value, &route)?;
+                if triggers.contains(&trigger) {
+                    return Err(Error::unsupported(
+                        route,
+                        "repeated event is not inspected yet",
+                    ));
+                }
+                triggers.push(trigger);
+            }
+            if triggers.is_empty() {
+                return Err(Error::unsupported("on", EMPTY));
+            }
+            Ok(triggers)
         }
-        return Ok(ManualTrigger::Scalar);
-    }
-    let events = mapping(value, "on").map_err(|error| match value {
-        Value::Sequence(events)
-            if events
+        Value::Mapping(events) => {
+            fields(events, EVENTS, &[], "on")?;
+            if events.is_empty() {
+                return Err(Error::unsupported("on", EMPTY));
+            }
+            events
                 .iter()
-                .all(|event| event.as_str().is_some_and(|event| EVENTS.contains(&event))) =>
-        {
-            error.with_category(Category::Unsupported)
+                .map(|(event, body)| {
+                    let event = text(event, "on")?;
+                    let route = format!("on.{event}");
+                    match event.as_str() {
+                        "workflow_dispatch" => dispatch(body).map(Trigger::Manual),
+                        // The pinned `schedule` is a sequence of cron mappings, never null.
+                        "schedule" => Err(match body {
+                            Value::Sequence(_) => Error::unsupported(route, CONFIGURATION),
+                            _ => Error::invalid(route, "expected a sequence"),
+                        }),
+                        _ => match body {
+                            Value::Null => Ok(Trigger::Event(event)),
+                            _ if NULL_ONLY.contains(&event.as_str()) => {
+                                Err(Error::invalid(route, "expected null"))
+                            }
+                            Value::Mapping(body) if body.is_empty() => Ok(Trigger::Event(event)),
+                            Value::Mapping(_) => Err(Error::unsupported(route, CONFIGURATION)),
+                            _ => Err(Error::invalid(route, "expected null or a mapping")),
+                        },
+                    }
+                })
+                .collect()
         }
-        _ => error,
-    })?;
-    fields(events, &["workflow_dispatch"], EVENTS, "on")?;
-    let body = events
-        .get("workflow_dispatch")
-        .ok_or_else(|| Error::invalid("on", "expected workflow_dispatch entry"))?;
+        _ => Err(Error::invalid(
+            "on",
+            "expected an event name, sequence or mapping",
+        )),
+    }
+}
+
+const CONFIGURATION: &str = "event configuration is not inspected yet";
+// The strict schema sets no minimum size; whether GitHub accepts no events is not established.
+const EMPTY: &str = "an empty event list is not inspected yet";
+
+/// A bare event name at `route`; `on-string-strict` admits every pinned event.
+fn bare(value: &Value, route: &str) -> Result<Trigger, Error> {
+    let event = text(value, route)?;
+    if !EVENTS.contains(&event.as_str()) {
+        return Err(Error::invalid(
+            route,
+            format_args!("unknown event '{}'", event.escape_debug()),
+        ));
+    }
+    Ok(if event == "workflow_dispatch" {
+        Trigger::Manual(ManualTrigger::Scalar)
+    } else {
+        Trigger::Event(event)
+    })
+}
+
+fn dispatch(body: &Value) -> Result<ManualTrigger, Error> {
     if body.is_null() {
         return Ok(ManualTrigger::Mapping(None));
     }

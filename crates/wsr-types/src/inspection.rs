@@ -8,8 +8,8 @@ pub struct WorkflowSummary {
     pub name: Option<String>,
     /// Optional source run-name text, never evaluated.
     pub run_name: Option<SourceText>,
-    /// Optional static trigger name, not an evaluated invocation event.
-    pub trigger: Option<ManualTrigger>,
+    /// `on` events in source order, never subscribed to or evaluated; empty without `on`.
+    pub triggers: Vec<Trigger>,
     /// Optional workflow-level token permissions request, never granted by inspection.
     pub permissions: Option<Permissions>,
     /// Optional workflow-level environment entries by name, never bound.
@@ -138,10 +138,19 @@ pub enum PermissionLevel {
     None,
 }
 
+/// One `on` event as declared (D-033 temporary GHA-derived type), never an invocation.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Trigger {
+    /// `workflow_dispatch`, with its declared configuration.
+    Manual(ManualTrigger),
+    /// Any other pinned-schema event name, declared without configuration.
+    Event(String),
+}
+
 /// Source form of the supported manual trigger, never an invocation.
 #[derive(Debug, PartialEq, Eq)]
 pub enum ManualTrigger {
-    /// Scalar `workflow_dispatch`.
+    /// Bare `workflow_dispatch` (scalar or sequence entry).
     Scalar,
     /// Mapping entry; None retains an explicitly null dispatch body.
     Mapping(Option<DispatchBody>),

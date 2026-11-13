@@ -48,6 +48,9 @@ for delivery gates.
 - [x] Workflow `run-name` in inspection: strict optional string, literal versus unevaluated
   classification of the whole decoded text and escaped rendering. See [run-name contract](../cli/README.md#unevaluated-run-names).
   No expression parsing/validation, context lookup or default application.
+- [x] `on` events in inspection: scalar, sequence and empty-body mapping forms of every pinned-schema
+  event, in source order, never evaluated or subscribed to; event configuration is unsupported (B-15).
+  See [trigger contract](../cli/README.md#trigger-events).
 - [x] Manual-trigger mappings and input declarations in inspection: typed metadata/defaults,
   deterministic reports, explicit unsupported/dynamic diagnostics and distinct declaration states.
   See [manual-input contract](../cli/README.md#manual-trigger-input-declarations). No input binding,
