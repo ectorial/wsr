@@ -1,6 +1,35 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-0 typed inspection errors implemented; PR pending checks
+## Current checkpoint — B-1 diagnostic routes implemented; PR pending checks
+
+Schedule A run 2026-11-13T02:57Z (no prior lock; lock taken). Baseline `d9712ec` = origin/main;
+Dependabot #23 untouched; no open Schedule B PR. Branch `fix/inspect-diagnostic-routes`; slice
+record [inspection-diagnostic-routes.md](inspection-diagnostic-routes.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no
+blockers, one nit (substring assertion could accept a doubled location) fixed by asserting
+complete stderr.
+
+- Red (observed on `d9712ec` build): `jobs.b.steps[0]: unknown field `with``, field-less
+  `jobs.b.steps[0]: expected a string` for `id: ~`, `jobs.b: runs-on[2]: …`, `jobs.b: needs[2]: …`,
+  needs-first ordering (`jobs.b c.needs: unknown job 'missing'`), `jobs identifier:` pseudo-route,
+  double-escaped `jobs: invalid job identifier "b\\u{1}"`, anonymous `jobs: duplicate job
+  identifier`, `on.workflow_dispatch.inputs: invalid input identifier "a b"`. New CLI test
+  `inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first` failed on the first case.
+- Green: that test (9 exact-stderr cases), updated dispatch identifier assertions, a wsr-gha
+  typed-route case for `jobs.b.steps[1].id` and `name`; all B-0 category/route tests unchanged and
+  passing. `cargo xtask ci` and `git diff --check` pass locally.
+- Remaining gap (documented): serde_yaml/libyaml-raised errors keep decoder wording, zero-based
+  path and no typed route.
+
+Next action: watch the PR; merge when the four required checks pass with no unresolved findings,
+then take B-2 (owning-crate graph/ID/shape/hostile-YAML characterization tests).
+
+## Previous checkpoint — B-0 typed inspection errors delivered (PR #29, `d9712ec`)
+
+PR #29 squash-merged as `d9712ec` after all four required checks passed on `1b266a2`, with no
+review comments. Merged diagnostics (4) and CLI inspection (31) tests verified on synced main.
+
+## Previous checkpoint — B-0 typed inspection errors implemented; PR pending checks
 
 Schedule A run 2026-11-13T01:57Z (no prior lock). Baseline `3793749` = origin/main; Dependabot #23
 untouched; no open Schedule B PR. Local uncommitted run-name checkpoint edits were superseded by

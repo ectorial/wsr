@@ -74,7 +74,7 @@ fn parse(value: &Value) -> Result<ManualTrigger, Error> {
                 .iter()
                 .all(|event| event.as_str().is_some_and(|event| EVENTS.contains(&event))) =>
         {
-            Error::new(Category::Unsupported, Some("on".into()), error.to_string())
+            error.with_category(Category::Unsupported)
         }
         _ => error,
     })?;
@@ -93,21 +93,18 @@ fn parse(value: &Value) -> Result<ManualTrigger, Error> {
             let inputs = mapping(value, "on.workflow_dispatch.inputs")?;
             let mut result = Vec::new();
             for (id, value) in inputs {
-                let label = "on.workflow_dispatch.inputs identifier";
-                let id =
-                    text(id, label).map_err(|error| error.routed("on.workflow_dispatch.inputs"))?;
+                let id = text(id, "on.workflow_dispatch.inputs")?;
                 let route = format!("on.workflow_dispatch.inputs.{id}");
-                super::check_required(&id, label).map_err(|error| error.routed(&route))?;
+                super::check_required(&id, &route)?;
                 if !(id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
                     && id
                         .chars()
                         .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-'))
                 {
                     return Err(Error::invalid(
-                        "on.workflow_dispatch.inputs",
-                        format_args!("invalid input identifier {id:?}"),
-                    )
-                    .routed(route));
+                        route,
+                        format_args!("invalid input identifier '{}'", id.escape_debug()),
+                    ));
                 }
                 result.push(input(id, mapping(value, &route)?, &route)?);
             }

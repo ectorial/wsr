@@ -128,6 +128,21 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         Some(text) => Some(SourceText::Literal(text)),
         None => None,
     };
+    // Identifiers are checked before `needs` resolves against them.
+    for id in workflow.jobs.keys() {
+        let route = format!("jobs.{id}");
+        check_literal(Some(id), &route)?;
+        if !id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+            || !id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        {
+            return Err(Error::invalid(
+                route,
+                format_args!("invalid job identifier '{}'", id.escape_debug()),
+            ));
+        }
+    }
     needs::validate(&workflow.jobs)?;
     let mut jobs = Vec::new();
     for (id, job) in workflow.jobs {
@@ -136,19 +151,6 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 format!("jobs.{id}.steps"),
                 "expected at least one step",
             ));
-        }
-        check_literal(Some(&id), "jobs identifier")
-            .map_err(|error| error.routed(format!("jobs.{id}")))?;
-        if !id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
-            || !id
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
-        {
-            return Err(Error::invalid(
-                "jobs",
-                format_args!("invalid job identifier {:?}", id.escape_debug().to_string()),
-            )
-            .routed(format!("jobs.{id}")));
         }
         check_literal(job.name.as_deref(), &format!("jobs.{id}.name"))?;
         match &job.runner {
@@ -278,17 +280,15 @@ fn unique_jobs<'de, D: serde::Deserializer<'de>>(
                     _ => diagnostic::within("jobs"),
                 })?;
                 let serde_yaml::Value::String(id) = id else {
-                    return Err(diagnostic::raise(Error::new(
-                        Category::Invalid,
-                        Some("jobs".into()),
-                        "expected a string job identifier".into(),
+                    return Err(diagnostic::raise(Error::invalid(
+                        "jobs",
+                        "expected a string job identifier",
                     )));
                 };
                 if jobs.contains_key(&id) {
-                    return Err(diagnostic::raise(Error::new(
-                        Category::Invalid,
-                        Some(format!("jobs.{id}")),
-                        "duplicate job identifier".into(),
+                    return Err(diagnostic::raise(Error::invalid(
+                        format!("jobs.{id}"),
+                        format_args!("duplicate job identifier '{}'", id.escape_debug()),
                     )));
                 }
                 jobs.insert(id, job);
@@ -330,7 +330,7 @@ fn steps<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Vec<Step>,
 fn string<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
     match serde_yaml::Value::deserialize(deserializer)? {
         serde_yaml::Value::String(value) => Ok(value),
-        _ => Err(serde::de::Error::custom("expected a string")),
+        _ => Err(diagnostic::raise_unrouted("expected a string")),
     }
 }
 
@@ -340,7 +340,7 @@ fn optional_string<'de, D: serde::Deserializer<'de>>(
     match Option::<serde_yaml::Value>::deserialize(deserializer)? {
         Some(serde_yaml::Value::String(value)) => Ok(Some(value)),
         None => Ok(None),
-        _ => Err(serde::de::Error::custom("expected a string")),
+        _ => Err(diagnostic::raise_unrouted("expected a string")),
     }
 }
 
@@ -360,10 +360,9 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
             .enumerate()
             .map(|(index, value)| match value {
                 serde_yaml::Value::String(label) => Ok(label),
-                _ => Err(diagnostic::raise(Error::new(
-                    Category::Invalid,
-                    Some(format!("runs-on[{}]", index + 1)),
-                    format!("runs-on[{}]: expected a string label", index + 1),
+                _ => Err(diagnostic::raise(Error::invalid(
+                    format!("runs-on[{}]", index + 1),
+                    "expected a string label",
                 ))),
             })
             .collect::<Result<Vec<_>, _>>()
@@ -386,13 +385,12 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
             } else {
                 Category::Invalid
             },
-            Some("runs-on".into()),
-            "runs-on: unsupported runner-selector mapping".into(),
+            "runs-on",
+            "unsupported runner-selector mapping",
         ))),
-        _ => Err(diagnostic::raise(Error::new(
-            Category::Invalid,
-            Some("runs-on".into()),
-            "runs-on: expected a string or list of strings".into(),
+        _ => Err(diagnostic::raise(Error::invalid(
+            "runs-on",
+            "expected a string or list of strings",
         ))),
     }
 }

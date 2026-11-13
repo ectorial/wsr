@@ -101,6 +101,12 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
                 .to_owned(),
             Some("jobs.b.needs"),
         ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - id: ~\n        run: a\n"
+                .to_owned(),
+            Some("jobs.b.steps[1].id"),
+        ),
+        (format!("name: 5\n{JOB}"), Some("name")),
         ("jobs: {}".to_owned(), Some("jobs")),
         ("jobs: [".to_owned(), None),
     ] {

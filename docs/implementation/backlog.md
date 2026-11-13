@@ -9,6 +9,8 @@ Schedule A takes only ready slices.
 
 ## B-0 Provisional typed inspection errors in `wsr-gha` (audit F1)
 
+- Status: **delivered** in [PR #29](https://github.com/ectorial/wsr/pull/29), `d9712ec` (Schedule A).
+
 - Behavior: `wsr_gha::inspect` returns a provisional, explicitly non-stable typed error (in `wsr-gha`, not
   `wsr-types`) carrying a structured route and a category separating invalid source from valid-but-unsupported
   GHA. Classify at the point of detection, never from message wording; stop erasing typed failures through
@@ -24,6 +26,10 @@ Schedule A takes only ready slices.
   `crates/wsr/src/commands/inspect.rs`, `crates/wsr-gha/tests/`.
 
 ## B-1 Consistent diagnostic routes and validation order (audit F3, F5)
+
+- Status: **implemented, PR pending checks** on `fix/inspect-diagnostic-routes` (Schedule A); see
+  [slice record](inspection-diagnostic-routes.md). Unknown keys render at the enclosing mapping as
+  specified; dispatch input identifiers received the same route/quoting rule.
 
 - Behavior: every inspection diagnostic uses one route grammar `jobs.<id>.<field>[<n>]` with one-based
   indices, for both decode and semantic errors (steps, `runs-on`, `needs` entries). Job identifiers are
