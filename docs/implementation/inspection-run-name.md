@@ -1,7 +1,7 @@
 # Next inspection iteration: unevaluated run-name inspection
 
-Status: **owner-approved (Schedule A backlog item 1); implemented on `feat/inspect-run-name`,
-delivery pending**. Baseline `main`: `1c565a4`, PR #26 merged. Evidence lives in the
+Status: **delivered** in [PR #27](https://github.com/ectorial/wsr/pull/27), commit `fd574dc`
+(owner-approved Schedule A backlog item 1). Baseline `main`: `1c565a4`, PR #26 merged. Evidence lives in the
 [checkpoint](inspection-progress.md).
 
 ## Developer outcome

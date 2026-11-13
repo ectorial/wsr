@@ -6,7 +6,10 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | Document | Owns |
 | --- | --- |
 | [Inspection checkpoint](inspection-progress.md) | Current autonomous inspection work, readiness evidence and next action |
-| [Next inspection iteration](inspection-next.md) | Authorized static dependency-inspection slice and acceptance gates; current delivery evidence lives in the checkpoint |
+| [Next inspection iteration](inspection-next.md) | Delivered static-dependency iteration (PR #22); the path is kept stable for external prompts, and current delivery evidence lives in the checkpoint |
+| [Inspection backlog](backlog.md) | Ordered ready slices for Schedule A; Schedule B appends |
+| [Decision requests](decision-requests.md) | Open owner decisions raised by the architecture review (Schedule B owned) |
+| [Architecture review log](architecture-review.md) | Dated findings, classifications and dispositions from each Schedule B run (Schedule B owned) |
 | [Run-name iteration](inspection-run-name.md) | Owner-approved literal/unevaluated run-name inspection and DX acceptance |
 | [Manual-input iteration](inspection-dispatch-inputs.md) | Authorized manual trigger/input-definition inspection and acceptance gates |
 | [Runner-label iteration](inspection-runner-labels.md) | Authorized literal runner-list slice, acceptance gates and token estimate |

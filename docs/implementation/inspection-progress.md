@@ -1,6 +1,18 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — run-name inspection implemented; PR pending checks
+## Current checkpoint — November 13, 2026
+
+Run-name inspection merged as [PR #27](https://github.com/ectorial/wsr/pull/27), commit `fd574dc`
+(`main` and `origin/main`). The iteration is delivered; see the [run-name iteration](inspection-run-name.md).
+The Schedule B architecture review's first run ([log](architecture-review.md)) corrected host-boundary
+hardening (escaped stderr diagnostics, regular-file requirement, broken-pipe handling) and refreshed
+stale documentation; remaining ready work is in the [backlog](backlog.md) and owner questions are in
+[decision requests](decision-requests.md). No expression evaluation, execution or runtime support is
+claimed. Java worker remains paused.
+
+Next action: Schedule A takes the next ready slice from [backlog.md](backlog.md).
+
+## Historical checkpoint — run-name inspection implemented; PR pending checks (superseded)
 
 Schedule A run 2026-11-13T00:57Z (no prior lock). Baseline `1c565a4` = origin/main; Dependabot #23
 untouched. Branch `feat/inspect-run-name` from origin/main; prior planning edits included as owned work.

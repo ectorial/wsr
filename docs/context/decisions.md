@@ -18,8 +18,8 @@ flowchart LR
 ## Documentation status and ownership
 
 This is the authoritative product decision record. Accepted decisions describe planned behavior,
-not implemented features. The current checkout is a CLI/workspace scaffold: all eight command
-handlers are stubs. Substantial prototype work remains in a local stash, separately from current
+not implemented features. The current checkout is a CLI/workspace scaffold: `inspect` is
+implemented as static workflow inspection (D-031) and the other command handlers remain placeholders. Substantial prototype work remains in a local stash, separately from current
 source and completion accounting.
 
 Use [ARCHITECTURE.md](architecture.md) for source inventory and target boundaries,

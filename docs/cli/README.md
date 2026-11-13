@@ -56,6 +56,12 @@ YAML decoding errors include available line/column information and structural co
 checks identify a field path (step indices are one-based). Dynamic values are explicitly unevaluated.
 Clap invocation errors retain exit code 2. The output is pre-alpha, not a frozen machine protocol.
 
+The source must be a regular file (symlinks are followed); directories, FIFOs and devices such as
+`/dev/zero` exit 1 with a `not a regular file` diagnostic and are never read. No size limit is
+enforced yet. Because workflow content is untrusted, diagnostics are written with control characters
+escaped, so no raw terminal escape sequence reaches stderr. If stdout is closed early (for example
+`wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
+
 Other trigger forms, runner-group objects, matrices, conditions, environment,
 permissions, defaults, services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
