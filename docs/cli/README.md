@@ -173,10 +173,12 @@ A timeout must be a finite positive YAML number (a WSR subset rule; the schema s
 `run` step; the [pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
 gives `shell` no expression context, so `${{` text fails, as does `shell` on a `uses` step.
 Literal shell text (here and in `defaults.run`) must be a built-in shell (`bash`, `pwsh`, `python`,
-`sh`, `cmd`, `powershell`) or contain a `{0}` placeholder, since the runner rejects anything else
+`sh`, `cmd`, `powershell`, any case, as the command before the first space with no arguments) or
+contain a `{0}` placeholder, since the runner rejects anything else
 (`shell: unknown shell 'perl'; expected bash, pwsh, python, sh, cmd, powershell or a command
-containing {0}`). A literal `uses` must be `./path`, `docker://image` or `owner/repo[/path]@ref`
-(`uses: invalid action reference 'actions/checkout'; …`); references are checked for shape only.
+containing {0}`). A literal `uses` must be `./path` (or `.\path`), `docker://image` or `owner/repo[/path]@ref`
+(`uses: invalid action reference 'actions/checkout'; …`); references are checked for shape only,
+and a `$/…` self-repository reference is unsupported.
 No timeout is applied and no shell is selected, located or invoked. Step `timeout-minutes` and
 `cancel-timeout-minutes` remain unsupported.
 

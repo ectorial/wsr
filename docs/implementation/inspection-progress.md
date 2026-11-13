@@ -1,6 +1,24 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-12 job and step conditions implemented; PR pending checks
+## Current checkpoint — B-14 shell and action-reference validation implemented; PR pending checks
+
+New Schedule A run (lock created 2026-11-13T21:24Z; no prior lock). PR #42 (B-12) was already merged
+as `6f58e96`; Schedule B's PR #43 (B-13) merged as `51bb95d`; main synced. B-14 on
+`feat/b14-shell-uses-validation` from `51bb95d`; slice record
+[inspection-shell-uses.md](inspection-shell-uses.md). Implemented by Claude (claude-opus-5-5,
+orchestrator, burn mode; mechanical, no `wsr-types` change); cross-reviewed by Codex gpt-6.1-sol
+(high): no blockers; four P2s fixed (runner path normalization, `.\` paths and `$/` Unsupported,
+case-insensitive built-ins, first-space split instead of a whole-string trim).
+
+- Red (observed): `shell_uses.rs` failed with `unwrap_err()` on `Ok` for `shell: 'true'` and `uses: '5'`.
+- Green: 5 `wsr-gha` tests, 1 CLI test (written after the `wsr-gha` green; acceptance, not red
+  evidence); full `wsr`/`wsr-gha` suites, dogfood goldens unchanged; `cargo xtask ci`; `git diff --check`.
+- No existing assertion changed.
+
+B-14 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-15 (non-dispatch `on:` events with empty bodies).
+
+## Previous checkpoint — B-12 job and step conditions delivered (PR #42, `6f58e96`)
 
 Same Schedule A run, after the PR #41 wake (lock retaken 2026-11-13). PR #41 squash-merged as
 `b686358` after all four required checks passed on `b22ae10` with no reviews or comments; `wsr` and

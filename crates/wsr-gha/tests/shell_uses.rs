@@ -25,7 +25,7 @@ fn defaults(level: &str, shell: &str) -> String {
 
 #[test]
 fn shells_that_are_neither_built_in_nor_format_strings_are_invalid() {
-    for shell in ["'true'", "'5'", "perl", "bash -e", "Bash"] {
+    for shell in ["'true'", "'5'", "perl", "bash -e", "' bash'"] {
         for (source, route) in [
             (
                 run_step(&format!("shell: {shell}")),
@@ -54,6 +54,8 @@ fn built_in_shells_and_format_strings_are_kept() {
         "cmd",
         "powershell",
         "perl {0}",
+        "PowerShell",
+        "bash ",
         "bash -e {0}",
     ] {
         let summary = wsr_gha::inspect(run_step(&format!("shell: '{shell}'")).as_bytes())
@@ -75,7 +77,6 @@ fn malformed_action_references_are_invalid() {
         "actions/@v4",
         "actions/checkout@",
         "/checkout@v4",
-        "actions//checkout@v4",
         "a/b@c@d",
         "docker://",
         "action",
@@ -97,6 +98,9 @@ fn well_formed_action_references_are_reported_verbatim() {
         "docker://alpine:3.20",
         "actions/checkout@v4",
         "actions/aws/ec2@main",
+        "actions//checkout@v4",
+        "actions\\checkout@v4",
+        ".\\.github\\actions\\build",
         "owner/repo@3d3c42e5aac5ba805825da76410c181273ba90b1",
     ] {
         let summary = wsr_gha::inspect(uses_step(reference).as_bytes())
@@ -106,4 +110,14 @@ fn well_formed_action_references_are_reported_verbatim() {
             "{reference}"
         );
     }
+}
+
+#[test]
+fn self_repository_references_are_unsupported() {
+    let error = wsr_gha::inspect(uses_step("$/action").as_bytes()).unwrap_err();
+    assert_eq!(
+        (error.category(), error.route()),
+        (Category::Unsupported, Some("jobs.b.steps[1].uses")),
+        "{error}"
+    );
 }

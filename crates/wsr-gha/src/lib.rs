@@ -254,16 +254,10 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             }
             let kind = match (step.run, step.uses) {
                 (Some(_), None) => StepSummaryKind::Run,
-                (None, Some(reference)) if !is_action_reference(&reference) => {
-                    return Err(Error::invalid(
-                        format!("{location}.uses"),
-                        format_args!(
-                            "invalid action reference '{}'; expected ./path, docker://image or owner/repo[/path]@ref",
-                            reference.escape_debug()
-                        ),
-                    ));
+                (None, Some(reference)) => {
+                    check_action_reference(&reference, &format!("{location}.uses"))?;
+                    StepSummaryKind::Uses(reference)
                 }
-                (None, Some(reference)) => StepSummaryKind::Uses(reference),
                 _ => {
                     return Err(Error::invalid(
                         location,
@@ -376,11 +370,17 @@ fn check_required(value: &str, location: &str, expression: Category) -> Result<(
     Ok(())
 }
 
-/// A job ID has no schema expression context and must be an identifier.
-/// The runner rejects a shell that is neither a built-in shell nor a `{0}` format string.
+/// The runner splits a shell at its first space into a command and arguments, and rejects one
+/// without `{0}` unless the command is a built-in shell (case-insensitive) with no arguments.
 pub(crate) fn check_shell(shell: &str, location: &str) -> Result<(), Error> {
     const BUILT_IN: &[&str] = &["bash", "pwsh", "python", "sh", "cmd", "powershell"];
-    if BUILT_IN.contains(&shell.trim()) || shell.contains("{0}") {
+    let (command, arguments) = shell.split_once(' ').unwrap_or((shell, ""));
+    if shell.contains("{0}")
+        || (arguments.trim().is_empty()
+            && BUILT_IN
+                .iter()
+                .any(|built_in| command.eq_ignore_ascii_case(built_in)))
+    {
         return Ok(());
     }
     Err(Error::invalid(
@@ -392,25 +392,44 @@ pub(crate) fn check_shell(shell: &str, location: &str) -> Result<(), Error> {
     ))
 }
 
-/// A local `./` path, a `docker://` image or `owner/repo[/path]@ref`; nothing is resolved.
-fn is_action_reference(reference: &str) -> bool {
-    if reference.starts_with("./") {
-        return true;
+/// Accept a local `./` or `.\` path, a `docker://` image or `owner/repo[/path]@ref`, whose path
+/// the runner splits on either separator, dropping empty segments. Nothing is resolved.
+fn check_action_reference(reference: &str, location: &str) -> Result<(), Error> {
+    if reference.starts_with("./") || reference.starts_with(".\\") {
+        return Ok(());
     }
-    if let Some(image) = reference.strip_prefix("docker://") {
-        return !image.is_empty();
+    if reference.starts_with("$/") {
+        // The pinned parser reads `$/` as a self-repository reference.
+        return Err(Error::unsupported(
+            location,
+            "self-repository action references are not inspected yet",
+        ));
     }
-    match reference.split_once('@') {
-        Some((path, version)) => {
+    let valid = match reference.strip_prefix("docker://") {
+        Some(image) => !image.is_empty(),
+        None => reference.split_once('@').is_some_and(|(path, version)| {
             !version.is_empty()
                 && !version.contains('@')
-                && path.split('/').count() >= 2
-                && path.split('/').all(|segment| !segment.is_empty())
-        }
-        None => false,
+                && path
+                    .split(['/', '\\'])
+                    .filter(|segment| !segment.is_empty())
+                    .count()
+                    >= 2
+        }),
+    };
+    if valid {
+        return Ok(());
     }
+    Err(Error::invalid(
+        location,
+        format_args!(
+            "invalid action reference '{}'; expected ./path, docker://image or owner/repo[/path]@ref",
+            reference.escape_debug()
+        ),
+    ))
 }
 
+/// A job ID has no schema expression context and must be an identifier.
 fn check_job_id(id: &str) -> Result<(), Error> {
     let route = format!("jobs.{id}");
     check_literal(Some(id), &route, Category::Invalid)?;
