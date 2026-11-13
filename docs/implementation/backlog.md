@@ -246,7 +246,8 @@ Schedule A takes only ready slices.
 
 ## B-18 Job `outputs`
 
-- Status: **READY** (Schedule A).
+- Status: **delivered on merge of the B-18 PR** (Schedule A); see [slice record](inspection-job-outputs.md).
+  Names render sorted, as for `env`, for deterministic output.
 
 - Behavior: an ordered map whose values are unevaluated `string-runner-context` text, reported "(not resolved)";
   an expression replacing the whole mapping is `Invalid` (`job-outputs` has no context); scalar values follow

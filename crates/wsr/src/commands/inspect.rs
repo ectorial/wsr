@@ -222,6 +222,13 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
         if let Some(concurrency) = job.concurrency {
             render_concurrency(&mut out, "  ", concurrency)?;
         }
+        if let Some(outputs) = job.outputs {
+            let outputs = outputs
+                .into_iter()
+                .map(|(name, text)| (name, StepValue::Text(text)))
+                .collect();
+            render_values(&mut out, "  ", "Outputs (not resolved)", outputs)?;
+        }
         for (index, step) in job.steps.into_iter().enumerate() {
             write!(out, "  Step {}", index + 1)?;
             if let Some(id) = step.id {
