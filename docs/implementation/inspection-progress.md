@@ -1,6 +1,29 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-30 job strategy implemented; PR pending checks
+## Current checkpoint — B-32 matrix literal size implemented; PR pending checks
+
+Schedule A run 2026-11-14 (lock taken fresh, none present). PR #60 (B-30) had merged as `52b43b7`
+and Schedule B's PR #61 as `4167a4e`; main synced. The only open PR is Dependabot #56 (not this
+loop's). B-32 is on `feat/b32-matrix-literal-size` from `4167a4e`; slice record
+[inspection-matrix-size.md](inspection-matrix-size.md). Steady rotation: a new cycle starts with
+B-32 implemented by Claude (claude-opus-5-5, orchestrator). Cross-reviewed by Codex gpt-6.1-sol
+(high): one P2 and one P3, both fixed. Next rotation: Claude, then Codex.
+
+- Red (observed): the literal fixtures (64,000 zeros in a 128 KB workflow; one 512,001-character
+  string) failed with `matrix expands beyond 512,000 bytes through YAML aliases; not inspected yet`
+  in `wsr-gha` and the CLI; one anchor reused by ten jobs was accepted.
+- Change: all matrices share a budget of twice the source length in charge units (string decoded
+  length, every other node 1). Contract change: the diagnostic reads `matrix expands beyond twice
+  the workflow source size through YAML aliases; not inspected yet`.
+- Review P2 fix: aliased null or empty-string items were free; red observed
+  (`aliased_null_items_are_alias_amplification`), now charged. P3: docs describe charge units, not
+  rendered bytes.
+- Green: `wsr-gha` strategy tests (10), CLI suite (70), `cargo xtask ci`, `git diff --check`.
+
+B-32 is delivered on merge of this PR. Next action: watch the PR and merge on green with no
+unresolved findings, then take B-33 (workflow `description`) with Claude as the implementer.
+
+## Previous checkpoint — B-30 job strategy delivered (PR #60, `52b43b7`)
 
 Same Schedule A run, after the PR #59 wake (lock retaken 2026-11-14). PR #59 squash-merged as
 `05562b9` after all four required checks passed on `5657cae`, with no reviews or comments. The

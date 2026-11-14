@@ -165,7 +165,7 @@ fn inspect_rejects_alias_amplified_matrices_without_output() {
     assert!(output.stdout.is_empty());
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(
-        stderr.contains("jobs.a.strategy.matrix: matrix expands beyond 512,000 bytes"),
+        stderr.contains("jobs.a.strategy.matrix: matrix expands beyond twice the workflow source size through YAML aliases; not inspected yet"),
         "{stderr}"
     );
     assert!(stderr.len() < 1_000, "{stderr}");
@@ -2623,6 +2623,48 @@ fn inspect_rejects_matrix_keys_duplicated_ignoring_case() {
         String::from_utf8(output.stderr).unwrap(),
         "error: wsr inspect: ci.yml: jobs.a.strategy.matrix.A: duplicate key 'A'; already defined as 'a'\n"
     );
+}
+
+// Literal matrices inspect at any size, with only the D-032 warning (B-32).
+#[test]
+fn inspect_reports_large_literal_matrices_without_expanding_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let zeros = vec!["0"; 64_000].join(",");
+    let large = "x".repeat(512_001);
+    for (matrix, warned) in [
+        (format!("{{a: [[{zeros}]]}}"), false),
+        (format!("{{a: ['{large}']}}"), true),
+    ] {
+        let source = format!(
+            "on: workflow_dispatch\njobs:\n  a:\n    runs-on: linux\n    strategy:\n      matrix: {matrix}\n    steps: [{{run: touch executed}}]\n"
+        );
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect_with_execution_traps(directory.path(), "ci.yml");
+        assert_eq!(
+            output.status.code(),
+            Some(0),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let warning = if warned {
+            format!(
+                "warning: wsr inspect: ci.yml: {} bytes exceeds GitHub's documented 500 KB (512000-byte) workflow file limit; GitHub would not run this workflow\n",
+                source.len()
+            )
+        } else {
+            String::new()
+        };
+        assert_eq!(String::from_utf8(output.stderr).unwrap(), warning);
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(stdout.matches("Job: ").count(), 1);
+        assert_eq!(stdout.matches("Matrix (normalized YAML): ").count(), 1);
+        assert!(
+            stdout.ends_with("\n  Step 1: run\n"),
+            "{}",
+            &stdout[stdout.len() - 200..]
+        );
+        assert!(!directory.path().join("executed").exists());
+    }
 }
 
 fn inspect_with_execution_traps(directory: &Path, file: &str) -> Output {

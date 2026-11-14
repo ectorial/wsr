@@ -13,7 +13,8 @@ pub(crate) fn deserialize<'de, D: serde::Deserializer<'de>>(
     })
 }
 
-pub(crate) fn decode(route: &str, value: Value) -> Result<Strategy, Error> {
+/// `budget` is shared by every matrix in the workflow; see [`within`].
+pub(crate) fn decode(route: &str, value: Value, budget: &mut usize) -> Result<Strategy, Error> {
     if let Value::String(text) = &value {
         if text.contains("${{") {
             return Ok(Strategy::Unevaluated(text.clone()));
@@ -33,10 +34,10 @@ pub(crate) fn decode(route: &str, value: Value) -> Result<Strategy, Error> {
             "max-parallel" => max_parallel = Some(scalar(&field, value, false)?),
             "matrix" => {
                 validate_matrix(&field, &value)?;
-                if !within(&value, &mut MATRIX_LIMIT.clone()) {
+                if !within(&value, budget) {
                     return Err(Error::unsupported(
                         &field,
-                        "matrix expands beyond 512,000 bytes through YAML aliases; not inspected yet",
+                        "matrix expands beyond twice the workflow source size through YAML aliases; not inspected yet",
                     ));
                 }
                 unique_matrix_keys(&field, &value)?;
@@ -82,15 +83,14 @@ fn scalar(route: &str, value: Value, boolean: bool) -> Result<SourceText, Error>
     }
 }
 
-// GitHub's documented workflow size (D-032): a matrix written out literally cannot be larger, so
-// a bigger one is alias amplification, and is not rendered.
-const MATRIX_LIMIT: usize = 512_000;
-
-/// Whether `value`'s scalar text fits in `budget` bytes, stopping as soon as it does not.
+/// Whether `value` fits in `budget` charge units, stopping as soon as it does not. A string is
+/// charged its decoded length (at most 1.5 times its source, via `\L`/`\P`) and every other node,
+/// empty string or null 1, so a literal matrix costs at most twice its source bytes (D-032: no size
+/// cap); a costlier one is alias amplification, and is not rendered.
 fn within(value: &Value, budget: &mut usize) -> bool {
     let size = match value {
-        Value::String(text) => text.len(),
-        _ => 8,
+        Value::String(text) => text.len().max(1),
+        _ => 1,
     };
     let Some(rest) = budget.checked_sub(size) else {
         return false;

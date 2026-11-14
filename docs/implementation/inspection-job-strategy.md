@@ -47,7 +47,7 @@ converter in that directory. Nested definitions inherit the strategy expression 
 | arbitrary nested variable sequence items/filter values | Normalized YAML; `sequence` items and filter loose values are `any`; no matching validation |
 | strategy with uses, including beyond scan budget | Inspected; `workflow-job` explicitly lists strategy and converter retains it; no FACTORY_ONLY/presence prohibition added |
 | decoder error | Invalid, detail withheld so arbitrary matrix text cannot leak through a mismatched YAML tag | This includes serde_yaml's alias repetition limit, a WSR resource limit rather than a pinned-parser rejection |
-| matrix whose scalar text exceeds 512,000 bytes (alias amplification) | Unsupported; a literal matrix in a GitHub-sized file cannot be larger (D-032), so it is not rendered |
+| matrices costing more than twice the workflow source size together (alias amplification; B-32) | Unsupported, not rendered; a string costs its decoded length, any other node 1, so a literal matrix of any size fits (D-032) |
 
 ## Acceptance and evidence
 
