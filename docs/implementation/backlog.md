@@ -363,3 +363,71 @@ Schedule A takes only ready slices.
 - Expected red: a workflow without `on` exits 0.
 - Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-gha/tests/*.rs`, `crates/wsr/tests/*.rs`, docs.
 - Relies on: D-002, D-031.
+
+## B-26 Job ID length and reserved prefix (audit F38)
+
+- Status: **delivered** in the Schedule B architecture PR `arch/review-2026-11-14-run5`.
+
+- Behavior: the pinned converter (`job.ts` L20-24 -> `id-builder.ts` L70-84 @ `4043eda`) rejects a job ID of
+  100 or more characters or with a `__` prefix, checked on the ID as written. `check_job_id` now rejects both
+  as `Invalid` at `jobs.{id}` ("invalid job identifier ..."), before the body is decoded and `needs` is
+  resolved, for runner and call jobs. Dispatch inputs, outputs and call `with`/`secrets` keys are unchanged:
+  the pinned reader has no such restriction there.
+- Acceptance: `wsr-gha` `tests/compiler.rs` (99 accepted, 100 rejected, `__build` rejected, `_build` and
+  `a__b` accepted, both job forms) and a CLI identifier-table row.
+- Expected red: the probes exit 0.
+- Files: `crates/wsr-gha/src/lib.rs`, tests, `docs/cli/README.md`.
+- Relies on: D-031.
+
+## B-27 Call-job category under an exhausted scan budget (audit F39)
+
+- Status: **delivered** in the Schedule B architecture PR `arch/review-2026-11-14-run5`; see
+  [slice record](inspection-workflow-calls.md).
+
+- Behavior: when the B-23 scan budget is exhausted (alias amplification), a call job's `container`,
+  `services`, `snapshot` or `cancel-timeout-minutes` after `uses` is `Invalid` ("cannot be combined with
+  `uses`"), not `Unsupported`: `Job::placement` treats an unscanned job as a call from the `uses` key it reads.
+  Residual: a factory-only key placed before `uses` in such a job stays `Unsupported`.
+- Acceptance: `wsr-gha` `tests/calls.rs` with a generated alias-amplified fixture.
+- Expected red: `Unsupported` at `jobs.z.container`.
+- Files: `crates/wsr-gha/src/lib.rs`, tests, `docs/implementation/inspection-workflow-calls.md`.
+- Relies on: D-031, D-033.
+
+## B-28 `${{` in step `run` kept unevaluated
+
+- Behavior: `${{` text in a step `run` (schema `string-steps-context`) is reported as unevaluated source, as
+  for step `name` (B-24). The script is still never printed or retained; `StepSummaryKind::Run` gains an
+  unevaluated flag, and the heading reads `Step N: run (script has unevaluated expressions; not evaluated)`.
+  Also (audit F40): the repository-workflow test must assert that its case names equal the sorted
+  `.github/workflows/*.yml` minus `example-*`, so a new workflow cannot go unpinned.
+- Acceptance: `wsr-gha` category test; a CLI golden with hostile text and the `executed` sentinel with the PATH
+  shim; the repository-workflow name assertion.
+- Expected red: ``jobs.a.steps[1].run: expression is unevaluated; dynamic inspection is not supported yet``
+  (`Unsupported`).
+- Files: `crates/wsr-gha/src/lib.rs` (~L328), `crates/wsr-types/src/inspection.rs`,
+  `crates/wsr/src/commands/inspect.rs`, tests (`crates/wsr/tests/inspection.rs` ~L2073-2091), `docs/cli/README.md`.
+- Relies on: D-031, D-033.
+
+## B-29 Job `container` as source text
+
+- Behavior: a job `container` is a string image or a `container-mapping` (`image`, `credentials`, `env`,
+  `ports`, `volumes`, `options`), reported as written and rendered "not pulled; not started". The pinned schema
+  decides each sub-key's category (B-8, B-13, B-20 rules). It stays `Invalid` with `uses`. A D-033 job field.
+- Acceptance: `wsr-gha` category tests per sub-key; CLI golden with a hostile image and sentinel proving no
+  pull or start.
+- Expected red: ``jobs.a: unsupported field `container`; this field is not inspected yet``.
+- Files: `crates/wsr-gha/src/lib.rs`, a new module, `crates/wsr-types/src/inspection.rs`,
+  `crates/wsr/src/commands/inspect.rs`, tests, `docs/cli/README.md`.
+- Relies on: D-031, D-033.
+
+## B-30 Job `strategy` as source text
+
+- Behavior: `fail-fast` and `max-parallel` as a literal or unevaluated text; `matrix` variables and values,
+  `include` and `exclude` as written or unevaluated text. Rendered "not expanded"; the job is never
+  multiplied (D-012 keeps matrix expansion core-owned). A D-033 job field.
+- Acceptance: category tests per key and a CLI golden; the repository test pinning `release.yml` moves to
+  exit 0 once B-28..B-30 land.
+- Expected red: ``unsupported field `strategy` `` at `release.yml` line 97.
+- Files: `crates/wsr-gha/src/lib.rs`, a new module, `crates/wsr-types/src/inspection.rs`,
+  `crates/wsr/src/commands/inspect.rs`, tests, `docs/cli/README.md`.
+- Relies on: D-031, D-033, D-012, B-28, B-29.

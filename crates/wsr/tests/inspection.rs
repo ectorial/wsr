@@ -1082,6 +1082,17 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
             "jobs.a.steps[9]: invalid job identifier 'a.steps[9]'",
         ),
         (
+            format!("jobs:\n  __build:\n{job}"),
+            "jobs.__build: invalid job identifier '__build'",
+        ),
+        (
+            format!("jobs:\n  {}:\n{job}", "j".repeat(100)),
+            &format!(
+                "jobs.{0}: invalid job identifier '{0}'",
+                "j".repeat(100)
+            ),
+        ),
+        (
             format!("jobs:\n  '${{{{ x }}}}':\n{job}"),
             "jobs.${{ x }}: expression is unevaluated; dynamic inspection is not supported yet",
         ),

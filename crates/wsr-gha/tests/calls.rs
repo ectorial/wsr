@@ -257,3 +257,38 @@ fn missing_runner_and_steps_keep_their_diagnostics() {
         assert_eq!(error.to_string(), message, "{body}");
     }
 }
+
+// Aliases can repeat a job body, so the scan stops after one job key per source byte. A call job
+// past that point is classified by its keys as they are read: those after `uses` are Invalid.
+#[test]
+fn call_job_keys_after_uses_stay_invalid_when_the_scan_budget_is_exhausted() {
+    let anchor = "  x: &x\n    name: n\n    if: always()\n    runs-on: linux\n    timeout-minutes: 5\n    continue-on-error: false\n    env: {A: b}\n    defaults: {run: {shell: bash}}\n    outputs: {o: v}\n    environment: prod\n    permissions: read-all\n    concurrency: g\n    needs: []\n    steps: [{run: echo}]\n";
+    let mut source = format!("jobs:\n{anchor}");
+    for index in 0..2500 {
+        source.push_str(&format!("  a{index}: *x\n"));
+    }
+    for (key, route, detail) in [
+        ("container: y", "jobs.z.container", "container"),
+        ("services: {}", "jobs.z.services", "services"),
+        ("snapshot: s", "jobs.z.snapshot", "snapshot"),
+        (
+            "cancel-timeout-minutes: 5",
+            "jobs.z.cancel-timeout-minutes",
+            "cancel-timeout-minutes",
+        ),
+    ] {
+        let error = common::inspect(format!("{source}  z: {{uses: ./x.yml, {key}}}\n").as_bytes())
+            .unwrap_err();
+        assert_eq!(
+            (error.category(), error.route()),
+            (Category::Invalid, Some(route)),
+            "{key}: {error}"
+        );
+        assert!(
+            error
+                .to_string()
+                .contains(&format!("`{detail}` cannot be combined with `uses`")),
+            "{key}: {error}"
+        );
+    }
+}
