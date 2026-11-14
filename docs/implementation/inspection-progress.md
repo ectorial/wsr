@@ -16,6 +16,10 @@ interface-touching: `RunnerRequirement::Selector` under D-033). Cross-reviewed b
   routes at `runs-on.group` / `runs-on.labels[n]`; `{}` replaces the former Unsupported samples.
 - Deliberate differences from the pin: `{}` Unsupported; whitespace-only Invalid.
 - Green: `runner_selector.rs` (2), `wsr-gha` (107), CLI (73), `cargo xtask ci`, `git diff --check`.
+- Hosted failure on `df6f8db`: `inspect_repository_workflows_from_temporary_copies` hit
+  `Text file busy` (ETXTBSY) running a just-written PATH trap, a Linux race with a child that a
+  concurrent test forked. This is pre-existing and unrelated to B-35. The trap positive controls
+  in `inspection.rs` and `dogfood.rs` now retry on `ExecutableFileBusy`, up to 100 times at 10 ms.
 
 B-35 is delivered on merge of this PR. Next action: watch the PR and merge on green with no
 unresolved findings, then take B-36 (pull_request activity types) with Claude as the implementer.

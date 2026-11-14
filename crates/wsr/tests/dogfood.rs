@@ -141,11 +141,24 @@ fn dogfood_examples_inspect_with_expected_output_and_execute_nothing() {
             )
             .unwrap();
             fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
-            // Positive control: each trap leaves the marker when it is run.
-            let status = Command::new(&path)
-                .env("WSR_EXECUTION_MARKER", &marker)
-                .status()
-                .unwrap();
+            // Positive control: each trap leaves the marker when it is run. On Linux a child
+            // forked concurrently by another test can briefly hold the new file open (ETXTBSY).
+            let mut attempts = 0;
+            let status = loop {
+                match Command::new(&path)
+                    .env("WSR_EXECUTION_MARKER", &marker)
+                    .status()
+                {
+                    Err(error)
+                        if error.kind() == std::io::ErrorKind::ExecutableFileBusy
+                            && attempts < 100 =>
+                    {
+                        attempts += 1;
+                        std::thread::sleep(std::time::Duration::from_millis(10));
+                    }
+                    result => break result.unwrap(),
+                }
+            };
             assert!(status.success() && marker.exists(), "{command} trap");
             fs::remove_file(&marker).unwrap();
         }
