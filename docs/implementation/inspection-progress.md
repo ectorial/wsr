@@ -1,6 +1,26 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-34 job cancel-timeout-minutes implemented; PR pending checks
+## Current checkpoint — B-35 runner selector implemented; PR pending checks
+
+Same Schedule A run, after the PR #64 wake (lock retaken 2026-11-14). PR #64 squash-merged as
+`b59ad1b` after all four required checks passed on `d0a8da6`, with no reviews or comments; the
+cancel-timeout, calls and CLI suites were verified on synced main. B-35 is on
+`feat/b35-runner-selector` from `b59ad1b`; slice record [inspection-runner-selector.md](inspection-runner-selector.md).
+A new steady cycle starts: slice 1, implemented by Claude (claude-opus-5-5, orchestrator;
+interface-touching: `RunnerRequirement::Selector` under D-033). Cross-reviewed by Codex gpt-6.1-sol
+(high): no findings. Next rotation: B-36 by Claude, then Codex.
+
+- Red (observed): ``jobs.a.runs-on: unsupported runner-selector mapping at line 3 column 5``
+  (`wsr-gha`); the CLI `{group: fleet}` case exited 0 instead of 1 after the decoder change.
+- Contract changes: diagnostics, scalar-conversion and name/runner tests keep their categories with
+  routes at `runs-on.group` / `runs-on.labels[n]`; `{}` replaces the former Unsupported samples.
+- Deliberate differences from the pin: `{}` Unsupported; whitespace-only Invalid.
+- Green: `runner_selector.rs` (2), `wsr-gha` (107), CLI (73), `cargo xtask ci`, `git diff --check`.
+
+B-35 is delivered on merge of this PR. Next action: watch the PR and merge on green with no
+unresolved findings, then take B-36 (pull_request activity types) with Claude as the implementer.
+
+## Previous checkpoint — B-34 job cancel-timeout-minutes delivered (PR #64, `b59ad1b`)
 
 Same Schedule A run, after the PR #63 wake (lock retaken 2026-11-14). PR #63 squash-merged as
 `22e6abb` after all four required checks passed on `c6fadce`, with no reviews or comments; the
