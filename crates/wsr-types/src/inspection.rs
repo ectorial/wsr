@@ -163,8 +163,12 @@ pub enum StepValue {
 /// Source operation classification, not an execution capability claim.
 #[derive(Debug)]
 pub enum StepSummaryKind {
-    /// A command is present, but is never executed by inspection.
-    Run,
+    /// A command is present, but is never executed by inspection. `unevaluated` records that the
+    /// script holds `${{` text (D-033); the script itself is not retained.
+    Run {
+        /// The script contains an unevaluated expression fence.
+        unevaluated: bool,
+    },
     /// An unresolved action reference; inspection never fetches or opens it.
     Uses(String),
 }

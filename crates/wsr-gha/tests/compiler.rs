@@ -216,7 +216,10 @@ fn summaries_preserve_runner_forms_and_step_kinds() {
         panic!("expected two steps");
     };
     assert_eq!((first.id.as_deref(), &first.name), (Some("one"), &None));
-    assert!(matches!(first.kind, StepSummaryKind::Run));
+    assert!(matches!(
+        first.kind,
+        StepSummaryKind::Run { unevaluated: false }
+    ));
     assert_eq!(
         (second.id.as_deref(), &second.name),
         (None, &Some(SourceText::Literal("Use".into())))

@@ -73,6 +73,28 @@ fn inspect_reports_name_and_runner_expressions_unevaluated() {
     assert!(!directory.path().join("executed").exists());
 }
 
+// Backlog B-28: `${{` text in a step `run` is valid GHA that is reported, never evaluated; the
+// script itself is never printed.
+#[test]
+fn inspect_reports_run_expressions_without_printing_the_script() {
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = "jobs:\n  a:\n    runs-on: linux\n    steps:\n      - name: Hostile\n        run: \"echo ${{ inputs.mode }}$(touch executed)\\e[31m\\u202E\"\n      - run: echo ${{ github.ref }}\n        shell: bash\n      - run: touch executed\n";
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    let report = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(
+        report,
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Step 1: run (script has unevaluated expressions; not evaluated) (Hostile)\n  Step 2: run (script has unevaluated expressions; not evaluated)\n    Shell: bash (not selected)\n  Step 3: run\n"
+    );
+    for script in ["echo", "touch", "inputs.mode", "github.ref"] {
+        assert!(!report.contains(script), "{script}: {report}");
+    }
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
 #[test]
 fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
     let directory = tempfile::tempdir().unwrap();
@@ -2101,6 +2123,16 @@ fn inspect_repository_workflows_from_temporary_copies() {
             ),
         ),
     ];
+    // Audit F40: every repository workflow except the dogfood examples is pinned here.
+    let mut names: Vec<String> = fs::read_dir(&root)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .filter(|name| name.ends_with(".yml") && !name.starts_with("example-"))
+        .collect();
+    names.sort();
+    let mut pinned: Vec<&str> = cases.iter().map(|(name, _)| *name).collect();
+    pinned.sort();
+    assert_eq!(names, pinned);
     for (name, expected) in cases {
         let source = fs::read_to_string(root.join(name)).unwrap();
         fs::write(directory.path().join(name), &source).unwrap();

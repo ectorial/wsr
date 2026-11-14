@@ -302,7 +302,11 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
             }
             write!(out, ": ")?;
             match step.kind {
-                StepSummaryKind::Run => write!(out, "run")?,
+                StepSummaryKind::Run { unevaluated: false } => write!(out, "run")?,
+                StepSummaryKind::Run { unevaluated: true } => write!(
+                    out,
+                    "run (script has unevaluated expressions; not evaluated)"
+                )?,
                 StepSummaryKind::Uses(reference) => {
                     write!(out, "uses {}", reference.escape_debug())?
                 }

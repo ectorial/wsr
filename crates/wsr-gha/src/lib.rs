@@ -330,7 +330,6 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             }
             if let Some(script) = &step.run {
                 let field = format!("{location}.run");
-                check_literal(Some(script), &field, Category::Unsupported)?;
                 // string-steps-context allows an empty script; WSR does not inspect one.
                 if script.trim().is_empty() {
                     return Err(Error::unsupported(field, "expected a nonempty string"));
@@ -340,7 +339,11 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 check_required(reference, &format!("{location}.uses"), Category::Invalid)?;
             }
             let kind = match (step.run, step.uses) {
-                (Some(_), None) => StepSummaryKind::Run,
+                // string-steps-context: `${{` text is valid GHA, kept unevaluated (B-28); the script
+                // itself is not retained.
+                (Some(script), None) => StepSummaryKind::Run {
+                    unevaluated: script.contains("${{"),
+                },
                 (None, Some(reference)) => {
                     check_action_reference(&reference, &format!("{location}.uses"))?;
                     StepSummaryKind::Uses(reference)
@@ -364,13 +367,13 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 if shell.trim().is_empty() {
                     return Err(Error::invalid(field, "expected a nonempty string"));
                 }
-                if !matches!(kind, StepSummaryKind::Run) {
+                if !matches!(kind, StepSummaryKind::Run { .. }) {
                     return Err(Error::invalid(field, "shell applies only to run steps"));
                 }
                 check_shell(shell, &field)?;
             }
             let working_directory = match step.working_directory {
-                Some(_) if !matches!(kind, StepSummaryKind::Run) => {
+                Some(_) if !matches!(kind, StepSummaryKind::Run { .. }) => {
                     return Err(Error::invalid(
                         format!("{location}.working-directory"),
                         "working-directory applies only to run steps",
@@ -387,7 +390,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 Some(text) => Some(SourceText::Literal(text)),
                 None => None,
             };
-            if step.with.is_some() && matches!(kind, StepSummaryKind::Run) {
+            if step.with.is_some() && matches!(kind, StepSummaryKind::Run { .. }) {
                 return Err(Error::invalid(
                     format!("{location}.with"),
                     "with applies only to uses steps",
