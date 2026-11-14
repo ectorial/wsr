@@ -46,7 +46,7 @@ Intended B-34 contract change: the job Unsupported sample in `diagnostics.rs` ch
 `cancel-timeout-minutes` to `services`. No other existing assertions change.
 
 Final validation: `cargo xtask ci` passed (format, locked workspace compilation and Clippy,
-workspace tests and strict documentation). The cancellation-timeout category suite passed 3 tests,
+workspace tests and strict documentation). The cancellation-timeout category suite passed 3 tests (4 after the fix below),
 CLI inspection passed 72, diagnostics passed 9, and call-job regressions passed 4.
 `git diff --check` passed.
 
@@ -55,3 +55,9 @@ Orchestrator fix (found while reviewing the diff): past the B-23 scan budget, a
 `call::decode` now lists it among the keys that cannot be combined with `uses`. Red observed
 (`cancel_timeout_before_uses_is_invalid_when_the_scan_budget_is_exhausted`: inspection
 succeeded), then green.
+
+Claude review (claude-opus-5-5, medium): no P1/P2. P3s: the line label became
+`Cancel timeout minutes:` to match `Timeout minutes:`; the test count above was updated; and,
+inherited from job `timeout-minutes`, a non-positive value before `uses` past the scan budget reports
+Unsupported (`expected a positive number`) instead of Invalid. That residual is left for Schedule B.
+`cargo xtask ci` and `git diff --check` pass after these fixes.

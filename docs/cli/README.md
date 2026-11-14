@@ -242,7 +242,7 @@ containing {0}`). A literal `uses` must be `./path` (or `.\path`), `docker://ima
 and a `$/…` self-repository reference is unsupported.
 No timeout is applied and no shell is selected, located or invoked. Job `cancel-timeout-minutes`
 follows the same decoder and category rules as `timeout-minutes`, rendering next to it as
-`Cancel timeout: 5 (not applied)` (or escaped unevaluated text). It is invalid with job `uses`.
+`Cancel timeout minutes: 5 (not applied)` (or escaped unevaluated text). It is invalid with job `uses`.
 See the [B-34 slice record](../implementation/inspection-cancel-timeout.md).
 
 ### Continue-on-error and step timeouts

@@ -253,7 +253,12 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
             )?,
             None => {}
         }
-        render_unapplied(&mut out, "  ", "Cancel timeout", job.cancel_timeout_minutes)?;
+        render_unapplied(
+            &mut out,
+            "  ",
+            "Cancel timeout minutes",
+            job.cancel_timeout_minutes,
+        )?;
         render_unapplied(&mut out, "  ", "Continue on error", job.continue_on_error)?;
         if let Some(env) = job.env {
             render_values(&mut out, "  ", "Env (not bound)", env)?;

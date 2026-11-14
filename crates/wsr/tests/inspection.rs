@@ -2748,7 +2748,7 @@ fn inspect_reports_cancel_timeouts_without_applying_or_executing() {
         assert_eq!(
             String::from_utf8(output.stdout).unwrap(),
             format!(
-                "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Timeout minutes: 10 (not applied)\n  Cancel timeout: {line}\n  Step 1: run\n"
+                "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Timeout minutes: 10 (not applied)\n  Cancel timeout minutes: {line}\n  Step 1: run\n"
             )
         );
         assert!(!directory.path().join("executed").exists());

@@ -1,6 +1,32 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-33 workflow description implemented; PR pending checks
+## Current checkpoint — B-34 job cancel-timeout-minutes implemented; PR pending checks
+
+Same Schedule A run, after the PR #63 wake (lock retaken 2026-11-14). PR #63 squash-merged as
+`22e6abb` after all four required checks passed on `c6fadce`, with no reviews or comments; the
+description, diagnostics and CLI suites were verified on synced main. B-34 is on
+`feat/b34-cancel-timeout` from `22e6abb`; slice record [inspection-cancel-timeout.md](inspection-cancel-timeout.md).
+Steady rotation slice 3 (cycle complete: B-32 and B-33 by Claude, B-34 by Codex). Implemented by
+Codex gpt-6.1-sol (reasoningEffort medium; `JobSummary.cancel_timeout_minutes` under D-033),
+commit `0f36725`. The orchestrator found and fixed one gap (`7395e92`). Cross-reviewed by Claude
+(claude-opus-5-5, medium): no P1/P2; three P3s, two fixed and one recorded as a residual. Next
+rotation: Claude, Claude, Codex.
+
+- Red (observed by Codex): ``jobs.a: unsupported field `cancel-timeout-minutes`; this field is not
+  inspected yet at line 4 column 5`` (`wsr-gha`) and at line 6 column 5 (CLI).
+- Orchestrator red: past the B-23 scan budget, `cancel-timeout-minutes` before `uses` was accepted
+  (test: inspection succeeded); `call::decode` now rejects it as Invalid.
+- Contract change: `diagnostics.rs` job Unsupported samples moved to `services`. The label is
+  `Cancel timeout minutes:` (review P3).
+- Pinned basis: `number-strategy-context`, the same as job `timeout-minutes`; `job.ts` checks nothing.
+- Green: `cancel_timeout.rs` (4), CLI suite (72), `cargo xtask ci`, `git diff --check`.
+- Residual (Schedule B): a non-positive value before `uses` past the scan budget is Unsupported,
+  not Invalid (inherited from job `timeout-minutes`).
+
+B-34 is delivered on merge of this PR. Next action: watch the PR and merge on green with no
+unresolved findings, then take B-35 (runs-on group/labels) with Claude as the implementer.
+
+## Previous checkpoint — B-33 workflow description delivered (PR #63, `22e6abb`)
 
 Same Schedule A run, after the PR #62 wake (lock retaken 2026-11-14). PR #62 squash-merged as
 `8d1d40e` after all four required checks passed on `e430f12`, with no reviews or comments; the
