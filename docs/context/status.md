@@ -65,6 +65,8 @@ for delivery gates.
 - [x] `on` events in inspection: scalar, sequence and empty-body mapping forms of every pinned-schema
   event, in source order, never evaluated or subscribed to; event configuration is unsupported (B-15).
   See [trigger contract](../cli/README.md#trigger-events).
+- [x] `push`, `pull_request` and `pull_request_target` branch, tag and path filters in inspection:
+  pattern lists in source order, never matched (B-22). See [contract](../cli/README.md#event-filters).
 - [x] Manual-trigger mappings and input declarations in inspection: typed metadata/defaults,
   deterministic reports, explicit unsupported/dynamic diagnostics and distinct declaration states.
   See [manual-input contract](../cli/README.md#manual-trigger-input-declarations). No input binding,

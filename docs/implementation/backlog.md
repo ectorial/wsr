@@ -296,7 +296,8 @@ Schedule A takes only ready slices.
 
 ## B-22 Branch, tag and path filters for `push`, `pull_request`, `pull_request_target`
 
-- Status: ready
+- Status: **delivered on merge of the B-22 PR** (Schedule A); see [slice record](inspection-event-filters.md).
+  Filters render one per line under `Filters (not matched):`.
 
 - Behavior: the pinned schema (`actions/languageservices` `4043eda158e16579cc5fb1b0b07a4bce2a76f0b5`,
   `workflow-v1.0.json`) allows different filters per event: `push` allows `branches`, `branches-ignore`, `tags`,

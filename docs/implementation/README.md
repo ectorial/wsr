@@ -13,6 +13,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | [Typed-error iteration](inspection-typed-errors.md) | Backlog B-0: provisional typed inspection errors with category and route |
 | [Diagnostic-route iteration](inspection-diagnostic-routes.md) | Backlog B-1: one-based route grammar and job-ID-first validation order |
 | [Classification iteration](inspection-classification.md) | Backlog B-8: expression category by schema context, schema-valid values no longer Invalid, job-ID-first route safety |
+| [Event-filter iteration](inspection-event-filters.md) | Backlog B-22: `push` and pull request branch, tag and path filters, never matched |
 | [Case-insensitive identifier iteration](inspection-case-ids.md) | Backlog B-21: job and dispatch input IDs repeated ignoring case are invalid |
 | [Diagnostic-text iteration](inspection-diagnostic-text.md) | Backlog B-20: unsupported-field wording matches the category; background step keys are invalid |
 | [Job-environment iteration](inspection-job-environment.md) | Backlog B-19: job `environment`, never selected; no protection rules evaluated |

@@ -342,6 +342,18 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Event filters (backlog B-22)
+
+`crates/wsr-gha/tests/triggers.rs` asserts source-order `Trigger::Filtered` lists for all three
+events and 19 categories: tag filters and `types` under the wrong event, unknown keys, expressions,
+empty, null, mapping and nested patterns and filter/`-ignore` pairs are `Invalid`; number and boolean
+patterns and pull request `types` are `Unsupported`. Two CLI tests pin a golden with a hostile pattern
+escaped plus an `executed` sentinel, and six exact diagnostics. Observed red:
+`on.pull_request: event configuration is not inspected yet`. Contract changes: the `push` Unsupported
+samples in `diagnostics.rs`, `triggers.rs` and the CLI dispatch test became `release`/`types`
+configuration. Audit F33: the repository-workflow test now traps every PATH command and pins the
+first diagnostic of temporary `ci.yml` and `release.yml` copies. The CLI inspection suite lists 60 tests.
+
 ## Job environments (backlog B-19)
 
 `crates/wsr-gha/tests/environment.rs` asserts kept `Environment` values for four forms, nine `Invalid`

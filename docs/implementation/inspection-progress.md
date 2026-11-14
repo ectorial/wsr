@@ -1,6 +1,26 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-21 case-insensitive identifiers implemented; PR pending checks
+## Current checkpoint — B-22 event filters implemented; PR pending checks
+
+Same Schedule A run, after the PR #51 wake (lock retaken 2026-11-14). PR #51 squash-merged as
+`7c2225e` after all four required checks passed on `90cee4d` with no reviews or comments; `wsr` and
+`wsr-gha` tests (139) verified on synced main. B-22 on `feat/b22-event-filters` from `7c2225e`; slice
+record [inspection-event-filters.md](inspection-event-filters.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode; `wsr-types` `Trigger::Filtered`/`EventFilter` under
+D-033); cross-reviewed by Codex gpt-6.1-sol (high): no findings (pair-rejection basis noted in the
+record).
+
+- Red (observed): `triggers.rs` failed with `on.pull_request: event configuration is not inspected yet`
+  (Unsupported at `on.pull_request`); the type landed first so the red was an assertion failure.
+- Contract changes: `push` Unsupported samples in `diagnostics.rs`, `triggers.rs` and the CLI dispatch
+  test became `release: {types: [published]}` / `pull_request.types`.
+- Green: 2 new `wsr-gha` tests, 2 CLI tests; F33 repository-workflow test with PATH traps pins
+  `ci.yml` (`uses`) and `release.yml` (`strategy`); CLI suite 60; `cargo xtask ci`; `git diff --check`.
+
+B-22 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-23 (reusable-workflow call jobs).
+
+## Previous checkpoint — B-21 case-insensitive identifiers delivered (PR #51, `7c2225e`)
 
 New Schedule A run (lock created 2026-11-14T02:24Z; none present). PR #49 (B-19) had merged as
 `7ecb135` and Schedule B's PR #50 as `ba2c704`; no loop PR open. B-21 on
