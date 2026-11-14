@@ -38,8 +38,12 @@ pub struct JobSummary {
     pub id: String,
     /// Optional display name.
     pub name: Option<String>,
-    /// Literal runner requirement, not a resolved environment.
-    pub runner: RunnerRequirement,
+    /// Literal runner requirement, not a resolved environment; None only for a reusable-workflow
+    /// call job.
+    pub runner: Option<RunnerRequirement>,
+    /// Reusable-workflow call (D-033 temporary GHA-derived type); such a job has no runner and no
+    /// steps. The called workflow is never loaded.
+    pub call: Option<WorkflowCall>,
     /// Static source dependency identifiers, retaining declared order and repetitions.
     pub needs: Vec<String>,
     /// Optional `if` text as written, bare or fenced; never parsed or evaluated.
@@ -64,6 +68,27 @@ pub struct JobSummary {
     pub environment: Option<Environment>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
+}
+
+/// A job's reusable-workflow call as written (D-033 temporary GHA-derived type); the referenced
+/// workflow is never opened, loaded or resolved, and nothing is passed to it.
+#[derive(Debug, PartialEq, Eq)]
+pub struct WorkflowCall {
+    /// `uses` reference text.
+    pub uses: String,
+    /// Optional `with` inputs by name, never passed.
+    pub with: Option<BTreeMap<String, StepValue>>,
+    /// Optional `secrets`, never passed.
+    pub secrets: Option<CallSecrets>,
+}
+
+/// Declared `secrets` of a reusable-workflow call (D-033 temporary GHA-derived type).
+#[derive(Debug, PartialEq, Eq)]
+pub enum CallSecrets {
+    /// `secrets: inherit`.
+    Inherit,
+    /// Secret values by name, as source text; never resolved.
+    Values(BTreeMap<String, StepValue>),
 }
 
 /// A step's source summary; it contains no executable script.

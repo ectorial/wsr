@@ -3,8 +3,8 @@ use std::io::{ErrorKind, Read as _, Write as _};
 use std::path::Path;
 
 use wsr_types::inspection::{
-    Concurrency, DispatchInputType, InputDefault, ManualTrigger, PermissionLevel, Permissions,
-    RunDefaults, RunnerRequirement, SourceText, StepSummaryKind, StepValue, Trigger,
+    CallSecrets, Concurrency, DispatchInputType, InputDefault, ManualTrigger, PermissionLevel,
+    Permissions, RunDefaults, RunnerRequirement, SourceText, StepSummaryKind, StepValue, Trigger,
 };
 
 // GitHub documents a 500 KB workflow file limit (D-032); 512,000 bytes is WSR's reading of it.
@@ -185,10 +185,11 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
             write!(out, " ({})", name.escape_debug())?;
         }
         match job.runner {
-            RunnerRequirement::Label(label) => {
+            None => writeln!(out)?,
+            Some(RunnerRequirement::Label(label)) => {
                 writeln!(out, "\n  Runner: {}", label.escape_debug())?
             }
-            RunnerRequirement::Labels(labels) => writeln!(
+            Some(RunnerRequirement::Labels(labels)) => writeln!(
                 out,
                 "\n  Runner labels: [{}]",
                 labels
@@ -258,6 +259,23 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                 .map(|(name, text)| (name, StepValue::Text(text)))
                 .collect();
             render_values(&mut out, "  ", "Outputs (not resolved)", outputs)?;
+        }
+        if let Some(call) = job.call {
+            writeln!(
+                out,
+                "  Calls workflow: {} (not loaded; not resolved)",
+                call.uses.escape_debug()
+            )?;
+            if let Some(with) = call.with {
+                render_values(&mut out, "  ", "With (not passed)", with)?;
+            }
+            match call.secrets {
+                Some(CallSecrets::Inherit) => writeln!(out, "  Secrets: inherit (not passed)")?,
+                Some(CallSecrets::Values(values)) => {
+                    render_values(&mut out, "  ", "Secrets (not passed)", values)?
+                }
+                None => {}
+            }
         }
         for (index, step) in job.steps.into_iter().enumerate() {
             write!(out, "  Step {}", index + 1)?;

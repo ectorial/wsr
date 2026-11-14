@@ -67,6 +67,8 @@ for delivery gates.
   See [trigger contract](../cli/README.md#trigger-events).
 - [x] `push`, `pull_request` and `pull_request_target` branch, tag and path filters in inspection:
   pattern lists in source order, never matched (B-22). See [contract](../cli/README.md#event-filters).
+- [x] Reusable-workflow call jobs in inspection: `uses`, `with` and `secrets` as written; the
+  referenced workflow is never opened, loaded or resolved (B-23). See [contract](../cli/README.md#reusable-workflow-calls).
 - [x] Manual-trigger mappings and input declarations in inspection: typed metadata/defaults,
   deterministic reports, explicit unsupported/dynamic diagnostics and distinct declaration states.
   See [manual-input contract](../cli/README.md#manual-trigger-input-declarations). No input binding,
