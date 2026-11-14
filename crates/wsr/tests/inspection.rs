@@ -1062,6 +1062,10 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
             format!("jobs:\n  b:\n{job}  b:\n{job}"),
             "jobs.b: duplicate job identifier 'b' at line 2 column 3",
         ),
+        (
+            format!("jobs:\n  build:\n{job}  Build:\n{job}"),
+            "jobs.Build: duplicate job identifier 'Build'; already defined as 'build' at line 2 column 3",
+        ),
     ] {
         fs::write(directory.path().join("ci.yml"), &source).unwrap();
         let output = inspect(directory.path(), "ci.yml");

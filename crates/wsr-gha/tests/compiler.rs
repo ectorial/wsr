@@ -267,3 +267,17 @@ fn hostile_yaml_fails_without_panicking() {
         assert!(message.contains(detail), "{message}");
     }
 }
+
+#[test]
+fn job_identifiers_repeated_ignoring_case_are_invalid() {
+    // B-21: the pinned reader rejects mapping keys repeated ignoring case.
+    let (category, route, message) = failure(&workflow(&[("build", ""), ("Build", "")]));
+    assert_eq!(category, Category::Invalid);
+    assert_eq!(route.as_deref(), Some("jobs.Build"));
+    assert!(
+        message.starts_with(
+            "jobs.Build: duplicate job identifier 'Build'; already defined as 'build'"
+        ),
+        "{message}"
+    );
+}

@@ -281,7 +281,7 @@ Schedule A takes only ready slices.
 
 ## B-21 Case-insensitive duplicate job IDs and dispatch input IDs (audit F30)
 
-- Status: ready
+- Status: **delivered on merge of the B-21 PR** (Schedule A); see [slice record](inspection-case-ids.md).
 
 - Behavior: the pinned reader rejects mapping keys repeated ignoring case (template-reader.ts L208-216);
   `crates/wsr-gha/src/lib.rs:522` uses an exact `contains_key` and `dispatch.rs:161` has no check. Keep a map
