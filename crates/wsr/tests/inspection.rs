@@ -2,16 +2,19 @@ use std::fs;
 use std::path::Path;
 use std::process::{Command, Output};
 
-/// A fixture whose root lacks `on`, which the pinned schema requires (backlog B-25), gets
-/// `on: workflow_dispatch` appended after its content, so diagnostic locations are unchanged.
+/// A block-mapping fixture whose root lacks `on`, which the pinned schema requires (backlog B-25),
+/// gets `on: workflow_dispatch` appended after its content, so diagnostic locations are unchanged.
+/// A flow-style root (`{…}` or `[…]`) is left as written.
 fn with_on(source: impl AsRef<[u8]>) -> Vec<u8> {
     let mut source = source.as_ref().to_vec();
-    let has_on = String::from_utf8_lossy(&source).lines().any(|line| {
-        ["on:", "on ", "\"on\"", "'on'", "{on:"]
+    let text = String::from_utf8_lossy(&source);
+    let flow = text.trim_start().starts_with(['{', '[']);
+    let has_on = text.lines().any(|line| {
+        ["on:", "on ", "\"on\"", "'on'"]
             .iter()
             .any(|start| line.starts_with(start))
     });
-    if !has_on {
+    if !flow && !has_on {
         if !source.is_empty() && !source.ends_with(b"\n") {
             source.push(b'\n');
         }

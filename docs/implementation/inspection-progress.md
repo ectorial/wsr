@@ -1,6 +1,27 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-24 name and runner expressions implemented; PR pending checks
+## Current checkpoint — B-25 required `on` implemented; PR pending checks
+
+Same Schedule A run, after the PR #54 wake (lock retaken 2026-11-14). PR #54 squash-merged as
+`d061843` after all four required checks passed on `153af59` with no reviews or comments; `wsr` and
+`wsr-gha` tests (150) verified on synced main. B-25 on `feat/b25-require-on` from `d061843`; slice
+record [inspection-require-on.md](inspection-require-on.md). Implemented by Claude (claude-opus-5-5,
+orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no P1/P2; one P3 fixed (flow
+roots in the CLI helper).
+
+- Red (observed): `a_workflow_without_on_is_invalid` failed because inspection succeeded.
+- Contract changes: fixtures route through `common::inspect` / `with_on` (append `on:
+  workflow_dispatch` after the content); 19 CLI goldens gained the trigger line; the
+  `dispatch_inputs.rs` and `triggers.rs` empty-trigger assertions now expect the missing-field error;
+  size-boundary fixtures carry `on` inside their measured source.
+- Green: all `wsr-gha` suites, CLI suite 63; `cargo xtask ci`; `git diff --check`.
+
+B-25 is delivered on merge of this PR. With B-21..B-25 delivered, no ready slice remains. Next
+action: watch the PR; merge on green with no unresolved findings; then report and exit until
+Schedule B or the owner adds a slice. Open follow-up for Schedule B: alias expansion in step/call
+`with` values (B-23 checkpoint).
+
+## Previous checkpoint — B-24 name and runner expressions delivered (PR #54, `d061843`)
 
 Same Schedule A run, after the PR #53 wake (lock retaken 2026-11-14). PR #53 squash-merged as
 `4136fab` after all four required checks passed on `3449c00` with no reviews or comments; `wsr` and
