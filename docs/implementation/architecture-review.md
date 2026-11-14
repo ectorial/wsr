@@ -144,7 +144,7 @@ Findings are classified (a) bounded correction, (b) owner decision — see
   diagnostic correctness, class (a), with the boundary >=100 rejected / 99 accepted on the ID as written, and
   found the rule must not extend to dispatch inputs, outputs or call `with`/`secrets`; `needs` references close
   with declaration validation. Implementer: claude-sonnet-5-5 (high).
-  Cross-review: Codex gpt-6.1-sol (reasoning high): PENDING
+  Cross-review: Codex gpt-6.1-sol (reasoning high): no findings; both regressions red on `0792966` and green on the fix.
 - Verified clean: boundaries (legacy types only in `wsr-types/src/lib.rs`; no `Serialize` on inspection types;
   no IO in `wsr-gha`/`wsr-types`; D-033 labels on `WorkflowCall`, `CallSecrets`, `EventFilter`,
   `Trigger::Filtered`, `SourceText`); exit codes 0/1/2 and empty stdout on failure; byte-identical repeat output;
