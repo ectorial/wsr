@@ -1,5 +1,7 @@
 //! Backlog B-18: job `outputs` kept as source text, never resolved.
 
+mod common;
+
 use std::collections::BTreeMap;
 
 use wsr_gha::Category;
@@ -14,7 +16,7 @@ fn job(outputs: &str) -> String {
 #[test]
 fn outputs_are_kept_by_name() {
     let summary =
-        wsr_gha::inspect(job("{z: '${{ steps.s.outputs.r }}', a: literal, M: ''}").as_bytes())
+        common::inspect(job("{z: '${{ steps.s.outputs.r }}', a: literal, M: ''}").as_bytes())
             .unwrap();
     assert_eq!(
         summary.jobs[0].outputs,
@@ -28,18 +30,18 @@ fn outputs_are_kept_by_name() {
         ]))
     );
     assert_eq!(
-        wsr_gha::inspect(job("{}").as_bytes()).unwrap().jobs[0].outputs,
+        common::inspect(job("{}").as_bytes()).unwrap().jobs[0].outputs,
         Some(BTreeMap::new())
     );
     let without = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n";
     assert_eq!(
-        wsr_gha::inspect(without.as_bytes()).unwrap().jobs[0].outputs,
+        common::inspect(without.as_bytes()).unwrap().jobs[0].outputs,
         None
     );
 }
 
 fn assert_category(outputs: &str, category: Category, route: &str) {
-    let error = wsr_gha::inspect(job(outputs).as_bytes()).unwrap_err();
+    let error = common::inspect(job(outputs).as_bytes()).unwrap_err();
     assert_eq!(
         (error.category(), error.route()),
         (category, Some(route)),

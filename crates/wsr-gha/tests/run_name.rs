@@ -1,7 +1,8 @@
+mod common;
 use wsr_types::inspection::SourceText;
 
 fn run_name(declaration: &str) -> Option<SourceText> {
-    wsr_gha::inspect(
+    common::inspect(
         format!("{declaration}jobs:\n  build:\n    runs-on: linux\n    steps:\n      - run: echo hello\n")
             .as_bytes(),
     )

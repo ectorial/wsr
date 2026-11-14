@@ -1,3 +1,4 @@
+mod common;
 use std::collections::BTreeMap;
 
 use wsr_gha::Category;
@@ -7,7 +8,7 @@ const JOB: &str = "    runs-on: linux\n    steps:\n      - run: echo\n";
 
 #[test]
 fn permissions_summary_keeps_workflow_and_job_requests_separate() {
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         format!(
             "permissions:\n  contents: read\n  id-token: none\njobs:\n  a:\n{JOB}  b:\n    permissions: read-all\n{JOB}  c:\n    permissions: {{}}\n{JOB}"
         )
@@ -64,7 +65,7 @@ fn permissions_outside_the_pinned_schema_are_invalid_at_their_route() {
             "jobs.b.permissions.contents",
         ),
     ] {
-        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        let error = common::inspect(source.as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (Category::Invalid, Some(route)),
@@ -75,7 +76,7 @@ fn permissions_outside_the_pinned_schema_are_invalid_at_their_route() {
 
 #[test]
 fn duplicate_permission_scopes_keep_decoder_evidence() {
-    let error = wsr_gha::inspect(
+    let error = common::inspect(
         format!("permissions: {{contents: read, contents: write}}\njobs:\n  b:\n{JOB}").as_bytes(),
     )
     .unwrap_err();

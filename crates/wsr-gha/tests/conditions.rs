@@ -1,11 +1,13 @@
 //! Backlog B-12: job and step `if` kept as written, never parsed or evaluated.
 
+mod common;
+
 use wsr_gha::Category;
 
 // Contract change: job `if` was reported Unsupported (B-0 acceptance); it is now inspected.
 #[test]
 fn job_and_step_conditions_are_kept_as_written() {
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         b"jobs:\n  b:\n    if: success() && github.ref == 'main'\n    runs-on: linux\n    steps:\n      - run: echo\n        if: ${{ always() }}\n      - uses: ./a\n      - run: echo\n        if: \"${{ x }} == 'y'\"\n",
     )
     .unwrap();
@@ -44,7 +46,7 @@ fn conditions_outside_the_subset_have_category_and_route() {
             (Category::Invalid, "jobs.b.steps[1].if"),
         ),
     ] {
-        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        let error = common::inspect(source.as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (expected.0, Some(expected.1)),

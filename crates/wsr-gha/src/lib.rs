@@ -31,7 +31,7 @@ struct Workflow {
     name: Option<String>,
     #[serde(rename = "run-name", default, deserialize_with = "converted_string")]
     run_name: Option<String>,
-    #[serde(rename = "on", default, deserialize_with = "dispatch::deserialize")]
+    #[serde(rename = "on", deserialize_with = "dispatch::deserialize")]
     triggers: Vec<wsr_types::inspection::Trigger>,
     #[serde(default, deserialize_with = "permissions::deserialize")]
     permissions: Option<wsr_types::inspection::Permissions>,

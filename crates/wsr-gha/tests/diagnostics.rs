@@ -1,9 +1,10 @@
+mod common;
 use wsr_gha::Category;
 
 const JOB: &str = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n";
 
 fn diagnose(source: &str) -> (Category, Option<String>) {
-    let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+    let error = common::inspect(source.as_bytes()).unwrap_err();
     (error.category(), error.route().map(str::to_owned))
 }
 
@@ -193,7 +194,7 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
 
 #[test]
 fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
-    let error = wsr_gha::inspect(
+    let error = common::inspect(
         b"jobs:\n  b:\n    runs-on: linux\n    cancel-timeout-minutes: 5\n    steps:\n      - run: echo\n",
     )
     .unwrap_err();
@@ -201,7 +202,7 @@ fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
         error.to_string(),
         "jobs.b: unsupported field `cancel-timeout-minutes`; this field is not inspected yet at line 4 column 5"
     );
-    let duplicate = wsr_gha::inspect(
+    let duplicate = common::inspect(
         format!("on: {{workflow_dispatch: null, workflow_dispatch: {{}}}}\n{JOB}").as_bytes(),
     )
     .unwrap_err();
@@ -214,7 +215,7 @@ fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
 
 #[test]
 fn a_job_identifier_is_validated_before_its_body_so_it_cannot_forge_a_route() {
-    let error = wsr_gha::inspect(
+    let error = common::inspect(
         b"jobs:\n  a.steps[9]:\n    bogus: 1\n    runs-on: linux\n    steps:\n      - run: echo\n",
     )
     .unwrap_err();
@@ -273,7 +274,7 @@ fn unsupported_fields_say_so_and_unknown_fields_keep_the_serde_text() {
                 .to_owned(),
         ),
     ] {
-        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        let error = common::inspect(source.as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route(), error.to_string()),
             (category, Some(route), message),
@@ -298,7 +299,7 @@ fn background_step_keys_are_invalid() {
 
 #[test]
 fn dispatch_input_description_still_inspects() {
-    wsr_gha::inspect(
+    common::inspect(
         format!("on:\n  workflow_dispatch:\n    inputs:\n      a:\n        description: d\n{JOB}")
             .as_bytes(),
     )

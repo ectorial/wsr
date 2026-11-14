@@ -1,12 +1,14 @@
 //! Backlog B-23: reusable-workflow call jobs are reported as written; nothing is loaded or passed.
 
+mod common;
+
 use std::collections::BTreeMap;
 
 use wsr_gha::Category;
 use wsr_types::inspection::{CallSecrets, SourceText, StepValue, WorkflowCall};
 
 fn call(body: &str) -> WorkflowCall {
-    let mut summary = wsr_gha::inspect(format!("jobs:\n  b:\n{body}").as_bytes())
+    let mut summary = common::inspect(format!("jobs:\n  b:\n{body}").as_bytes())
         .unwrap_or_else(|error| panic!("{body}: {error}"));
     let job = summary.jobs.remove(0);
     assert_eq!(job.runner, None);
@@ -15,7 +17,7 @@ fn call(body: &str) -> WorkflowCall {
 }
 
 fn failure(body: &str) -> (Category, Option<String>) {
-    let error = wsr_gha::inspect(format!("jobs:\n  b:\n{body}").as_bytes()).unwrap_err();
+    let error = common::inspect(format!("jobs:\n  b:\n{body}").as_bytes()).unwrap_err();
     (error.category(), error.route().map(str::to_owned))
 }
 
@@ -57,7 +59,7 @@ fn call_jobs_keep_reference_inputs_and_secrets() {
         )])))
     );
     // Keys shared by both job forms.
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         b"jobs:\n  a:\n    runs-on: linux\n    steps:\n      - run: echo\n  b:\n    name: call\n    needs: a\n    if: always()\n    permissions: read-all\n    concurrency: g\n    uses: ./w.yml\n",
     )
     .unwrap();
@@ -250,7 +252,7 @@ fn missing_runner_and_steps_keep_their_diagnostics() {
             "jobs.b: missing field `steps` at line 3 column 5",
         ),
     ] {
-        let error = wsr_gha::inspect(format!("jobs:\n  b:\n{body}").as_bytes()).unwrap_err();
+        let error = common::inspect(format!("jobs:\n  b:\n{body}").as_bytes()).unwrap_err();
         assert_eq!(error.category(), Category::Invalid, "{body}");
         assert_eq!(error.to_string(), message, "{body}");
     }

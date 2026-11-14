@@ -1,5 +1,7 @@
 //! Backlog B-17: job and step `continue-on-error` and step `timeout-minutes`, never applied.
 
+mod common;
+
 use wsr_gha::Category;
 use wsr_types::inspection::SourceText;
 
@@ -30,9 +32,9 @@ fn values_are_kept_as_source_data() {
         ),
     ] {
         let field = format!("continue-on-error: {value}");
-        let summary = wsr_gha::inspect(job(&field).as_bytes()).unwrap();
+        let summary = common::inspect(job(&field).as_bytes()).unwrap();
         assert_eq!(summary.jobs[0].continue_on_error, expected, "{value}");
-        let summary = wsr_gha::inspect(step(&field).as_bytes()).unwrap();
+        let summary = common::inspect(step(&field).as_bytes()).unwrap();
         assert_eq!(
             summary.jobs[0].steps[0].continue_on_error, expected,
             "{value}"
@@ -47,20 +49,20 @@ fn values_are_kept_as_source_data() {
         ),
     ] {
         let summary =
-            wsr_gha::inspect(step(&format!("timeout-minutes: {value}")).as_bytes()).unwrap();
+            common::inspect(step(&format!("timeout-minutes: {value}")).as_bytes()).unwrap();
         assert_eq!(
             summary.jobs[0].steps[0].timeout_minutes, expected,
             "{value}"
         );
     }
-    let summary = wsr_gha::inspect(job("name: x").as_bytes()).unwrap();
+    let summary = common::inspect(job("name: x").as_bytes()).unwrap();
     assert_eq!(summary.jobs[0].continue_on_error, None);
     assert_eq!(summary.jobs[0].steps[0].continue_on_error, None);
     assert_eq!(summary.jobs[0].steps[0].timeout_minutes, None);
 }
 
 fn assert_category(source: String, category: Category, route: &str) {
-    let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+    let error = common::inspect(source.as_bytes()).unwrap_err();
     assert_eq!(
         (error.category(), error.route()),
         (category, Some(route)),

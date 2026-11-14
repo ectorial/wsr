@@ -1,5 +1,7 @@
 //! Backlog B-19: job `environment` kept as source data, never selected.
 
+mod common;
+
 use wsr_gha::Category;
 use wsr_types::inspection::{Environment, SourceText};
 
@@ -53,7 +55,7 @@ fn environments_are_kept_as_source_data() {
             },
         ),
     ] {
-        let summary = wsr_gha::inspect(job(value).as_bytes())
+        let summary = common::inspect(job(value).as_bytes())
             .unwrap_or_else(|error| panic!("{value}: {error}"));
         assert_eq!(
             summary.jobs[0].environment.as_ref(),
@@ -63,13 +65,13 @@ fn environments_are_kept_as_source_data() {
     }
     let without = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n";
     assert_eq!(
-        wsr_gha::inspect(without.as_bytes()).unwrap().jobs[0].environment,
+        common::inspect(without.as_bytes()).unwrap().jobs[0].environment,
         None
     );
 }
 
 fn assert_category(environment: &str, category: Category, route: &str) {
-    let error = wsr_gha::inspect(job(environment).as_bytes()).unwrap_err();
+    let error = common::inspect(job(environment).as_bytes()).unwrap_err();
     assert_eq!(
         (error.category(), error.route()),
         (category, Some(route)),
@@ -116,7 +118,7 @@ fn schema_valid_environments_outside_the_subset_are_unsupported() {
 
 #[test]
 fn a_sequence_environment_says_what_is_expected() {
-    let error = wsr_gha::inspect(job("[a]").as_bytes()).unwrap_err();
+    let error = common::inspect(job("[a]").as_bytes()).unwrap_err();
     assert_eq!(
         error.to_string(),
         "jobs.b.environment: expected a string or mapping"
