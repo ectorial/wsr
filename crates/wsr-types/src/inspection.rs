@@ -55,6 +55,9 @@ pub struct JobSummary {
     /// Optional source timeout: a literal positive YAML number rendered as text, or unevaluated
     /// expression text. Never applied.
     pub timeout_minutes: Option<SourceText>,
+    /// Optional cancellation timeout (D-033 temporary GHA-derived type): literal positive number
+    /// or unevaluated expression text. Never applied.
+    pub cancel_timeout_minutes: Option<SourceText>,
     /// Optional `continue-on-error`: a literal boolean rendered as text, or unevaluated text.
     /// Never applied.
     pub continue_on_error: Option<SourceText>,
