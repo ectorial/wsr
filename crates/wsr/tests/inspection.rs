@@ -2322,6 +2322,36 @@ fn inspect_reports_event_filters_without_matching_them() {
     assert!(!directory.path().join("executed").exists());
 }
 
+// B-36: pull request activity types are reported in source order, never matched.
+#[test]
+fn inspect_reports_activity_types_without_matching_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = "on:\n  pull_request:\n    types: [opened, synchronize]\n    branches: [\"x$(touch executed)\\e[31m\\u202E\"]\n  pull_request_target:\n    types: closed\njobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: touch executed\n";
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect_with_execution_traps(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: pull_request (not evaluated)\n  Filters (not matched):\n    types: [\"opened\", \"synchronize\"]\n    branches: [\"x$(touch executed)\\u{1b}[31m\\u{202e}\"]\nTrigger: pull_request_target (not evaluated)\n  Filters (not matched):\n    types: [\"closed\"]\nJob: b\n  Runner: linux\n  Step 1: run\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        source
+    );
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+    fs::write(directory.path().join("ci.yml"), "on: {pull_request: {types: [\"$(touch executed)\\e[31m\\u202E\"]}}\njobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: touch executed\n").unwrap();
+    let output = inspect_with_execution_traps(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: wsr inspect: ci.yml: on.pull_request.types[1]: unknown activity type '$(touch executed)\\u{1b}[31m\\u{202e}'\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+}
+
 #[test]
 fn inspect_rejects_invalid_event_filters() {
     let directory = tempfile::tempdir().unwrap();
@@ -2347,9 +2377,10 @@ fn inspect_rejects_invalid_event_filters() {
             "{push: {tags: 5}}",
             "on.push.tags: non-string value is not inspected yet",
         ),
+        // B-36 contract change: `types` now inspect; an unknown activity type is invalid.
         (
-            "{pull_request: {types: [opened]}}",
-            "on.pull_request.types: unsupported field `types`; this field is not inspected yet",
+            "{pull_request: {types: [opened, Closed]}}",
+            "on.pull_request.types[2]: unknown activity type 'Closed'",
         ),
     ] {
         fs::write(

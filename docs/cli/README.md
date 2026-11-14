@@ -119,8 +119,11 @@ Trigger: push (not evaluated)
 ```
 
 Per the pinned schema, `push` takes `branches`, `branches-ignore`, `tags`, `tags-ignore`, `paths` and
-`paths-ignore`; the pull request events take the same without the tag filters, plus `types`, which is
-unsupported (``on.pull_request.types: unsupported field `types`; …``). Any other key is invalid
+`paths-ignore`; the pull request events take the same without the tag filters, plus `types` (B-36), reported in
+source order as `types: ["opened", "synchronize"]` and never matched. Each activity type must be one
+of the 22 pinned names, matched case-sensitively; `${{` text, numbers, booleans, nulls and
+nested values are invalid (``on.pull_request.types[2]: unknown activity type 'Closed'``), and an
+empty list is reported as `[]`. Any other key is invalid
 (``on.pull_request: unknown field `tags` ``). A pattern must be a non-empty string; filters have no
 expression context, so `${{` text is invalid, as are null, nested values and a filter given with its
 `-ignore` counterpart (``on.push.branches-ignore: cannot be combined with `branches` ``). Numbers and
