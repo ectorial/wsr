@@ -24,7 +24,12 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
         (format!("on: [push, push]\n{JOB}"), "on[2]"),
         (format!("on: {{schedule: [{{cron: '0 0 * * *'}}]}}\n{JOB}"), "on.schedule"),
         // B-16 contract change: `concurrency` is now inspected.
-        (format!("description: x\n{JOB}"), "description"),
+        // B-33 contract change: root `description` is now inspected; a job key keeps this sample.
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    snapshot: img\n    steps:\n      - run: echo\n"
+                .to_owned(),
+            "jobs.b.snapshot",
+        ),
         (
             // B-17 contract change: step `timeout-minutes` is now inspected.
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n      - name: 5\n        run: b\n"
@@ -238,11 +243,13 @@ fn unsupported_fields_say_so_and_unknown_fields_keep_the_serde_text() {
     let unsupported =
         |field: &str| format!("unsupported field `{field}`; this field is not inspected yet");
     for (source, category, route, message) in [
+        // B-33 contract change: root `description` was this sample; it is now inspected.
         (
-            format!("description: x\n{JOB}"),
+            "jobs:\n  b:\n    runs-on: linux\n    snapshot: img\n    steps:\n      - run: echo\n"
+                .to_owned(),
             Category::Unsupported,
-            "description",
-            unsupported("description"),
+            "jobs.b.snapshot",
+            format!("jobs.b: {} at line 4 column 5", unsupported("snapshot")),
         ),
         (
             "jobs:\n  b:\n    runs-on: linux\n    services: {}\n    steps:\n      - run: echo\n"

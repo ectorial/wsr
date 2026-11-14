@@ -2592,6 +2592,35 @@ fn inspect_rejects_a_workflow_without_on() {
     );
 }
 
+// B-33: workflow `description` is retained as written and escaped.
+#[test]
+fn inspect_reports_workflow_descriptions_as_written() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = "name: ci\ndescription: \"$(touch executed)\\e[31m\\u202E\"\non: workflow_dispatch\njobs:\n  a:\n    runs-on: linux\n    steps: [{run: touch executed}]\n";
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect_with_execution_traps(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: ci\nDescription: $(touch executed)\\u{1b}[31m\\u{202e}\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Step 1: run\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        source
+    );
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+    fs::write(directory.path().join("ci.yml"), "description: '${{ x }}'\non: workflow_dispatch\njobs:\n  a:\n    runs-on: linux\n    steps: [{run: echo}]\n").unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: wsr inspect: ci.yml: description: expression is unevaluated; dynamic inspection is not supported yet\n"
+    );
+}
+
 #[test]
 fn inspect_reports_job_strategies_without_expanding_or_executing() {
     let directory = tempfile::tempdir().unwrap();

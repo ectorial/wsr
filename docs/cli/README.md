@@ -164,11 +164,23 @@ and converter references and intentional source-preservation differences are rec
 The canonical example workflows inspect (their reports are the dogfood goldens). Their manual
 reference runs are not evidence of WSR execution support.
 
+### Workflow descriptions
+
+An optional workflow `description` (B-33) is reported as written on the line after the workflow
+name, with control and format characters escaped; empty or whitespace text is kept, and null or
+omission adds no line. The pinned `workflow-description` is a plain string with no expression
+context, so `${{` text is invalid; a boolean or number is unsupported (B-13); a list or mapping is
+invalid. The text is never displayed elsewhere or validated further:
+
+```text
+Description: Builds and tests the workspace
+```
+
 ### Unevaluated run names
 
 An optional workflow `run-name` must be a nonempty string; null, booleans, numbers, lists,
 mappings and blank text fail before stdout with a `run-name` diagnostic (a null, boolean or number is unsupported, the rest invalid). Its decoded text is
-reported on the line after the workflow name, with control characters escaped:
+reported on the line after the workflow name (and description, if any), with control characters escaped:
 
 ```text
 Run name: Local reference (literal)

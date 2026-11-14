@@ -31,6 +31,8 @@ use needs::Needs;
 struct Workflow {
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
+    #[serde(default, deserialize_with = "optional_string")]
+    description: Option<String>,
     #[serde(rename = "run-name", default, deserialize_with = "converted_string")]
     run_name: Option<String>,
     #[serde(rename = "on", deserialize_with = "dispatch::deserialize")]
@@ -49,7 +51,7 @@ struct Workflow {
 
 impl diagnostic::Level for Workflow {
     const NAME: &'static str = "Workflow";
-    const SCHEMA: &'static [&'static str] = &["description"];
+    const SCHEMA: &'static [&'static str] = &[];
 }
 
 /// The pinned `job` is `job-factory` or `workflow-job`; `runs-on` and `steps` are required unless
@@ -219,6 +221,12 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         return Err(Error::invalid("jobs", "expected at least one job"));
     }
     check_literal(workflow.name.as_deref(), "name", Category::Invalid)?;
+    // The pinned workflow-description is a plain string with no expression context (B-33).
+    check_literal(
+        workflow.description.as_deref(),
+        "description",
+        Category::Invalid,
+    )?;
     let run_name = match workflow.run_name {
         Some(text) if text.trim().is_empty() => {
             return Err(Error::invalid("run-name", "expected a nonempty string"));
@@ -452,6 +460,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
     }
     Ok(WorkflowSummary {
         name: workflow.name,
+        description: workflow.description,
         run_name,
         triggers: workflow.triggers,
         permissions: workflow.permissions,
