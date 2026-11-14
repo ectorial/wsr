@@ -1,6 +1,29 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-35 runner selector implemented; PR pending checks
+## Current checkpoint — B-36 activity types implemented; PR pending checks
+
+Same Schedule A run, after the PR #65 wake (lock retaken 2026-11-14). PR #65 squash-merged as
+`625cc25` after all four required checks passed on `fdde55f`, with no reviews or comments; the
+runner-selector, CLI and dogfood suites were verified on synced main. B-36 is on
+`feat/b36-activity-types` from `625cc25`; slice record [inspection-activity-types.md](inspection-activity-types.md).
+Steady rotation slice 2 of the cycle, implemented by Claude (claude-opus-5-5, orchestrator; no new
+type, `EventFilter` reused). **Provider limit:** the Codex cross-review (gpt-6.1-sol, high) hit its
+usage limit, so the review fell back to Claude (claude-opus-5-5, medium, fresh context). No P1; one
+P2 (stale delivery records and coverage doc) fixed; two P3s, one fixed and one accepted. Next
+rotation: Codex for the next slice once its limit resets; Claude if it has not.
+
+- Red (observed): ``on.pull_request.types: unsupported field `types`; this field is not inspected
+  yet`` (Unsupported) in `activity_types.rs`.
+- Contract changes: `triggers.rs` (two rows) and the CLI filter table moved their `types` samples to
+  `release` configuration and an Invalid unknown activity type.
+- Green: `activity_types.rs` (3), `wsr-gha`, CLI (74), `cargo xtask ci`, `git diff --check`.
+
+B-36 is delivered on merge of this PR. With B-32..B-36 delivered, the backlog has no ready slice;
+only owner decision DR-005 (inspection completion scope) remains. Next action: watch the PR and
+merge on green with no unresolved findings, then report and exit until Schedule B or the owner adds
+a slice.
+
+## Previous checkpoint — B-35 runner selector delivered (PR #65, `625cc25`)
 
 Same Schedule A run, after the PR #64 wake (lock retaken 2026-11-14). PR #64 squash-merged as
 `b59ad1b` after all four required checks passed on `d0a8da6`, with no reviews or comments; the

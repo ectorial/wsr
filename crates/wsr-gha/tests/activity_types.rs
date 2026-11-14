@@ -103,3 +103,19 @@ fn activity_types_outside_the_allowed_values_are_invalid() {
         }
     }
 }
+
+// A number or boolean is named like any other unknown activity type (B-36 review P3).
+#[test]
+fn converted_scalars_are_named_as_unknown_activity_types() {
+    for (types, text) in [("5", "'5'"), ("true", "'true'"), ("!!str 5", "'5'")] {
+        let on = format!("{{pull_request: {{types: {types}}}}}");
+        let Err(error) = common::inspect(format!("on: {on}\n{JOBS}").as_bytes()) else {
+            panic!("accepted {on}");
+        };
+        assert_eq!(
+            error.to_string(),
+            format!("on.pull_request.types: unknown activity type {text}"),
+            "{on}"
+        );
+    }
+}

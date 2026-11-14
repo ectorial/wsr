@@ -237,6 +237,14 @@ fn activity(value: &Value, route: &str) -> Result<String, Error> {
             route,
             format_args!("unknown activity type '{}'", text.escape_debug()),
         )),
+        Value::Bool(value) => Err(Error::invalid(
+            route,
+            format_args!("unknown activity type '{value}'"),
+        )),
+        Value::Number(value) => Err(Error::invalid(
+            route,
+            format_args!("unknown activity type '{value}'"),
+        )),
         _ => Err(Error::invalid(
             route,
             "expected an activity type or a sequence of them",

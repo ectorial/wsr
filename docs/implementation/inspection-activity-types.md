@@ -37,3 +37,8 @@ Expected red (live probe): ``on.pull_request.types: unsupported field `types`; t
   `triggers.rs`, the CLI suite (golden with hostile text in a neighbouring branch filter and in a
   rejected type, `executed` sentinel and PATH traps), `cargo xtask ci`, `git diff --check`. The CLI
   golden was written after the implementation, so its red was observed only at the `wsr-gha` level.
+- Review: Codex hit its usage limit; the review fell back to Claude (claude-opus-5-5, medium).
+  No P1. P2: delivery records and `docs/testing/coverage.md` were stale; updated in this PR. P3: a
+  number or boolean now reads `unknown activity type '5'` like `!!str 5`
+  (`converted_scalars_are_named_as_unknown_activity_types`, written with the fix, so no red was
+  observed). P3 accepted without change: `EventFilter.patterns` also holds activity types (D-033).

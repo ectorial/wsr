@@ -78,6 +78,7 @@ for delivery gates.
 - [x] The workflow `description` is inspected as written (B-33; delivered on merge of its PR). See [slice record](../implementation/inspection-workflow-description.md).
 - [x] Job `cancel-timeout-minutes` is inspected as source data, never applied (B-34; delivered on merge of its PR). See [slice record](../implementation/inspection-cancel-timeout.md).
 - [x] `runs-on` group/labels selector mappings are inspected as written, never resolved to a runner (B-35; delivered on merge of its PR). See [slice record](../implementation/inspection-runner-selector.md).
+- [x] Pull request activity `types` are inspected in source order, never matched (B-36; delivered on merge of its PR). See [slice record](../implementation/inspection-activity-types.md).
 - [x] Step `run` expressions in inspection: a script with `${{` text is flagged in its step heading,
   never printed, evaluated or executed (B-28). See [contract](../cli/README.md#static-workflow-inspection).
 - [x] `on` required in inspection: a workflow without it is invalid, as in the pinned root schema (B-25).
