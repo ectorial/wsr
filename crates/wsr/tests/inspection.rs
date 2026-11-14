@@ -662,7 +662,15 @@ fn inspect_runner_labels_reject_empty_and_invalid_values() {
         ("[linux, null]", "runs-on[2]: expected a string label"),
         ("[linux, [x64]]", "runs-on[2]: expected a string label"),
         ("[linux, {}]", "runs-on[2]: expected a string label"),
-        ("{group: fleet}", "unsupported runner-selector mapping"),
+        // B-35 contract change: selectors inspect (`inspect_reports_runner_selectors_without_selecting_a_runner`).
+        (
+            "{}",
+            "runs-on: empty runner-selector mapping; not inspected yet",
+        ),
+        (
+            "{group: team/fleet}",
+            "runs-on.group: invalid runner group name",
+        ),
     ] {
         let source = format!(
             "jobs:\n  build:\n    runs-on: {value}\n    steps:\n      - run: touch executed\n"
@@ -2619,6 +2627,27 @@ fn inspect_reports_workflow_descriptions_as_written() {
         String::from_utf8(output.stderr).unwrap(),
         "error: wsr inspect: ci.yml: description: expression is unevaluated; dynamic inspection is not supported yet\n"
     );
+}
+
+// B-35: runner selectors are reported as written; no runner is selected or contacted.
+#[test]
+fn inspect_reports_runner_selectors_without_selecting_a_runner() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = "on: workflow_dispatch\njobs:\n  a:\n    runs-on: {group: \"$(touch executed)\\e[31m\\u202E\", labels: [\"${{ matrix.os }}\", linux]}\n    steps: [{run: touch executed}]\n  b:\n    runs-on: {group: '${{ vars.group }}', labels: gpu}\n    steps: [{run: touch executed}]\n  c:\n    runs-on: {labels: []}\n    steps: [{run: touch executed}]\n";
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect_with_execution_traps(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner group: $(touch executed)\\u{1b}[31m\\u{202e} (not selected)\n  Runner labels: [\"${{ matrix.os }}\", \"linux\"] (some unevaluated; expression syntax not validated)\n  Step 1: run\nJob: b\n  Runner group: ${{ vars.group }} (unevaluated; expression syntax not validated; not selected)\n  Runner: gpu\n  Step 1: run\nJob: c\n  Runner labels: []\n  Step 1: run\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        source
+    );
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
 }
 
 #[test]

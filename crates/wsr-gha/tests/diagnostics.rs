@@ -37,20 +37,17 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
                 .to_owned(),
             "jobs.b.steps[2].name",
         ),
+        // B-35 contract change: runner-selector mappings now inspect; only an empty one does not.
         (
-            "jobs:\n  b:\n    runs-on: {group: fleet}\n    steps:\n      - run: echo\n".to_owned(),
-            "jobs.b.runs-on",
-        ),
-        (
-            "jobs:\n  b:\n    runs-on: {group: fleet, labels: [a]}\n    steps:\n      - run: echo\n"
-                .to_owned(),
+            "jobs:\n  b:\n    runs-on: {}\n    steps:\n      - run: echo\n".to_owned(),
             "jobs.b.runs-on",
         ),
         // B-13: numbers and booleans are converted to strings by the pinned reader.
         (format!("name: 5\n{JOB}"), "name"),
         (
             "jobs:\n  b:\n    runs-on: {group: 1}\n    steps:\n      - run: echo\n".to_owned(),
-            "jobs.b.runs-on",
+            // B-35 contract change: routed at the selector key.
+            "jobs.b.runs-on.group",
         ),
     ] {
         assert_eq!(
@@ -165,7 +162,8 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
         (format!("on: [1]\n{JOB}"), Some("on[1]")),
         (
             "jobs:\n  b:\n    runs-on: {bogus: linux}\n    steps:\n      - run: echo\n".to_owned(),
-            Some("jobs.b.runs-on"),
+            // B-35 contract change: routed at the unknown selector key.
+            Some("jobs.b.runs-on.bogus"),
         ),
         (
             format!("on: {{workflow_dispatch: {{inputs: {{a: {{type: object}}}}}}}}\n{JOB}"),
@@ -188,7 +186,8 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
         ),
         (
             "jobs:\n  b:\n    runs-on: {group: ~}\n    steps:\n      - run: echo\n".to_owned(),
-            Some("jobs.b.runs-on"),
+            // B-35 contract change: routed at the selector key.
+            Some("jobs.b.runs-on.group"),
         ),
         ("jobs: {}".to_owned(), Some("jobs")),
         ("jobs: [".to_owned(), None),

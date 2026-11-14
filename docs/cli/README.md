@@ -461,8 +461,14 @@ No runner is discovered, selected or provisioned, and labels do not establish pl
 
 Null values, nested lists, empty lists and blank members fail before stdout; a number or boolean
 (scalar or list entry, converted to a string by the pinned reader) is unsupported rather than invalid.
-Runner-selector mappings, including one whose `group` or `labels` hold numbers or booleans, are
-explicitly unsupported. `${{` text in a scalar or list label is kept unevaluated and never
+A runner-selector mapping (B-35) with `group` and/or `labels` is reported as written, and no
+runner group is resolved or selected: `Runner group: fleet (not selected)` (or
+`(unevaluated; expression syntax not validated; not selected)`), followed by its labels in the
+scalar or list form above; `labels: []` renders `Runner labels: []`. Like the pinned converter, a
+literal group with more than one `/`, or one `/` without an `org`, `organization`, `ent` or
+`enterprise` prefix and a name, is invalid; an expression group is not checked. Unknown keys,
+nulls, blank text and nested values are invalid at `jobs.build.runs-on.group` or
+`.labels[2]`; numbers and booleans there are unsupported, as is an empty mapping `{}`. `${{` text in a scalar or list label is kept unevaluated and never
 selects a runner: `Runner: ${{ matrix.os }} (unevaluated; expression syntax not validated)`, or a
 list followed by `(some unevaluated; expression syntax not validated)`. Semantic diagnostics identify `jobs.build.runs-on[2]` for a second label;
 decoding errors retain available source context. No normalization or label resolution occurs.

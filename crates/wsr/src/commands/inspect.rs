@@ -188,38 +188,9 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
         if let Some(name) = job.name {
             write!(out, " ({})", display_name(name))?;
         }
-        match job.runner {
-            None => writeln!(out)?,
-            Some(RunnerRequirement::Label(SourceText::Literal(label))) => {
-                writeln!(out, "\n  Runner: {}", label.escape_debug())?
-            }
-            Some(RunnerRequirement::Label(SourceText::Unevaluated(label))) => writeln!(
-                out,
-                "\n  Runner: {} (unevaluated; expression syntax not validated)",
-                label.escape_debug()
-            )?,
-            Some(RunnerRequirement::Labels(labels)) => {
-                let unevaluated = labels
-                    .iter()
-                    .any(|label| matches!(label, SourceText::Unevaluated(_)));
-                write!(
-                    out,
-                    "\n  Runner labels: [{}]",
-                    labels
-                        .iter()
-                        .map(
-                            |(SourceText::Literal(label) | SourceText::Unevaluated(label))| {
-                                format!("{label:?}")
-                            }
-                        )
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )?;
-                if unevaluated {
-                    write!(out, " (some unevaluated; expression syntax not validated)")?;
-                }
-                writeln!(out)?
-            }
+        writeln!(out)?;
+        if let Some(runner) = job.runner {
+            render_runner(&mut out, runner)?;
         }
         if !job.needs.is_empty() {
             writeln!(
@@ -448,6 +419,60 @@ fn render_defaults(out: &mut String, indent: &str, defaults: RunDefaults) -> std
         }
     }
     Ok(())
+}
+
+fn render_runner(out: &mut String, runner: RunnerRequirement) -> std::fmt::Result {
+    match runner {
+        RunnerRequirement::Label(SourceText::Literal(label)) => {
+            writeln!(out, "  Runner: {}", label.escape_debug())
+        }
+        RunnerRequirement::Label(SourceText::Unevaluated(label)) => writeln!(
+            out,
+            "  Runner: {} (unevaluated; expression syntax not validated)",
+            label.escape_debug()
+        ),
+        RunnerRequirement::Labels(labels) => {
+            let unevaluated = labels
+                .iter()
+                .any(|label| matches!(label, SourceText::Unevaluated(_)));
+            write!(
+                out,
+                "  Runner labels: [{}]",
+                labels
+                    .iter()
+                    .map(
+                        |(SourceText::Literal(label) | SourceText::Unevaluated(label))| {
+                            format!("{label:?}")
+                        }
+                    )
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
+            if unevaluated {
+                write!(out, " (some unevaluated; expression syntax not validated)")?;
+            }
+            writeln!(out)
+        }
+        RunnerRequirement::Selector { group, labels } => {
+            match group {
+                Some(SourceText::Literal(group)) => writeln!(
+                    out,
+                    "  Runner group: {} (not selected)",
+                    group.escape_debug()
+                )?,
+                Some(SourceText::Unevaluated(group)) => writeln!(
+                    out,
+                    "  Runner group: {} (unevaluated; expression syntax not validated; not selected)",
+                    group.escape_debug()
+                )?,
+                None => {}
+            }
+            match labels {
+                Some(labels) => render_runner(out, *labels),
+                None => Ok(()),
+            }
+        }
+    }
 }
 
 fn render_unapplied(

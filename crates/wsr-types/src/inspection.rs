@@ -216,6 +216,14 @@ pub enum RunnerRequirement {
     Label(SourceText),
     /// Source list, retaining order, spelling and repetitions; entries may be unevaluated.
     Labels(Vec<SourceText>),
+    /// `group`/`labels` mapping (D-033 temporary GHA-derived type), never resolved to a runner.
+    /// `labels` is only ever `Label` or `Labels`, keeping its source form.
+    Selector {
+        /// Runner group as written, literal or unevaluated.
+        group: Option<SourceText>,
+        /// Labels as written.
+        labels: Option<Box<RunnerRequirement>>,
+    },
 }
 
 use std::collections::BTreeMap;

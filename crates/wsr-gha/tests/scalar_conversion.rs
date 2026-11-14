@@ -182,15 +182,22 @@ fn runner_conversions_are_unsupported_and_nulls_stay_invalid() {
         for (field, route) in [
             (format!("runs-on: {value}"), "jobs.b.runs-on"),
             (format!("runs-on: [linux, {value}]"), "jobs.b.runs-on[2]"),
-            (format!("runs-on: {{group: {value}}}"), "jobs.b.runs-on"),
-            (format!("runs-on: {{labels: {value}}}"), "jobs.b.runs-on"),
+            // B-35 contract change: selector values are routed at their key.
+            (
+                format!("runs-on: {{group: {value}}}"),
+                "jobs.b.runs-on.group",
+            ),
+            (
+                format!("runs-on: {{labels: {value}}}"),
+                "jobs.b.runs-on.labels",
+            ),
             (
                 format!("runs-on: {{labels: [a, {value}]}}"),
-                "jobs.b.runs-on",
+                "jobs.b.runs-on.labels[2]",
             ),
             (
                 format!("runs-on: {{group: g, labels: [{value}]}}"),
-                "jobs.b.runs-on",
+                "jobs.b.runs-on.labels[1]",
             ),
         ] {
             cases.push(case(
@@ -203,9 +210,9 @@ fn runner_conversions_are_unsupported_and_nulls_stay_invalid() {
     for (field, route) in [
         ("runs-on: ~", "jobs.b.runs-on"),
         ("runs-on: [linux, ~]", "jobs.b.runs-on[2]"),
-        ("runs-on: {group: ~}", "jobs.b.runs-on"),
-        ("runs-on: {labels: ~}", "jobs.b.runs-on"),
-        ("runs-on: {labels: [a, ~]}", "jobs.b.runs-on"),
+        ("runs-on: {group: ~}", "jobs.b.runs-on.group"),
+        ("runs-on: {labels: ~}", "jobs.b.runs-on.labels"),
+        ("runs-on: {labels: [a, ~]}", "jobs.b.runs-on.labels[2]"),
     ] {
         cases.push(case(
             format!("jobs:\n  b:\n    {field}\n    steps:\n      - run: echo\n"),
