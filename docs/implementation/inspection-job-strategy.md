@@ -91,3 +91,8 @@ workspace compilation, Clippy with warnings denied, workspace tests and doctests
 CLI probes were written outside the repository: `services` remains Unsupported; call-job strategy
 inspects successfully and renders "not expanded" without loading the reference. The B-33..B-36
 expected diagnostics in the backlog were captured from live CLI probes.
+
+Cross-review follow-up: like the pinned reader (template-reader.ts L180-195), keys containing `${{`
+are not compared, though their values still are; boolean or number keys are `Unsupported` at any
+depth (`non-string key is not inspected yet`), not only at the matrix and include/exclude level.
+Observed red: the `{a: [{'${{ x }}': 1, '${{ X }}': 2}]}` probe was rejected as a duplicate.

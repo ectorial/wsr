@@ -442,7 +442,8 @@ Schedule A takes only ready slices.
 
 - Status: **delivered** in the Schedule B architecture PR `arch/review-2026-11-14-run6`.
 - Behavior: reject keys duplicated ignoring case in matrix axes, include/exclude items and nested
-  mapping values, using B-21 normalization. Keep the alias/size guard unchanged.
+  mapping values, using B-21 normalization. Keys containing `${{` are not compared (pinned reader
+  L180-195); boolean or number keys are `Unsupported` at any depth. Keep the alias/size guard unchanged.
 - Acceptance: strategy tests cover all four positions and a distinct-key control; CLI exit 1,
   empty stdout and a specific repeated-key route.
 - Expected red: `accepted duplicate matrix keys: {a: [1], A: [2]}`; CLI exit 0 instead of 1.
@@ -473,7 +474,7 @@ Schedule A takes only ready slices.
 - Acceptance: empty text, scalar conversions per B-13, wrong shapes and expression handling per
   the pinned schema context; a CLI golden with hostile text, the executed sentinel and the
   positive-controlled PATH trap.
-- Expected red (live probe): ``unsupported field `description`; this field is not inspected yet``.
+- Expected red (live probe): ``ci.yml: unsupported field `description`; this field is not inspected yet at line 2 column 1``.
 - Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs` (`WorkflowSummary`, D-033),
   `crates/wsr/src/commands/inspect.rs`, tests, `docs/cli/README.md`.
 - Relies on: D-031, D-033.

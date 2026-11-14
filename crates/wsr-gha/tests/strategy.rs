@@ -161,4 +161,15 @@ fn matrix_keys_are_unique_ignoring_case() {
         );
     }
     assert!(inspect_strategy("{matrix: {a: [{x: 1, Y: 2}], B: [2]}}").is_ok());
+    // The pinned reader skips the duplicate check for expression keys.
+    assert!(inspect_strategy("{matrix: {a: [{'${{ x }}': 1, '${{ X }}': 2}]}}").is_ok());
+    for matrix in ["{a: [{1: x, '1': y}]}", "{a: [{true: x, 'TRUE': y}]}"] {
+        let error = inspect_strategy(&format!("{{matrix: {matrix}}}")).unwrap_err();
+        assert_eq!(error.category(), wsr_gha::Category::Unsupported, "{matrix}");
+        assert_eq!(
+            error.route(),
+            Some("jobs.a.strategy.matrix.a[1]"),
+            "{matrix}"
+        );
+    }
 }

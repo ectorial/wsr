@@ -2619,10 +2619,9 @@ fn inspect_rejects_matrix_keys_duplicated_ignoring_case() {
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(1));
     assert!(output.stdout.is_empty());
-    assert!(
-        String::from_utf8(output.stderr)
-            .unwrap()
-            .contains("jobs.a.strategy.matrix.A")
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: wsr inspect: ci.yml: jobs.a.strategy.matrix.A: duplicate key 'A'; already defined as 'a'\n"
     );
 }
 

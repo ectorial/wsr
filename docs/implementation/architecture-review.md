@@ -170,8 +170,9 @@ Findings are classified (a) bounded correction, (b) owner decision — see
 - Audited range: `0792966..52b43b7` (PRs #57–#60; #57 is run 5's architecture PR; no open Schedule A PR).
   Auditor: Codex gpt-6.1-sol (reasoning high); burn mode ended 2026-11-14 00:00 America/Denver,
   alternation resumes. Implementer: Codex gpt-6.1-sol (medium).
-- Cross-review: pending
-  Planned cross-reviewer: claude-opus-5-5 (high).
+- Cross-review: claude-opus-5-5 (high): P2 nested `${{` keys wrongly compared (the pinned reader skips them), P3
+  nested boolean/number keys never compared, P3 CLI guide silent on B-31, P3 loose CLI assertion and B-33 red text;
+  all fixed before PR (nested non-string keys now `Unsupported`; red observed on the expression-key probe).
 - Verified clean (audit baseline): 181 tests green; all 8 repository workflows inspect including
   `release.yml`, byte-identical repeat output; exit codes 0/1/2, empty stdout on failure;
   control/bidi escaping; no legacy WorkflowIR/WorkflowProvider adoption, no Serialize on inspection

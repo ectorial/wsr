@@ -179,6 +179,11 @@ fn unique_matrix_keys(route: &str, value: &Value) -> Result<(), Error> {
             for (key, value) in entries {
                 let field = if let Value::String(key) = key {
                     let field = format!("{route}.{key}");
+                    // The pinned reader does not compare expression keys.
+                    if key.contains("${{") {
+                        unique_matrix_keys(&field, value)?;
+                        continue;
+                    }
                     if let Some(first) = spellings.insert(key.to_uppercase(), key) {
                         return Err(Error::invalid(
                             field,
@@ -190,6 +195,12 @@ fn unique_matrix_keys(route: &str, value: &Value) -> Result<(), Error> {
                         ));
                     }
                     field
+                } else if matches!(key, Value::Bool(_) | Value::Number(_)) {
+                    // The pinned parser converts these keys to strings before comparing them.
+                    return Err(Error::unsupported(
+                        route,
+                        "non-string key is not inspected yet",
+                    ));
                 } else {
                     route.to_owned()
                 };
