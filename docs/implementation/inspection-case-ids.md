@@ -1,7 +1,8 @@
 # Case-insensitive identifier iteration: job and dispatch input IDs (backlog B-21)
 
 Status: **delivered on merge of its PR**, branch `feat/b21-case-insensitive-ids` from `ba2c704`
-(Schedule A). Evidence lives in the [checkpoint](inspection-progress.md).
+(Schedule A). Implemented by Claude
+(claude-opus-5-5, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no findings. Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Scope
 
