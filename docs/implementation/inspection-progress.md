@@ -1,6 +1,23 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-19 job environment implemented; PR pending checks
+## Current checkpoint — B-21 case-insensitive identifiers implemented; PR pending checks
+
+New Schedule A run (lock created 2026-11-14T02:24Z; none present). PR #49 (B-19) had merged as
+`7ecb135` and Schedule B's PR #50 as `ba2c704`; no loop PR open. B-21 on
+`feat/b21-case-insensitive-ids` from `ba2c704`; slice record
+[inspection-case-ids.md](inspection-case-ids.md). Implemented by Claude (claude-opus-5-5,
+orchestrator, burn mode); cross-reviewed by Codex gpt-6.1-sol (high): no findings.
+
+- Red (observed): the `build`/`Build` (`compiler.rs`) and `mode`/`MODE` (`dispatch_inputs.rs`)
+  probes inspected successfully (`unwrap_err` on `Ok`). The CLI table row was added with them and run
+  only after implementation (acceptance).
+- Green: 2 `wsr-gha` tests, 1 CLI row; `cargo test -p wsr --test inspection` (58); `cargo xtask ci`;
+  `git diff --check`.
+
+B-21 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-22 (push/pull_request filters).
+
+## Previous checkpoint — B-19 job environment delivered (PR #49, `7ecb135`)
 
 Same Schedule A run, after the PR #48 wake (lock retaken 2026-11-13). PR #48 squash-merged as
 `e39fe9e` after all four required checks passed on `f581333` with no reviews or comments; `wsr` and

@@ -504,6 +504,7 @@ fn unique_jobs<'de, D: serde::Deserializer<'de>>(
             mut map: M,
         ) -> Result<Self::Value, M::Error> {
             let mut jobs = BTreeMap::new();
+            let mut spellings = BTreeMap::new();
             while let Some(id) = map.next_key::<serde_yaml::Value>()? {
                 // The identifier is validated before its body is decoded, so it cannot forge
                 // the route of a body diagnostic.
@@ -524,6 +525,17 @@ fn unique_jobs<'de, D: serde::Deserializer<'de>>(
                     return Err(diagnostic::raise(Error::invalid(
                         format!("jobs.{id}"),
                         format_args!("duplicate job identifier '{}'", id.escape_debug()),
+                    )));
+                }
+                // The pinned reader also rejects identifiers repeated ignoring case.
+                if let Some(first) = spellings.insert(id.to_uppercase(), id.clone()) {
+                    return Err(diagnostic::raise(Error::invalid(
+                        format!("jobs.{id}"),
+                        format_args!(
+                            "duplicate job identifier '{}'; already defined as '{}'",
+                            id.escape_debug(),
+                            first.escape_debug()
+                        ),
                     )));
                 }
                 jobs.insert(id, job);

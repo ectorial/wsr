@@ -158,6 +158,7 @@ fn dispatch(body: &Value) -> Result<ManualTrigger, Error> {
         .map(|value| {
             let inputs = mapping(value, "on.workflow_dispatch.inputs")?;
             let mut result = Vec::new();
+            let mut spellings = std::collections::BTreeMap::new();
             for (id, value) in inputs {
                 let id = text(id, "on.workflow_dispatch.inputs")?;
                 let route = format!("on.workflow_dispatch.inputs.{id}");
@@ -170,6 +171,17 @@ fn dispatch(body: &Value) -> Result<ManualTrigger, Error> {
                     return Err(Error::invalid(
                         route,
                         format_args!("invalid input identifier '{}'", id.escape_debug()),
+                    ));
+                }
+                // The pinned reader rejects identifiers repeated ignoring case.
+                if let Some(first) = spellings.insert(id.to_uppercase(), id.clone()) {
+                    return Err(Error::invalid(
+                        route,
+                        format_args!(
+                            "duplicate input identifier '{}'; already defined as '{}'",
+                            id.escape_debug(),
+                            first.escape_debug()
+                        ),
                     ));
                 }
                 result.push(input(id, mapping(value, &route)?, &route)?);

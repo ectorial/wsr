@@ -62,3 +62,18 @@ fn dispatch_summary_retains_declared_types_defaults_and_omissions() {
     assert_eq!(inputs[3].input_type, Some(DispatchInputType::Number));
     assert_eq!(inputs[3].default, Some(InputDefault::Number("42".into())));
 }
+
+#[test]
+fn input_identifiers_repeated_ignoring_case_are_invalid() {
+    // B-21: the pinned reader rejects mapping keys repeated ignoring case.
+    let error = wsr_gha::inspect(
+        b"on:\n  workflow_dispatch:\n    inputs:\n      mode: {}\n      MODE: {}\njobs:\n  build:\n    runs-on: linux\n    steps:\n      - run: echo hello\n",
+    )
+    .unwrap_err();
+    assert_eq!(error.category(), wsr_gha::Category::Invalid);
+    assert_eq!(error.route(), Some("on.workflow_dispatch.inputs.MODE"));
+    assert_eq!(
+        error.to_string(),
+        "on.workflow_dispatch.inputs.MODE: duplicate input identifier 'MODE'; already defined as 'mode'"
+    );
+}

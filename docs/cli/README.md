@@ -131,7 +131,9 @@ input compatibility. Choice defaults are not checked for membership in options b
 
 Diagnostics identify the file and structural route, such as
 `on.workflow_dispatch.inputs.mode.options[2]` or `on.workflow_dispatch.inputs.bad id: invalid
-input identifier 'bad id'`. YAML duplicate-key/parse errors retain available source context;
+input identifier 'bad id'`. Input identifiers repeated ignoring case are invalid, as in the pinned
+reader (`on.workflow_dispatch.inputs.MODE: duplicate input identifier 'MODE'; already defined as
+'mode'`). YAML duplicate-key/parse errors retain available source context;
 semantic checks do not introduce exact source spans. The pinned official schema
 and converter references and intentional source-preservation differences are recorded in the
 [iteration record](../implementation/inspection-dispatch-inputs.md).
@@ -418,7 +420,8 @@ label`, `jobs.b.steps[1].id: expected a string`. An unknown key is reported at i
 mapping, whose detail names the key (``jobs.b.steps[1]: unknown field `bogus`, …``). Decoding
 errors keep the parser's line/column. Identifiers in diagnostic text are quoted as `'…'` and
 escaped once (`jobs.b\u{1}: invalid job identifier 'b\u{1}'`); a duplicate job names its
-identifier. Errors raised by the YAML parser or decoder itself (syntax, a scalar where a step
+identifier, and one repeated ignoring case also names the first spelling (`jobs.Build: duplicate
+job identifier 'Build'; already defined as 'build'`). Errors raised by the YAML parser or decoder itself (syntax, a scalar where a step
 mapping belongs, duplicate keys inside a value, recursion/alias limits) keep the decoder's wording
 and zero-based path. Successful static validation does not establish scheduling, conditions,
 matrix expansion, skipped-job behavior or workflow execution.
