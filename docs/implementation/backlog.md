@@ -298,7 +298,11 @@ Schedule A takes only ready slices.
 
 - Status: ready
 
-- Behavior: each filter (`branches`, `branches-ignore`, `tags`, `tags-ignore`, `paths`, `paths-ignore`) is a
+- Behavior: the pinned schema (`actions/languageservices` `4043eda158e16579cc5fb1b0b07a4bce2a76f0b5`,
+  `workflow-v1.0.json`) allows different filters per event: `push` allows `branches`, `branches-ignore`, `tags`,
+  `tags-ignore`, `paths`, `paths-ignore`; `pull_request` and `pull_request_target` allow `types`, `branches`,
+  `branches-ignore`, `paths`, `paths-ignore` and no `tags`/`tags-ignore`. A key absent from the event's mapping
+  is `Invalid` (an unknown field of that event). Each allowed filter is a
   non-empty string or a sequence of non-empty strings; the definitions have no expression context, so `${{`
   text is `Invalid`; numbers and booleans follow B-13 (`Unsupported`); null is `Invalid`; giving both a filter
   and its `-ignore` counterpart is `Invalid`; `types` stays `Unsupported`. Rendered as
@@ -307,7 +311,9 @@ Schedule A takes only ready slices.
   gets the dogfood PATH shim and executed sentinel, and pins the exit-1 first diagnostic of `ci.yml` and
   `release.yml`, updated as slices land.
 - Acceptance: CLI goldens plus a hostile-text sentinel; temp copies of `ci.yml` and `release.yml` reach their
-  next diagnostic.
+  next diagnostic. Negative cases: `tags` and `tags-ignore` under `pull_request` and under
+  `pull_request_target` are rejected as `Invalid`, since the key is absent from those events' mappings in the
+  pinned schema; `tags` under `push` is accepted.
 - Expected red: ``on.push: event configuration is not inspected yet``.
 - Files: `crates/wsr-gha/src/dispatch.rs`, the `wsr-types` inspection module, `crates/wsr/src/commands/inspect.rs`,
   `crates/wsr-gha/tests/triggers.rs`, `crates/wsr/tests/inspection.rs`, docs.

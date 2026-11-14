@@ -60,8 +60,10 @@ states that execution compatibility is not assessed; runner names do not establi
 Success exits 0 and writes a deterministic human-readable summary to stdout, with empty stderr except the 500 KB size warning below.
 Unreadable/malformed source, invalid supported shapes, unknown fields and expressions in inspected
 strings exit 1, leave stdout empty and write a diagnostic to stderr. Diagnostics identify the file;
-YAML decoding errors include available line/column information and structural context. A location,
-when present, is the start of the enclosing mapping (for an unknown field, the field's own key) and may be absent. Semantic
+YAML decoding errors include available line/column information and structural context. A location
+follows the parser and may be absent: custom value diagnostics point at the start of the enclosing mapping,
+unknown-field diagnostics at the key, and other decoding errors (for example a wrong value type) and YAML syntax
+errors keep the parser's own position. Semantic
 checks identify a field path (step indices are one-based). Dynamic values are explicitly unevaluated.
 Clap invocation errors retain exit code 2. The output is pre-alpha, not a frozen machine protocol.
 

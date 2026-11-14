@@ -109,7 +109,7 @@ Findings are classified (a) bounded correction, (b) owner decision — see
   Auditor: claude-opus-5-5 (effort high), burn mode. Second opinion on F29: Codex gpt-6.1-sol (reasoning high),
   which confirmed F29 as medium diagnostic correctness/low operational impact, class (a), corrected the wording
   (no "valid GitHub Actions" claim, since schema membership recognizes the key, not the value) and found F37.
-  Implementer: claude-sonnet-5-5 (high). Cross-review: Codex gpt-6.1-sol (reasoning high): pending.
+  Implementer: claude-sonnet-5-5 (high). Cross-review: Codex gpt-6.1-sol (reasoning high): no code findings; P2 (B-22 tag filters are push-only) and P3 (location statement over-general) fixed before PR.
 - Verified clean: no legacy `WorkflowIR`/`WorkflowProvider` outside `wsr-types/src/lib.rs`; D-033 labels on
   `Trigger`, `Concurrency` and `Environment`; no `Serialize` on inspection types; no IO in `wsr-gha`/`wsr-types`;
   exit codes 0/1/2 and empty stdout on failure; byte-identical repeat output; 101 category probes over the

@@ -51,6 +51,8 @@ was unreachable.
 
 ## Limitations
 
-- The location suffix still follows the parser: the start of the enclosing mapping for value errors and the
-  key for unknown fields (the [CLI guide](../cli/README.md) says so).
+- The location suffix still follows the parser and may be absent: custom value diagnostics point at the start of
+  the enclosing mapping, unknown-field diagnostics at the key, and other decoding and syntax errors keep the
+  parser's location (`name: foo\njobs: []\n` reports line 2 column 7, the sequence value; the
+  [CLI guide](../cli/README.md) says so).
 - `unknown field` text inside `on` bodies prints the raw key; the CLI escapes control characters at output.
