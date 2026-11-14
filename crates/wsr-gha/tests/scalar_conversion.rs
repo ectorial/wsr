@@ -2,6 +2,8 @@
 //! validates that string, so a schema-valid conversion is `Unsupported` (valid GHA WSR does not
 //! inspect) and a value the schema or the runner rejects is `Invalid`.
 
+mod common;
+
 use std::collections::BTreeMap;
 
 use wsr_gha::Category::{self, Invalid, Unsupported};
@@ -35,7 +37,7 @@ fn mismatches(cases: Vec<(String, Category, String)>) -> Vec<String> {
     cases
         .into_iter()
         .filter_map(|(source, category, route)| {
-            let outcome = match wsr_gha::inspect(source.as_bytes()) {
+            let outcome = match common::inspect(source.as_bytes()) {
                 Ok(_) => "accepted".to_owned(),
                 Err(error) => format!("{:?} at {:?}", error.category(), error.route()),
             };
@@ -87,7 +89,7 @@ fn name_and_run_name_conversions_are_unsupported_and_null_name_is_absent() {
         in_job("name: ~"),
         in_run_step("name: ~"),
     ] {
-        let summary = wsr_gha::inspect(source.as_bytes()).unwrap();
+        let summary = common::inspect(source.as_bytes()).unwrap();
         assert_eq!(summary.name, None, "{source}");
         assert_eq!(summary.jobs[0].name, None, "{source}");
         assert_eq!(summary.jobs[0].steps[0].name, None, "{source}");
@@ -322,7 +324,7 @@ fn env_and_with_null_values_are_unsupported_and_numbers_and_booleans_stay_accept
             "jobs.b.steps[1].with.a",
         ),
     ]);
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         in_uses_step("with: {n: 5, s: '5', b: true}\n        env: {n: 5, s: '5', b: true}")
             .as_bytes(),
     )
@@ -389,7 +391,7 @@ fn conditions_identifiers_references_and_timeouts_keep_their_categories() {
 
 #[test]
 fn quoted_scalars_keep_their_source_text_apart_from_unquoted_ones() {
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         format!(
             "run-name: '5'\nname: '5'\n{}",
             "jobs:\n  b:\n    name: '1'\n    runs-on: '2'\n    steps:\n      - run: '3'\n        name: '4'\n        working-directory: '6'\n"

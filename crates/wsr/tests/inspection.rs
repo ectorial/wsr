@@ -2,6 +2,24 @@ use std::fs;
 use std::path::Path;
 use std::process::{Command, Output};
 
+/// A fixture whose root lacks `on`, which the pinned schema requires (backlog B-25), gets
+/// `on: workflow_dispatch` appended after its content, so diagnostic locations are unchanged.
+fn with_on(source: impl AsRef<[u8]>) -> Vec<u8> {
+    let mut source = source.as_ref().to_vec();
+    let has_on = String::from_utf8_lossy(&source).lines().any(|line| {
+        ["on:", "on ", "\"on\"", "'on'", "{on:"]
+            .iter()
+            .any(|start| line.starts_with(start))
+    });
+    if !has_on {
+        if !source.is_empty() && !source.ends_with(b"\n") {
+            source.push(b'\n');
+        }
+        source.extend_from_slice(b"on: workflow_dispatch\n");
+    }
+    source
+}
+
 fn inspect(directory: &Path, file: &str) -> Output {
     Command::new(env!("CARGO_BIN_EXE_wsr"))
         .args(["inspect", file])
@@ -14,18 +32,18 @@ fn inspect(directory: &Path, file: &str) -> Output {
 fn inspect_reports_static_jobs_and_steps_without_running_them() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = "name: Local CI\njobs:\n  test:\n    name: Tests\n    runs-on: ubuntu-latest\n    steps:\n      - name: Dangerous command\n        run: touch executed\n      - uses: ./action\n";
-    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
     fs::write(directory.path().join("wsr.toml"), "invalid config sentinel").unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: Local CI\nInspection only; execution compatibility is not assessed.\nJob: test (Tests)\n  Runner: ubuntu-latest\n  Step 1: run (Dangerous command)\n  Step 2: uses ./action\n"
+        "Workflow: Local CI\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: test (Tests)\n  Runner: ubuntu-latest\n  Step 1: run (Dangerous command)\n  Step 2: uses ./action\n"
     );
     assert_eq!(
-        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
-        workflow
+        fs::read(directory.path().join("ci.yml")).unwrap(),
+        with_on(workflow)
     );
     assert_eq!(
         fs::read_to_string(directory.path().join("wsr.toml")).unwrap(),
@@ -41,13 +59,13 @@ fn inspect_reports_static_jobs_and_steps_without_running_them() {
 fn inspect_reports_name_and_runner_expressions_unevaluated() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = "jobs:\n  a:\n    name: \"${{ matrix.os }}$(touch executed)\\e[31m\\u202E\"\n    runs-on: ${{ matrix.os }}\n    steps:\n      - name: ${{ inputs.step }}\n        run: touch executed\n  b:\n    runs-on: [linux, \"${{ vars.POOL }}\\e\"]\n    steps:\n      - run: echo hello\n";
-    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: a (${{ matrix.os }}$(touch executed)\\u{1b}[31m\\u{202e}; unevaluated; expression syntax not validated)\n  Runner: ${{ matrix.os }} (unevaluated; expression syntax not validated)\n  Step 1: run (${{ inputs.step }}; unevaluated; expression syntax not validated)\nJob: b\n  Runner labels: [\"linux\", \"${{ vars.POOL }}\\u{1b}\"] (some unevaluated; expression syntax not validated)\n  Step 1: run\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a (${{ matrix.os }}$(touch executed)\\u{1b}[31m\\u{202e}; unevaluated; expression syntax not validated)\n  Runner: ${{ matrix.os }} (unevaluated; expression syntax not validated)\n  Step 1: run (${{ inputs.step }}; unevaluated; expression syntax not validated)\nJob: b\n  Runner labels: [\"linux\", \"${{ vars.POOL }}\\u{1b}\"] (some unevaluated; expression syntax not validated)\n  Step 1: run\n"
     );
     assert!(!directory.path().join("executed").exists());
 }
@@ -99,7 +117,7 @@ fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
             "duplicate job identifier",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -122,7 +140,7 @@ fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
 #[test]
 fn inspect_manual_workflow_is_deterministic_and_preserves_step_order() {
     let directory = tempfile::tempdir().unwrap();
-    fs::write(directory.path().join("ci.yml"), "on: workflow_dispatch\njobs:\n  zebra:\n    runs-on: linux\n    steps:\n      - uses: owner/action@v1\n      - run: echo last\n  alpha:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo first\n").unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on("on: workflow_dispatch\njobs:\n  zebra:\n    runs-on: linux\n    steps:\n      - uses: owner/action@v1\n      - run: echo last\n  alpha:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo first\n")).unwrap();
     let first = inspect(directory.path(), "ci.yml");
     assert_eq!(first.status.code(), Some(0), "{first:?}");
     let second = inspect(directory.path(), "ci.yml");
@@ -138,7 +156,9 @@ fn inspect_static_dependencies() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(
         directory.path().join("ci.yml"),
-        include_str!("../../../tests/fixtures/inspection/static-needs.yml"),
+        with_on(include_str!(
+            "../../../tests/fixtures/inspection/static-needs.yml"
+        )),
     )
     .unwrap();
     let output = inspect(directory.path(), "ci.yml");
@@ -146,7 +166,7 @@ fn inspect_static_dependencies() {
     assert!(output.stderr.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: Dependency example\nInspection only; execution compatibility is not assessed.\nJob: build\n  Runner: ubuntu-latest\n  Step 1: run\nJob: package\n  Runner: ubuntu-latest\n  Needs: build, test\n  Step 1: run\nJob: test\n  Runner: ubuntu-latest\n  Needs: build\n  Step 1: run\n"
+        "Workflow: Dependency example\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: build\n  Runner: ubuntu-latest\n  Step 1: run\nJob: package\n  Runner: ubuntu-latest\n  Needs: build, test\n  Step 1: run\nJob: test\n  Runner: ubuntu-latest\n  Needs: build\n  Step 1: run\n"
     );
 }
 
@@ -169,7 +189,7 @@ fn inspect_unknown_dependencies_fail_before_rendering() {
     ] {
         fs::write(
             directory.path().join("ci.yml"),
-            dependency_workflow(&[("build", ""), ("test", needs)]),
+            with_on(dependency_workflow(&[("build", ""), ("test", needs)])),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -190,7 +210,7 @@ fn inspect_rejects_self_dependencies() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(
         directory.path().join("ci.yml"),
-        dependency_workflow(&[("build", "    needs: build\n")]),
+        with_on(dependency_workflow(&[("build", "    needs: build\n")])),
     )
     .unwrap();
     let output = inspect(directory.path(), "ci.yml");
@@ -208,12 +228,12 @@ fn inspect_cycle_diagnostic_excludes_blocked_downstream_jobs() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(
         directory.path().join("ci.yml"),
-        dependency_workflow(&[
+        with_on(dependency_workflow(&[
             ("downstream", "    needs: one\n"),
             ("one", "    needs: two\n"),
             ("two", "    needs: [three]\n"),
             ("three", "    needs: one\n"),
-        ]),
+        ])),
     )
     .unwrap();
     let output = inspect(directory.path(), "ci.yml");
@@ -232,13 +252,13 @@ fn inspect_dependencies_allow_diamonds_repeated_edges_forward_references_and_emp
     let directory = tempfile::tempdir().unwrap();
     fs::write(
         directory.path().join("ci.yml"),
-        dependency_workflow(&[
+        with_on(dependency_workflow(&[
             ("package", "    needs: [test, build, test]\n"),
             ("test", "    needs: [build]\n"),
             ("build", "    needs: last\n"),
             ("last", "    needs: []\n"),
             ("disconnected", ""),
-        ]),
+        ])),
     )
     .unwrap();
     let first = inspect(directory.path(), "ci.yml");
@@ -258,10 +278,10 @@ fn inspect_unknown_dependencies_take_precedence_over_cycles() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(
         directory.path().join("ci.yml"),
-        dependency_workflow(&[
+        with_on(dependency_workflow(&[
             ("cycle", "    needs: cycle\n"),
             ("test", "    needs: [missing]\n"),
-        ]),
+        ])),
     )
     .unwrap();
     let output = inspect(directory.path(), "ci.yml");
@@ -304,7 +324,10 @@ fn inspect_rejects_malformed_and_dynamic_dependencies() {
     ] {
         fs::write(
             directory.path().join("ci.yml"),
-            dependency_workflow(&[("build", ""), ("test", &format!("    needs: {value}\n"))]),
+            with_on(dependency_workflow(&[
+                ("build", ""),
+                ("test", &format!("    needs: {value}\n")),
+            ])),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -342,10 +365,10 @@ fn inspect_dependency_validation_does_not_execute_or_modify_repository_inputs() 
             "      - run: touch executed",
             "      - run: touch executed\n      - uses: ./unopened-action",
         );
-        fs::write(root.join("ci.yml"), &source).unwrap();
+        fs::write(root.join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(root, "ci.yml");
         assert_eq!(output.status.code(), Some(status), "{output:?}");
-        assert_eq!(fs::read_to_string(root.join("ci.yml")).unwrap(), source);
+        assert_eq!(fs::read(root.join("ci.yml")).unwrap(), with_on(&source));
         for (file, contents) in sentinels {
             assert_eq!(fs::read_to_string(root.join(file)).unwrap(), contents);
         }
@@ -372,7 +395,7 @@ fn inspect_deep_dependency_chain_uses_bounded_graph_traversal() {
             "  job_{index}:\n    runs-on: linux\n{needs}    steps:\n      - run: echo hello\n"
         ));
     }
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty());
@@ -397,17 +420,17 @@ fn inspect_deep_dependency_chain_uses_bounded_graph_traversal() {
 fn inspect_explicit_step_identities_preserve_names_kinds_and_order() {
     let directory = tempfile::tempdir().unwrap();
     let source = include_str!("../../../tests/fixtures/inspection/step-identities.yml");
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty());
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: Step identity example\nInspection only; execution compatibility is not assessed.\nJob: build\n  Runner: ubuntu-latest\n  Step 1 [compile]: run (Compile sources)\n  Step 2 [upload]: uses ./unopened-action\n  Step 3: run\n"
+        "Workflow: Step identity example\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: build\n  Runner: ubuntu-latest\n  Step 1 [compile]: run (Compile sources)\n  Step 2 [upload]: uses ./unopened-action\n  Step 3: run\n"
     );
     assert_eq!(
-        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
-        source
+        fs::read(directory.path().join("ci.yml")).unwrap(),
+        with_on(source)
     );
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
     assert!(!directory.path().join("executed").exists());
@@ -435,7 +458,7 @@ fn inspect_rejects_invalid_step_identities_before_rendering() {
             "      - run:",
             &format!("      - id: {value}\n        run:"),
         );
-        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{value}: {output:?}");
         assert!(output.stdout.is_empty());
@@ -454,7 +477,7 @@ fn inspect_rejects_duplicate_explicit_step_ids_with_both_locations() {
     let directory = tempfile::tempdir().unwrap();
     let source = include_str!("../../../tests/fixtures/inspection/step-identities.yml")
         .replace("id: upload", "id: compile");
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(1), "{output:?}");
     assert!(output.stdout.is_empty());
@@ -476,7 +499,7 @@ fn inspect_step_ids_preserve_case_allow_cross_job_reuse_and_accept_length_bounda
     let source = format!(
         "jobs:\n  first:\n    runs-on: linux\n    steps:\n      - id: Build\n        run: echo first\n      - id: build\n        run: echo second\n      - id: {longest}\n        run: echo longest\n      - id: _valid-1\n        run: echo valid\n  second:\n    needs: first\n    runs-on: linux\n    steps:\n      - id: Build\n        run: echo reused\n"
     );
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty());
@@ -496,18 +519,18 @@ fn inspect_step_ids_preserve_case_allow_cross_job_reuse_and_accept_length_bounda
 fn inspect_runner_label_lists_preserve_steps_dependencies_and_sentinels() {
     let directory = tempfile::tempdir().unwrap();
     let source = include_str!("../../../tests/fixtures/inspection/runner-labels.yml");
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     fs::write(directory.path().join("wsr.toml"), "sentinel").unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty());
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: build\n  Runner labels: [\"self-hosted\", \"linux\", \"x64\"]\n  Step 1 [compile]: run\n  Step 2: uses ./unopened-action\nJob: test\n  Runner: ubuntu-latest\n  Needs: build\n  Step 1: run\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: build\n  Runner labels: [\"self-hosted\", \"linux\", \"x64\"]\n  Step 1 [compile]: run\n  Step 2: uses ./unopened-action\nJob: test\n  Runner: ubuntu-latest\n  Needs: build\n  Step 1: run\n"
     );
     assert_eq!(
-        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
-        source
+        fs::read(directory.path().join("ci.yml")).unwrap(),
+        with_on(source)
     );
     assert_eq!(
         fs::read_to_string(directory.path().join("wsr.toml")).unwrap(),
@@ -543,7 +566,7 @@ fn inspect_runner_labels_reject_empty_and_invalid_values() {
         let source = format!(
             "jobs:\n  build:\n    runs-on: {value}\n    steps:\n      - run: touch executed\n"
         );
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{value}: {output:?}");
         assert!(output.stdout.is_empty());
@@ -553,8 +576,8 @@ fn inspect_runner_labels_reject_empty_and_invalid_values() {
             "{value}: {error}"
         );
         assert_eq!(
-            fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
-            source
+            fs::read(directory.path().join("ci.yml")).unwrap(),
+            with_on(&source)
         );
         assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
     }
@@ -563,7 +586,7 @@ fn inspect_runner_labels_reject_empty_and_invalid_values() {
 #[test]
 fn inspect_runner_labels_quote_boundaries_preserve_case_order_and_repetitions() {
     let directory = tempfile::tempdir().unwrap();
-    fs::write(directory.path().join("ci.yml"), "jobs:\n  build:\n    runs-on: ['Linux', 'a,b', 'Linux', \"line\\nbreak\", 'quote\"label']\n    steps:\n      - run: echo hello\n  single:\n    runs-on: [linux]\n    steps:\n      - run: echo hello\n").unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on("jobs:\n  build:\n    runs-on: ['Linux', 'a,b', 'Linux', \"line\\nbreak\", 'quote\"label']\n    steps:\n      - run: echo hello\n  single:\n    runs-on: [linux]\n    steps:\n      - run: echo hello\n")).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty());
@@ -581,7 +604,7 @@ fn inspect_runner_labels_quote_boundaries_preserve_case_order_and_repetitions() 
 fn inspect_manual_input_declarations_without_applying_or_executing_them() {
     let directory = tempfile::tempdir().unwrap();
     let source = include_str!("../../../tests/fixtures/inspection/dispatch-inputs.yml");
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     fs::write(directory.path().join("wsr.toml"), "sentinel").unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
@@ -591,8 +614,8 @@ fn inspect_manual_input_declarations_without_applying_or_executing_them() {
         "Workflow: Manual input example\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\n  Input: mode\n    Type: choice\n    Description: Choose the reference outcome\n    Required: true\n    Default: \"pass\" (not applied)\n    Options: [\"pass\", \"fail\"]\nJob: build\n  Runner: ubuntu-latest\n  Step 1 [compile]: run\n  Step 2: uses ./unopened-action\n"
     );
     assert_eq!(
-        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
-        source
+        fs::read(directory.path().join("ci.yml")).unwrap(),
+        with_on(source)
     );
     assert_eq!(
         fs::read_to_string(directory.path().join("wsr.toml")).unwrap(),
@@ -641,7 +664,11 @@ fn inspect_dispatch_enforces_choice_options_and_default_types() {
             "default: expected a string for string, choice or environment input",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), dispatch_workflow(fields)).unwrap();
+        fs::write(
+            directory.path().join("ci.yml"),
+            with_on(dispatch_workflow(fields)),
+        )
+        .unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{fields}: {output:?}");
         assert!(output.stdout.is_empty());
@@ -720,7 +747,11 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
             "on.workflow_dispatch.inputs.value: unknown field `unexpected`",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), dispatch_workflow(fields)).unwrap();
+        fs::write(
+            directory.path().join("ci.yml"),
+            with_on(dispatch_workflow(fields)),
+        )
+        .unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{fields}: {output:?}");
         assert!(output.stdout.is_empty());
@@ -781,7 +812,7 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
         ),
     ] {
         let source = format!("on: {trigger}\n{}", dependency_workflow(&[("build", "")]));
-        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{trigger}: {output:?}");
         assert!(output.stdout.is_empty());
@@ -804,7 +835,10 @@ fn inspect_dispatch_preserves_empty_declarations_types_and_deterministic_order()
     ] {
         fs::write(
             directory.path().join("ci.yml"),
-            format!("on: {trigger}\n{}", dependency_workflow(&[("build", "")])),
+            with_on(format!(
+                "on: {trigger}\n{}",
+                dependency_workflow(&[("build", "")])
+            )),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -819,7 +853,7 @@ fn inspect_dispatch_preserves_empty_declarations_types_and_deterministic_order()
     let source = "on:\n  workflow_dispatch:\n    inputs:\n      z_string:\n        type: string\n        default: '42'\n        required: false\n      d_environment:\n        type: environment\n        default: production\n      c_number:\n        type: number\n        default: 42\n      b_boolean:\n        type: boolean\n        default: false\n      a_omitted:\n        description: \"line\\nbreak\"\n      e_choice:\n        type: choice\n        options: ['a,b', a, a]\n        default: other\n";
     fs::write(
         directory.path().join("ci.yml"),
-        format!("{source}{}", dependency_workflow(&[("build", "")])),
+        with_on(format!("{source}{}", dependency_workflow(&[("build", "")]))),
     )
     .unwrap();
     let first = inspect(directory.path(), "ci.yml");
@@ -864,7 +898,7 @@ fn inspect_dispatch_identifiers_and_dynamic_required_are_diagnosed() {
             "on: {{workflow_dispatch: {{inputs: {{'{key}': {fields}}}}}}}\n{}",
             dependency_workflow(&[("build", "")])
         );
-        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{output:?}");
         assert!(output.stdout.is_empty());
@@ -878,7 +912,7 @@ fn inspect_dispatch_identifiers_and_dynamic_required_are_diagnosed() {
     }
 }
 
-const RUN_NAME_HEADER: &str = "Workflow: Example shell reference\nInspection only; execution compatibility is not assessed.\n";
+const RUN_NAME_HEADER: &str = "Workflow: Example shell reference\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\n";
 
 fn run_name_workflow(run_name: &str) -> String {
     format!(
@@ -890,7 +924,7 @@ fn run_name_workflow(run_name: &str) -> String {
 fn inspect_run_name_reports_unevaluated_source_without_executing_or_binding_inputs() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = run_name_workflow("run-name: \"Shell reference — ${{ inputs.mode }}\"\n");
-    fs::write(directory.path().join("ci.yml"), &workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(&workflow)).unwrap();
     fs::write(directory.path().join("wsr.toml"), "invalid config sentinel").unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
@@ -902,8 +936,8 @@ fn inspect_run_name_reports_unevaluated_source_without_executing_or_binding_inpu
     );
     assert!(!stdout.contains("Shell reference — quick"), "{stdout}");
     assert_eq!(
-        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
-        workflow
+        fs::read(directory.path().join("ci.yml")).unwrap(),
+        with_on(&workflow)
     );
     assert_eq!(
         fs::read_to_string(directory.path().join("wsr.toml")).unwrap(),
@@ -945,7 +979,7 @@ fn inspect_run_name_literal_omitted_and_unvalidated_fences() {
     ] {
         fs::write(
             directory.path().join("ci.yml"),
-            run_name_workflow(declaration),
+            with_on(run_name_workflow(declaration)),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -975,7 +1009,7 @@ fn inspect_run_name_rejects_wrong_shapes_and_blank_text_before_rendering() {
     ] {
         fs::write(
             directory.path().join("ci.yml"),
-            run_name_workflow(declaration),
+            with_on(run_name_workflow(declaration)),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -993,8 +1027,7 @@ fn inspect_run_name_rejects_wrong_shapes_and_blank_text_before_rendering() {
 fn inspect_reports_unsupported_fields_without_claiming_them_valid() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(
-        directory.path().join("ci.yml"),
-        "jobs:\n  b:\n    runs-on: linux\n    strategy: {matrix: {a: [1]}}\n    steps:\n      - run: touch executed\n",
+        directory.path().join("ci.yml"), with_on("jobs:\n  b:\n    runs-on: linux\n    strategy: {matrix: {a: [1]}}\n    steps:\n      - run: touch executed\n"),
     )
     .unwrap();
     let output = inspect(directory.path(), "ci.yml");
@@ -1062,7 +1095,7 @@ fn inspect_diagnostics_use_one_based_field_routes_and_validate_job_ids_first() {
             "jobs.Build: duplicate job identifier 'Build'; already defined as 'build' at line 2 column 3",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -1100,7 +1133,7 @@ fn inspect_errors_never_write_raw_control_bytes_to_stderr() {
             format!("jobs:\n  \"\\e[31mbad\":\n{steps}"),
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{location}: {output:?}");
         assert!(output.stdout.is_empty(), "{location}: {output:?}");
@@ -1130,7 +1163,7 @@ fn inspect_errors_escape_unicode_format_characters_on_stderr() {
             "jobs.b\\u{202e}\\u{200b}\\u{2066}\\u{2069}: invalid job identifier 'b\\u{202e}\\u{200b}\\u{2066}\\u{2069}'",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -1148,14 +1181,14 @@ fn inspect_does_not_panic_when_stdout_is_closed_early() {
     use std::process::Stdio;
 
     let directory = tempfile::tempdir().unwrap();
-    let mut source = String::from("jobs:\n");
+    let mut source = String::from("on: workflow_dispatch\njobs:\n");
     for index in 0..5000 {
         source.push_str(&format!(
             "  job{index:05}:\n    name: A reasonably long display name for job {index}\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello\n"
         ));
     }
     let size = source.len();
-    fs::write(directory.path().join("big.yml"), source).unwrap();
+    fs::write(directory.path().join("big.yml"), with_on(source)).unwrap();
     let mut child = Command::new(env!("CARGO_BIN_EXE_wsr"))
         .args(["inspect", "big.yml"])
         .current_dir(directory.path())
@@ -1233,7 +1266,7 @@ fn inspect_rejects_non_regular_files_without_reading_them() {
 fn inspect_reports_requested_permissions_without_granting_them() {
     let directory = tempfile::tempdir().unwrap();
     let job = "    runs-on: linux\n    steps:\n      - run: touch executed\n";
-    let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\n";
+    let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\n";
     for (source, report) in [
         (
             format!("permissions: read-all\njobs:\n  b:\n{job}"),
@@ -1264,7 +1297,7 @@ fn inspect_reports_requested_permissions_without_granting_them() {
             ),
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(0), "{source}: {output:?}");
         assert!(output.stderr.is_empty(), "{source}: {output:?}");
@@ -1330,7 +1363,7 @@ fn inspect_rejects_permissions_outside_the_pinned_schema() {
             "permissions.x\\u{1b}[31m: unknown permission scope 'x\\u{1b}[31m'".to_owned(),
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -1345,7 +1378,7 @@ fn inspect_rejects_permissions_outside_the_pinned_schema() {
 #[test]
 fn inspect_reports_job_timeouts_and_step_shells_without_applying_them() {
     let directory = tempfile::tempdir().unwrap();
-    let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\n";
+    let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\n";
     for (source, report) in [
         (
             "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: 5\n    steps:\n      - run: touch executed\n        shell: bash\n      - uses: ./action\n",
@@ -1366,7 +1399,7 @@ fn inspect_reports_job_timeouts_and_step_shells_without_applying_them() {
             ),
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(0), "{source}: {output:?}");
         assert!(output.stderr.is_empty(), "{source}: {output:?}");
@@ -1419,7 +1452,7 @@ fn inspect_rejects_invalid_job_timeouts_and_step_shells() {
             "jobs.b.steps[1]: expected exactly one of run or uses",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -1434,7 +1467,7 @@ fn inspect_rejects_invalid_job_timeouts_and_step_shells() {
 #[test]
 fn inspect_reports_step_inputs_without_binding_or_passing_them() {
     let directory = tempfile::tempdir().unwrap();
-    let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n";
+    let head = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: b\n  Runner: linux\n";
     for (source, report) in [
         (
             r#"jobs:
@@ -1474,7 +1507,7 @@ fn inspect_reports_step_inputs_without_binding_or_passing_them() {
             ),
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(0), "{source}: {output:?}");
         assert!(output.stderr.is_empty(), "{source}: {output:?}");
@@ -1514,6 +1547,7 @@ jobs:
 "#;
     let report = r#"Workflow: (unnamed)
 Inspection only; execution compatibility is not assessed.
+Trigger: workflow_dispatch (not evaluated)
 Env (not bound):
   MODE: "${{ inputs.mode }}" (unevaluated)
   N: 3
@@ -1535,7 +1569,7 @@ Job: c
   Run defaults (not applied): {}
   Step 1: run
 "#;
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
@@ -1630,7 +1664,7 @@ fn inspect_rejects_invalid_workflow_and_job_env_and_run_defaults() {
             "jobs.b.defaults.run.working-directory: expected a nonempty string".to_owned(),
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -1662,6 +1696,7 @@ fn inspect_reports_job_and_step_conditions_without_evaluating_them() {
 "#;
     let report = r#"Workflow: (unnamed)
 Inspection only; execution compatibility is not assessed.
+Trigger: workflow_dispatch (not evaluated)
 Job: b
   Runner: linux
   Condition: github.event_name == \'push\' (not evaluated; expression syntax not validated)
@@ -1674,7 +1709,7 @@ Job: c
   Condition: ${{ inputs.mode == \'fail\' }} && always() (not evaluated; expression syntax not validated)
   Step 1: run
 "#;
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
@@ -1718,7 +1753,7 @@ fn inspect_rejects_conditions_outside_the_inspected_subset() {
             "jobs.b.steps[1].if: expected a string at line 5 column 9",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -1824,7 +1859,7 @@ fn inspect_rejects_invalid_step_inputs() {
             "jobs.b.steps[1].working-directory: expected a nonempty string".to_owned(),
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -1839,12 +1874,13 @@ fn inspect_rejects_invalid_step_inputs() {
 #[test]
 fn inspect_warns_above_the_github_workflow_size_limit_and_still_reports() {
     let directory = tempfile::tempdir().unwrap();
-    let workflow = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n# ";
-    let report = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Step 1: run\n";
+    let workflow =
+        "on: workflow_dispatch\njobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n# ";
+    let report = "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: b\n  Runner: linux\n  Step 1: run\n";
     for size in [511_999, 512_000, 512_001] {
         let source = format!("{workflow}{}\n", "x".repeat(size - workflow.len() - 1));
         assert_eq!(source.len(), size);
-        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(&source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(0), "{size}: {output:?}");
         assert_eq!(String::from_utf8(output.stdout).unwrap(), report, "{size}");
@@ -1865,9 +1901,10 @@ fn inspect_size_warning_does_not_panic_when_stderr_is_closed() {
     use std::process::Stdio;
 
     let directory = tempfile::tempdir().unwrap();
-    let workflow = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n# ";
+    let workflow =
+        "on: workflow_dispatch\njobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n# ";
     let source = format!("{workflow}{}\n", "x".repeat(512_001 - workflow.len() - 1));
-    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
     let mut child = Command::new(env!("CARGO_BIN_EXE_wsr"))
         .args(["inspect", "ci.yml"])
         .current_dir(directory.path())
@@ -1887,7 +1924,7 @@ fn inspect_size_warning_does_not_panic_when_stderr_is_closed() {
     assert_eq!(status.code(), Some(0));
     assert_eq!(
         stdout,
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Step 1: run\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: b\n  Runner: linux\n  Step 1: run\n"
     );
 }
 
@@ -1910,7 +1947,7 @@ fn inspect_rejects_unknown_shells_and_malformed_action_references() {
             "jobs.b.steps[1].uses: invalid action reference 'actions/checkout\\u{1b}\\u{202e}'; expected ./path, docker://image or owner/repo[/path]@ref",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), source).unwrap();
+        fs::write(directory.path().join("ci.yml"), with_on(source)).unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{source}: {output:?}");
         assert!(output.stdout.is_empty(), "{source}: {output:?}");
@@ -1940,7 +1977,11 @@ fn inspect_reports_bare_trigger_events_in_source_order() {
             "workflow_call push workflow_dispatch create",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), format!("on: {on}\n{job}")).unwrap();
+        fs::write(
+            directory.path().join("ci.yml"),
+            with_on(format!("on: {on}\n{job}")),
+        )
+        .unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(0), "{on}: {output:?}");
         assert!(output.stderr.is_empty(), "{on}: {output:?}");
@@ -1985,7 +2026,11 @@ fn inspect_rejects_unknown_and_configured_trigger_events() {
         ("{schedule: null}", "on.schedule: expected a sequence"),
         ("{push: main}", "on.push: expected null or a mapping"),
     ] {
-        fs::write(directory.path().join("ci.yml"), format!("on: {on}\n{job}")).unwrap();
+        fs::write(
+            directory.path().join("ci.yml"),
+            with_on(format!("on: {on}\n{job}")),
+        )
+        .unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{on}: {output:?}");
         assert!(output.stdout.is_empty(), "{on}: {output:?}");
@@ -2090,13 +2135,13 @@ fn inspect_reports_workflow_calls_without_loading_them() {
     )
     .unwrap();
     let workflow = "jobs:\n  a:\n    uses: ./.github/workflows/target.yml\n    with:\n      mode: \"x$(touch executed)\\e[31m\\u202E\"\n      ref: ${{ github.ref }}\n    secrets: inherit\n  b:\n    uses: ./.github/workflows/missing.yml\n    secrets:\n      token: ${{ secrets.T }}\n";
-    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: a\n  Calls workflow: ./.github/workflows/target.yml (not loaded; not resolved)\n  With (not passed):\n    mode: \"x$(touch executed)\\u{1b}[31m\\u{202e}\"\n    ref: \"${{ github.ref }}\" (unevaluated)\n  Secrets: inherit (not passed)\nJob: b\n  Calls workflow: ./.github/workflows/missing.yml (not loaded; not resolved)\n  Secrets (not passed):\n    token: \"${{ secrets.T }}\" (unevaluated)\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Calls workflow: ./.github/workflows/target.yml (not loaded; not resolved)\n  With (not passed):\n    mode: \"x$(touch executed)\\u{1b}[31m\\u{202e}\"\n    ref: \"${{ github.ref }}\" (unevaluated)\n  Secrets: inherit (not passed)\nJob: b\n  Calls workflow: ./.github/workflows/missing.yml (not loaded; not resolved)\n  Secrets (not passed):\n    token: \"${{ secrets.T }}\" (unevaluated)\n"
     );
     assert!(!directory.path().join("executed").exists());
     assert!(
@@ -2142,7 +2187,7 @@ fn inspect_rejects_invalid_workflow_calls() {
     ] {
         fs::write(
             directory.path().join("ci.yml"),
-            format!("jobs:\n  b:\n{job}"),
+            with_on(format!("jobs:\n  b:\n{job}")),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -2161,7 +2206,7 @@ fn inspect_rejects_invalid_workflow_calls() {
 fn inspect_reports_event_filters_without_matching_them() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = "on:\n  push:\n    branches: [main, \"x$(touch executed)\\e[31m\\u202E\"]\n    tags-ignore: v*\n  pull_request:\n    paths: docs/**\n  pull_request_target:\n    branches-ignore: []\njobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: touch executed\n";
-    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
@@ -2202,7 +2247,11 @@ fn inspect_rejects_invalid_event_filters() {
             "on.pull_request.types: unsupported field `types`; this field is not inspected yet",
         ),
     ] {
-        fs::write(directory.path().join("ci.yml"), format!("on: {on}\n{job}")).unwrap();
+        fs::write(
+            directory.path().join("ci.yml"),
+            with_on(format!("on: {on}\n{job}")),
+        )
+        .unwrap();
         let output = inspect(directory.path(), "ci.yml");
         assert_eq!(output.status.code(), Some(1), "{on}: {output:?}");
         assert!(output.stdout.is_empty(), "{on}: {output:?}");
@@ -2219,13 +2268,13 @@ fn inspect_rejects_invalid_event_filters() {
 fn inspect_reports_concurrency_without_applying_it() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = "concurrency: \"ci-$(touch executed)\\e[31m\\u202E\"\njobs:\n  b:\n    runs-on: linux\n    concurrency:\n      group: ${{ github.ref }}\n      cancel-in-progress: true\n      queue: max\n    steps:\n      - run: touch executed\n";
-    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nConcurrency (not applied):\n  Group: ci-$(touch executed)\\u{1b}[31m\\u{202e}\nJob: b\n  Runner: linux\n  Concurrency (not applied):\n    Group: ${{ github.ref }} (unevaluated; expression syntax not validated)\n    Cancel in progress: true\n    Queue: max\n  Step 1: run\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nConcurrency (not applied):\n  Group: ci-$(touch executed)\\u{1b}[31m\\u{202e}\nJob: b\n  Runner: linux\n  Concurrency (not applied):\n    Group: ${{ github.ref }} (unevaluated; expression syntax not validated)\n    Cancel in progress: true\n    Queue: max\n  Step 1: run\n"
     );
     assert!(!directory.path().join("executed").exists());
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
@@ -2258,8 +2307,7 @@ fn inspect_rejects_concurrency_outside_the_inspected_subset() {
         ),
     ] {
         fs::write(
-            directory.path().join("ci.yml"),
-            format!("jobs:\n  b:\n    runs-on: linux\n    concurrency: {value}\n    steps:\n      - run: echo\n"),
+            directory.path().join("ci.yml"), with_on(format!("jobs:\n  b:\n    runs-on: linux\n    concurrency: {value}\n    steps:\n      - run: echo\n")),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -2278,13 +2326,13 @@ fn inspect_rejects_concurrency_outside_the_inspected_subset() {
 fn inspect_reports_continue_on_error_and_step_timeouts_without_applying_them() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: 5\n    continue-on-error: \"${{ $(touch executed)\\e\\u202E }}\"\n    steps:\n      - run: touch executed\n        continue-on-error: true\n        timeout-minutes: 1.5\n      - uses: ./action\n        timeout-minutes: ${{ inputs.minutes }}\n";
-    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Timeout minutes: 5 (not applied)\n  Continue on error: ${{ $(touch executed)\\u{1b}\\u{202e} }} (unevaluated; expression syntax not validated; not applied)\n  Step 1: run\n    Continue on error: true (not applied)\n    Timeout minutes: 1.5 (not applied)\n  Step 2: uses ./action\n    Timeout minutes: ${{ inputs.minutes }} (unevaluated; expression syntax not validated; not applied)\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: b\n  Runner: linux\n  Timeout minutes: 5 (not applied)\n  Continue on error: ${{ $(touch executed)\\u{1b}\\u{202e} }} (unevaluated; expression syntax not validated; not applied)\n  Step 1: run\n    Continue on error: true (not applied)\n    Timeout minutes: 1.5 (not applied)\n  Step 2: uses ./action\n    Timeout minutes: ${{ inputs.minutes }} (unevaluated; expression syntax not validated; not applied)\n"
     );
     assert!(!directory.path().join("executed").exists());
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
@@ -2309,7 +2357,7 @@ fn inspect_rejects_non_boolean_continue_on_error_and_non_number_step_timeouts() 
     ] {
         fs::write(
             directory.path().join("ci.yml"),
-            format!("jobs:\n  b:\n    runs-on: linux\n{field}"),
+            with_on(format!("jobs:\n  b:\n    runs-on: linux\n{field}")),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -2328,13 +2376,13 @@ fn inspect_rejects_non_boolean_continue_on_error_and_non_number_step_timeouts() 
 fn inspect_reports_job_outputs_without_resolving_them() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = "jobs:\n  b:\n    runs-on: linux\n    outputs:\n      result: ${{ steps.s.outputs.r }}\n      \"n\\u202E\": \"$(touch executed)\\e[31m\"\n    steps:\n      - id: s\n        run: touch executed\n  c:\n    runs-on: linux\n    outputs: {}\n    steps:\n      - run: echo\n";
-    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Outputs (not resolved):\n    n\\u{202e}: \"$(touch executed)\\u{1b}[31m\"\n    result: \"${{ steps.s.outputs.r }}\" (unevaluated)\n  Step 1 [s]: run\nJob: c\n  Runner: linux\n  Outputs (not resolved): {}\n  Step 1: run\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: b\n  Runner: linux\n  Outputs (not resolved):\n    n\\u{202e}: \"$(touch executed)\\u{1b}[31m\"\n    result: \"${{ steps.s.outputs.r }}\" (unevaluated)\n  Step 1 [s]: run\nJob: c\n  Runner: linux\n  Outputs (not resolved): {}\n  Step 1: run\n"
     );
     assert!(!directory.path().join("executed").exists());
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
@@ -2359,8 +2407,7 @@ fn inspect_rejects_job_outputs_outside_the_inspected_subset() {
         ),
     ] {
         fs::write(
-            directory.path().join("ci.yml"),
-            format!("jobs:\n  b:\n    runs-on: linux\n    outputs: {outputs}\n    steps:\n      - run: echo\n"),
+            directory.path().join("ci.yml"), with_on(format!("jobs:\n  b:\n    runs-on: linux\n    outputs: {outputs}\n    steps:\n      - run: echo\n")),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -2379,13 +2426,13 @@ fn inspect_rejects_job_outputs_outside_the_inspected_subset() {
 fn inspect_reports_job_environments_without_selecting_them() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = "jobs:\n  b:\n    runs-on: linux\n    environment: \"prod$(touch executed)\\e\\u202E\"\n    steps:\n      - run: touch executed\n  c:\n    runs-on: linux\n    environment:\n      name: ${{ inputs.target }}\n      url: https://example.test\n      deployment: false\n    outputs:\n      u: ${{ steps.d.outputs.url }}\n    steps:\n      - run: echo\n";
-    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
     let output = inspect(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: b\n  Runner: linux\n  Environment (not selected; no protection rules evaluated):\n    Name: prod$(touch executed)\\u{1b}\\u{202e}\n  Step 1: run\nJob: c\n  Runner: linux\n  Environment (not selected; no protection rules evaluated):\n    Name: ${{ inputs.target }} (unevaluated; expression syntax not validated)\n    URL: https://example.test\n    Deployment: false\n  Outputs (not resolved):\n    u: \"${{ steps.d.outputs.url }}\" (unevaluated)\n  Step 1: run\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: b\n  Runner: linux\n  Environment (not selected; no protection rules evaluated):\n    Name: prod$(touch executed)\\u{1b}\\u{202e}\n  Step 1: run\nJob: c\n  Runner: linux\n  Environment (not selected; no protection rules evaluated):\n    Name: ${{ inputs.target }} (unevaluated; expression syntax not validated)\n    URL: https://example.test\n    Deployment: false\n  Outputs (not resolved):\n    u: \"${{ steps.d.outputs.url }}\" (unevaluated)\n  Step 1: run\n"
     );
     assert!(!directory.path().join("executed").exists());
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
@@ -2414,8 +2461,7 @@ fn inspect_rejects_job_environments_outside_the_inspected_subset() {
         ),
     ] {
         fs::write(
-            directory.path().join("ci.yml"),
-            format!("jobs:\n  b:\n    runs-on: linux\n    environment: {environment}\n    steps:\n      - run: echo\n"),
+            directory.path().join("ci.yml"), with_on(format!("jobs:\n  b:\n    runs-on: linux\n    environment: {environment}\n    steps:\n      - run: echo\n")),
         )
         .unwrap();
         let output = inspect(directory.path(), "ci.yml");
@@ -2427,4 +2473,24 @@ fn inspect_rejects_job_environments_outside_the_inspected_subset() {
             "{environment}"
         );
     }
+}
+
+// Backlog B-25: the pinned root schema requires `on`.
+#[test]
+fn inspect_rejects_a_workflow_without_on() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: touch executed\n";
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: wsr inspect: ci.yml: missing field `on`\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        source
+    );
 }

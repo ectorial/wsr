@@ -1,5 +1,7 @@
 //! Backlog B-14: literal `shell` and `uses` text the runner rejects is invalid source.
 
+mod common;
+
 use wsr_gha::Category;
 use wsr_types::inspection::StepSummaryKind;
 
@@ -34,7 +36,7 @@ fn shells_that_are_neither_built_in_nor_format_strings_are_invalid() {
             (defaults("workflow", shell), "defaults.run.shell"),
             (defaults("job", shell), "jobs.b.defaults.run.shell"),
         ] {
-            let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+            let error = common::inspect(source.as_bytes()).unwrap_err();
             assert_eq!(
                 (error.category(), error.route()),
                 (Category::Invalid, Some(route)),
@@ -58,11 +60,11 @@ fn built_in_shells_and_format_strings_are_kept() {
         "bash ",
         "bash -e {0}",
     ] {
-        let summary = wsr_gha::inspect(run_step(&format!("shell: '{shell}'")).as_bytes())
+        let summary = common::inspect(run_step(&format!("shell: '{shell}'")).as_bytes())
             .unwrap_or_else(|error| panic!("{shell}: {error}"));
         assert_eq!(summary.jobs[0].steps[0].shell.as_deref(), Some(shell));
         for level in ["workflow", "job"] {
-            wsr_gha::inspect(defaults(level, &format!("'{shell}'")).as_bytes())
+            common::inspect(defaults(level, &format!("'{shell}'")).as_bytes())
                 .unwrap_or_else(|error| panic!("{level} {shell}: {error}"));
         }
     }
@@ -81,7 +83,7 @@ fn malformed_action_references_are_invalid() {
         "docker://",
         "action",
     ] {
-        let error = wsr_gha::inspect(uses_step(reference).as_bytes()).unwrap_err();
+        let error = common::inspect(uses_step(reference).as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (Category::Invalid, Some("jobs.b.steps[1].uses")),
@@ -103,7 +105,7 @@ fn well_formed_action_references_are_reported_verbatim() {
         ".\\.github\\actions\\build",
         "owner/repo@3d3c42e5aac5ba805825da76410c181273ba90b1",
     ] {
-        let summary = wsr_gha::inspect(uses_step(reference).as_bytes())
+        let summary = common::inspect(uses_step(reference).as_bytes())
             .unwrap_or_else(|error| panic!("{reference}: {error}"));
         assert!(
             matches!(&summary.jobs[0].steps[0].kind, StepSummaryKind::Uses(kept) if kept == reference),
@@ -114,7 +116,7 @@ fn well_formed_action_references_are_reported_verbatim() {
 
 #[test]
 fn self_repository_references_are_unsupported() {
-    let error = wsr_gha::inspect(uses_step("$/action").as_bytes()).unwrap_err();
+    let error = common::inspect(uses_step("$/action").as_bytes()).unwrap_err();
     assert_eq!(
         (error.category(), error.route()),
         (Category::Unsupported, Some("jobs.b.steps[1].uses")),

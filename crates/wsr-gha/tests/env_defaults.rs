@@ -1,5 +1,7 @@
 //! Backlog B-11: workflow and job `env` and `defaults.run` as source data, never bound or applied.
 
+mod common;
+
 use std::collections::BTreeMap;
 
 use wsr_gha::Category;
@@ -7,7 +9,7 @@ use wsr_types::inspection::{RunDefaults, SourceText, StepValue};
 
 #[test]
 fn workflow_and_job_env_and_run_defaults_keep_source_values() {
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         b"env: {N: 3, M: '${{ inputs.m }}'}\ndefaults: {run: {shell: bash}}\njobs:\n  b:\n    runs-on: linux\n    env: {}\n    defaults:\n      run: {shell: '${{ matrix.s }}', working-directory: src}\n    steps:\n      - run: echo\n  c:\n    runs-on: linux\n    defaults: {}\n    steps:\n      - run: echo\n",
     )
     .unwrap();
@@ -142,7 +144,7 @@ fn env_and_run_default_failures_have_category_and_route() {
             ),
         ),
     ] {
-        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        let error = common::inspect(source.as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (expected.0, Some(expected.1)),

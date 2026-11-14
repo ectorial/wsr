@@ -1,12 +1,14 @@
 //! Backlog B-15: non-dispatch `on:` events with empty bodies are reported in source order.
 
+mod common;
+
 use wsr_gha::Category;
 use wsr_types::inspection::{DispatchBody, EventFilter, ManualTrigger, Trigger};
 
 const JOBS: &str = "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n";
 
 fn triggers(on: &str) -> Vec<Trigger> {
-    wsr_gha::inspect(format!("on: {on}\n{JOBS}").as_bytes())
+    common::inspect(format!("on: {on}\n{JOBS}").as_bytes())
         .unwrap_or_else(|error| panic!("{on}: {error}"))
         .triggers
 }
@@ -17,7 +19,11 @@ fn event(name: &str) -> Trigger {
 
 #[test]
 fn events_are_kept_in_source_order() {
-    assert_eq!(wsr_gha::inspect(JOBS.as_bytes()).unwrap().triggers, []);
+    // B-25 contract change: a missing `on` is invalid, no longer an empty trigger list.
+    assert_eq!(
+        wsr_gha::inspect(JOBS.as_bytes()).unwrap_err().to_string(),
+        "missing field `on`"
+    );
     assert_eq!(triggers("workflow_call"), [event("workflow_call")]);
     assert_eq!(triggers("schedule"), [event("schedule")]);
     assert_eq!(
@@ -57,7 +63,7 @@ fn event_configuration_stays_unsupported() {
         ("[]", "on"),
         ("{}", "on"),
     ] {
-        let error = wsr_gha::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
+        let error = common::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (Category::Unsupported, Some(route)),
@@ -81,7 +87,7 @@ fn unknown_events_and_malformed_bodies_are_invalid() {
         ("{push: main}", "on.push"),
         ("{schedule: null}", "on.schedule"),
     ] {
-        let error = wsr_gha::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
+        let error = common::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (Category::Invalid, Some(route)),
@@ -110,7 +116,7 @@ fn invalid_keys_render_by_what_they_are() {
             "on.workflow_dispatch.inputs.a: unknown field `bogus`",
         ),
     ] {
-        let error = wsr_gha::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
+        let error = common::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
         assert_eq!(error.category(), Category::Invalid, "{on}");
         assert_eq!(error.to_string(), message, "{on}");
     }
@@ -252,7 +258,7 @@ fn filter_categories_follow_the_pinned_schema() {
             "on.pull_request.types",
         ),
     ] {
-        let error = wsr_gha::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
+        let error = common::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (category, Some(route)),

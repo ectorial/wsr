@@ -37,9 +37,9 @@ source summary (D-033), not executable IR or a signed Component compilation resu
 
 Current supported subset:
 
-- Optional literal workflow `name` and optional `on` events (scalar, sequence or mapping); events are
-  reported in source order, never evaluated or subscribed to. Absence of `on` is accepted for
-  inspection fragments. See [trigger events](#trigger-events).
+- Optional literal workflow `name` and required `on` events (scalar, sequence or mapping); events are
+  reported in source order, never evaluated or subscribed to. A workflow without `on` is invalid
+  (``missing field `on` ``), as the pinned root schema requires it. See [trigger events](#trigger-events).
 - Optional workflow `run-name` source text, reported but never evaluated; see [run names](#unevaluated-run-names).
 - A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
 - Job `name`, a nonempty string or string-list `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
@@ -128,7 +128,7 @@ booleans, which the pinned reader converts to strings, are unsupported. An empty
 ### Manual-trigger input declarations
 
 `on: workflow_dispatch`, `on: {workflow_dispatch: null}`, an empty dispatch mapping,
-and a dispatch mapping with `inputs` are supported, alone or among other events. Missing `on`, null dispatch bodies, absent inputs and empty input mappings
+and a dispatch mapping with `inputs` are supported, alone or among other events. Null dispatch bodies, absent inputs and empty input mappings
 remain distinct in the source summary, though the trigger-only CLI line is the same; inputs print
 under the `workflow_dispatch` line.
 

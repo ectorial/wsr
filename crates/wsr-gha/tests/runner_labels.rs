@@ -1,3 +1,4 @@
+mod common;
 use wsr_types::inspection::{RunnerRequirement, SourceText};
 
 fn literal(text: &str) -> SourceText {
@@ -17,7 +18,7 @@ fn source_summary_retains_scalar_and_list_forms() {
         let raw = format!(
             "jobs:\n  build:\n    runs-on: {source}\n    steps:\n      - run: echo hello\n"
         );
-        let summary = wsr_gha::inspect(raw.as_bytes()).unwrap();
+        let summary = common::inspect(raw.as_bytes()).unwrap();
         assert_eq!(summary.jobs[0].runner, Some(expected));
     }
 }

@@ -1,5 +1,7 @@
 //! Owning-crate characterization of the static inspection compiler, independent of host rendering.
 
+mod common;
+
 use wsr_gha::Category;
 use wsr_types::inspection::{RunnerRequirement, SourceText, StepSummaryKind};
 
@@ -16,7 +18,7 @@ fn workflow(jobs: &[(&str, &str)]) -> String {
 }
 
 fn failure(source: &str) -> (Category, Option<String>, String) {
-    let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+    let error = common::inspect(source.as_bytes()).unwrap_err();
     (
         error.category(),
         error.route().map(str::to_owned),
@@ -26,7 +28,7 @@ fn failure(source: &str) -> (Category, Option<String>, String) {
 
 #[test]
 fn dependency_graph_accepts_diamonds_repeated_edges_and_forward_references() {
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         workflow(&[
             ("a", "    needs: [b, c, b]\n"),
             ("b", "    needs: d\n"),
@@ -150,7 +152,7 @@ fn job_and_step_identifier_rules_are_enforced() {
 
 #[test]
 fn step_identifier_length_boundary_is_accepted() {
-    let summary = wsr_gha::inspect(STEP_ID.replace("ID", &"s".repeat(99)).as_bytes()).unwrap();
+    let summary = common::inspect(STEP_ID.replace("ID", &"s".repeat(99)).as_bytes()).unwrap();
     assert_eq!(
         summary.jobs[0].steps[0].id.as_deref().map(str::len),
         Some(99)
@@ -171,7 +173,7 @@ fn unknown_dependencies_are_reported_before_cycles() {
 
 #[test]
 fn summaries_preserve_runner_forms_and_step_kinds() {
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         b"jobs:\n  b:\n    runs-on: [self-hosted, linux, linux]\n    steps:\n      - id: one\n        run: echo\n      - uses: owner/action@v1\n        name: Use\n",
     )
     .unwrap();
@@ -280,4 +282,15 @@ fn job_identifiers_repeated_ignoring_case_are_invalid() {
         ),
         "{message}"
     );
+}
+
+#[test]
+fn a_workflow_without_on_is_invalid() {
+    // B-25: the pinned root schema marks `on` as required.
+    let error =
+        wsr_gha::inspect(b"jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n")
+            .unwrap_err();
+    assert_eq!(error.category(), Category::Invalid);
+    assert_eq!(error.route(), None);
+    assert_eq!(error.to_string(), "missing field `on`");
 }

@@ -1,9 +1,10 @@
+mod common;
 use wsr_gha::Category;
 use wsr_types::inspection::SourceText;
 
 #[test]
 fn timeout_and_shell_are_kept_as_source_data() {
-    let summary = wsr_gha::inspect(
+    let summary = common::inspect(
         b"jobs:\n  a:\n    runs-on: linux\n    timeout-minutes: 5\n    steps:\n      - run: echo\n        shell: bash\n      - run: echo\n  b:\n    runs-on: linux\n    timeout-minutes: ${{ inputs.t }}\n    steps:\n      - run: echo\n  c:\n    runs-on: linux\n    steps:\n      - run: echo\n",
     )
     .unwrap();
@@ -49,7 +50,7 @@ fn invalid_timeouts_and_shells_are_invalid_at_their_route() {
             "jobs.b.steps[1].shell",
         ),
     ] {
-        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        let error = common::inspect(source.as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (Category::Invalid, Some(route)),
@@ -66,7 +67,7 @@ fn non_positive_timeouts_are_schema_valid_but_unsupported() {
         let source = format!(
             "jobs:\n  b:\n    runs-on: linux\n    timeout-minutes: {minutes}\n    steps:\n      - run: echo\n"
         );
-        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        let error = common::inspect(source.as_bytes()).unwrap_err();
         assert_eq!(
             (error.category(), error.route()),
             (Category::Unsupported, Some("jobs.b.timeout-minutes")),

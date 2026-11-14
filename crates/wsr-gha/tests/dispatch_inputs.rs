@@ -1,9 +1,10 @@
+mod common;
 use wsr_types::inspection::{
     DispatchBody, DispatchInputType, InputDefault, ManualTrigger, Trigger,
 };
 
 fn summary(trigger: &str) -> wsr_types::inspection::WorkflowSummary {
-    wsr_gha::inspect(
+    common::inspect(
         format!(
             "{trigger}jobs:\n  build:\n    runs-on: linux\n    steps:\n      - run: echo hello\n"
         )
@@ -14,7 +15,13 @@ fn summary(trigger: &str) -> wsr_types::inspection::WorkflowSummary {
 
 #[test]
 fn dispatch_source_states_remain_distinct() {
-    assert_eq!(summary("").triggers, []);
+    // B-25 contract change: a missing `on` is invalid, no longer an empty trigger list.
+    assert!(
+        wsr_gha::inspect(
+            b"jobs:\n  build:\n    runs-on: linux\n    steps:\n      - run: echo hello\n"
+        )
+        .is_err()
+    );
     assert_eq!(
         summary("on: workflow_dispatch\n").triggers,
         [Trigger::Manual(ManualTrigger::Scalar)]
@@ -66,7 +73,7 @@ fn dispatch_summary_retains_declared_types_defaults_and_omissions() {
 #[test]
 fn input_identifiers_repeated_ignoring_case_are_invalid() {
     // B-21: the pinned reader rejects mapping keys repeated ignoring case.
-    let error = wsr_gha::inspect(
+    let error = common::inspect(
         b"on:\n  workflow_dispatch:\n    inputs:\n      mode: {}\n      MODE: {}\njobs:\n  build:\n    runs-on: linux\n    steps:\n      - run: echo hello\n",
     )
     .unwrap_err();

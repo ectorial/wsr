@@ -353,7 +353,8 @@ Schedule A takes only ready slices.
 
 ## B-25 Require `on` (audit F11)
 
-- Status: ready
+- Status: **delivered on merge of the B-25 PR** (Schedule A); see [slice record](inspection-require-on.md).
+  With B-21..B-25 delivered, no ready slice remains.
 
 - Behavior: a workflow without `on` is `Invalid` with ``missing field `on` `` (the pinned root schema has
   `required: true`). Test fixtures change mechanically through a shared helper; the documentation sentence

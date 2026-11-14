@@ -1,5 +1,7 @@
 //! Backlog B-16: workflow and job `concurrency` kept as source data, never applied.
 
+mod common;
+
 use wsr_gha::Category;
 use wsr_types::inspection::{Concurrency, SourceText};
 
@@ -66,11 +68,11 @@ fn concurrency_is_kept_at_both_levels() {
         ),
     ];
     for (value, expected) in cases {
-        let summary = wsr_gha::inspect(workflow(value).as_bytes())
+        let summary = common::inspect(workflow(value).as_bytes())
             .unwrap_or_else(|error| panic!("{value}: {error}"));
         assert_eq!(summary.concurrency.as_ref(), Some(&expected), "{value}");
         assert_eq!(summary.jobs[0].concurrency, None);
-        let summary = wsr_gha::inspect(job(value).as_bytes())
+        let summary = common::inspect(job(value).as_bytes())
             .unwrap_or_else(|error| panic!("job {value}: {error}"));
         assert_eq!(
             summary.jobs[0].concurrency.as_ref(),
@@ -82,7 +84,7 @@ fn concurrency_is_kept_at_both_levels() {
 }
 
 fn assert_category(source: String, category: Category, route: &str) {
-    let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+    let error = common::inspect(source.as_bytes()).unwrap_err();
     assert_eq!(
         (error.category(), error.route()),
         (category, Some(route)),

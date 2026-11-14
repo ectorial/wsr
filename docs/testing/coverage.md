@@ -342,6 +342,18 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Required `on` (backlog B-25)
+
+`a_workflow_without_on_is_invalid` (`compiler.rs`) and `inspect_rejects_a_workflow_without_on` (CLI,
+exit 1, empty stdout, `executed` sentinel, file unchanged) pin ``missing field `on` ``. Fixtures that do
+not test triggers pass through one shared helper per suite (`crates/wsr-gha/tests/common/mod.rs`
+`inspect`, the CLI `with_on`), which appends `on: workflow_dispatch` after a fixture whose root lacks
+`on`, so parser locations are unchanged; goldens gained the `Trigger: workflow_dispatch` line, read-back
+checks compare with the helper's bytes, and the two size-boundary fixtures carry `on` inside their
+measured source. Observed red: a workflow without `on` inspected with exit 0. Contract changes: the
+`dispatch_inputs.rs` and `triggers.rs` empty-trigger assertions now expect the missing-field error. The
+CLI inspection suite lists 63 tests.
+
 ## Name and runner expressions (backlog B-24)
 
 `crates/wsr-gha/tests/name_runner_expressions.rs` asserts `SourceText::Unevaluated` job, step and call
