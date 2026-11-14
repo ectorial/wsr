@@ -244,16 +244,11 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 "expected at least one step",
             ));
         }
-        check_literal(
-            job.name.as_deref(),
-            &format!("jobs.{id}.name"),
-            Category::Unsupported,
-        )?;
-        match &job.runner {
-            None => {}
-            Some(RunnerRequirement::Label(label)) => {
-                check_required(label, &format!("jobs.{id}.runs-on"), Category::Unsupported)?
-            }
+        // string-strategy-context (`name`) and runs-on have expression contexts: `${{` text is
+        // kept unevaluated (B-24).
+        let labels = match &job.runner {
+            None => Vec::new(),
+            Some(RunnerRequirement::Label(label)) => vec![(label, format!("jobs.{id}.runs-on"))],
             Some(RunnerRequirement::Labels(labels)) => {
                 if labels.is_empty() {
                     return Err(Error::invalid(
@@ -261,13 +256,16 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                         "expected at least one label",
                     ));
                 }
-                for (index, label) in labels.iter().enumerate() {
-                    check_required(
-                        label,
-                        &format!("jobs.{id}.runs-on[{}]", index + 1),
-                        Category::Unsupported,
-                    )?;
-                }
+                labels
+                    .iter()
+                    .enumerate()
+                    .map(|(index, label)| (label, format!("jobs.{id}.runs-on[{}]", index + 1)))
+                    .collect()
+            }
+        };
+        for (label, route) in labels {
+            if written(label).trim().is_empty() {
+                return Err(Error::invalid(route, "expected a nonempty string"));
             }
         }
         // job-env and job-defaults-run have expression contexts; job-defaults has none.
@@ -325,11 +323,6 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                     ));
                 }
             }
-            check_literal(
-                step.name.as_deref(),
-                &format!("{location}.name"),
-                Category::Unsupported,
-            )?;
             if let Some(script) = &step.run {
                 let field = format!("{location}.run");
                 check_literal(Some(script), &field, Category::Unsupported)?;
@@ -405,7 +398,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
                 .transpose()?;
             steps.push(StepSummary {
                 id: step.id,
-                name: step.name,
+                name: step.name.map(source_text),
                 condition: step.condition,
                 continue_on_error: step.continue_on_error,
                 timeout_minutes: step.timeout_minutes,
@@ -418,7 +411,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         }
         jobs.push(JobSummary {
             id,
-            name: job.name,
+            name: job.name.map(source_text),
             runner: job.runner,
             call,
             needs: job.needs.into_values(),
@@ -444,6 +437,21 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         concurrency,
         jobs,
     })
+}
+
+/// Text as written: unevaluated when it holds `${{`, literal otherwise. Never evaluated.
+fn source_text(text: String) -> SourceText {
+    if text.contains("${{") {
+        SourceText::Unevaluated(text)
+    } else {
+        SourceText::Literal(text)
+    }
+}
+
+fn written(text: &SourceText) -> &str {
+    match text {
+        SourceText::Literal(text) | SourceText::Unevaluated(text) => text,
+    }
 }
 
 /// Reject an unevaluated expression. `expression` is the category the pinned schema gives it:
@@ -775,12 +783,12 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
 ) -> Result<RunnerRequirement, D::Error> {
     match serde_yaml::Value::deserialize(deserializer)? {
-        serde_yaml::Value::String(label) => Ok(RunnerRequirement::Label(label)),
+        serde_yaml::Value::String(label) => Ok(RunnerRequirement::Label(source_text(label))),
         serde_yaml::Value::Sequence(values) => values
             .into_iter()
             .enumerate()
             .map(|(index, value)| match value {
-                serde_yaml::Value::String(label) => Ok(label),
+                serde_yaml::Value::String(label) => Ok(source_text(label)),
                 serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
                     Err(diagnostic::raise(Error::unsupported(
                         format!("runs-on[{}]", index + 1),

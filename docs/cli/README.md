@@ -42,7 +42,7 @@ Current supported subset:
   inspection fragments. See [trigger events](#trigger-events).
 - Optional workflow `run-name` source text, reported but never evaluated; see [run names](#unevaluated-run-names).
 - A nonempty `jobs` mapping with unique string identifiers, ordered lexicographically in output.
-- Job `name`, a nonempty literal string or string-list `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
+- Job `name`, a nonempty string or string-list `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
 - Or a reusable-workflow call job: `uses` with optional `with` and `secrets`, never loaded; see [workflow calls](#reusable-workflow-calls).
 - Step `name`, optional explicit `id`, and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
   in the summary; action references are reported verbatim, never resolved, fetched or opened.
@@ -416,8 +416,9 @@ No runner is discovered, selected or provisioned, and labels do not establish pl
 Null values, nested lists, empty lists and blank members fail before stdout; a number or boolean
 (scalar or list entry, converted to a string by the pinned reader) is unsupported rather than invalid.
 Runner-selector mappings, including one whose `group` or `labels` hold numbers or booleans, are
-explicitly unsupported. Expressions are unevaluated and rejected,
-including inside lists. Semantic diagnostics identify `jobs.build.runs-on[2]` for a second label;
+explicitly unsupported. `${{` text in a scalar or list label is kept unevaluated and never
+selects a runner: `Runner: ${{ matrix.os }} (unevaluated; expression syntax not validated)`, or a
+list followed by `(some unevaluated; expression syntax not validated)`. Semantic diagnostics identify `jobs.build.runs-on[2]` for a second label;
 decoding errors retain available source context. No normalization or label resolution occurs.
 
 ### Explicit step identities
@@ -454,8 +455,10 @@ ahead of an unknown dependency.
 A job identifier is also validated before its body is decoded, so a hostile identifier cannot forge
 the route of a body diagnostic; when both are wrong, the identifier is the one reported. An expression in a field the pinned schema gives no expression
 context (workflow `name`, `on`, job and step identifiers, `needs`, `uses`, manual-input
-declarations) is invalid; where the schema allows expressions (job and step `name`, `run`,
-`runs-on`) it is valid GHA that inspection does not evaluate. See the
+declarations) is invalid; where the schema allows expressions it is valid GHA that inspection does
+not evaluate: job and step `name` and `runs-on` keep the text unevaluated
+(`Job: b (${{ matrix.os }}; unevaluated; expression syntax not validated)`, likewise after a step
+heading), while `run` stays unsupported. See the
 [classification record](../implementation/inspection-classification.md).
 
 ### Diagnostic routes

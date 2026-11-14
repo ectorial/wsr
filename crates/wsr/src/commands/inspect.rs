@@ -182,22 +182,40 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
     for job in summary.jobs {
         write!(out, "Job: {}", job.id.escape_debug())?;
         if let Some(name) = job.name {
-            write!(out, " ({})", name.escape_debug())?;
+            write!(out, " ({})", display_name(name))?;
         }
         match job.runner {
             None => writeln!(out)?,
-            Some(RunnerRequirement::Label(label)) => {
+            Some(RunnerRequirement::Label(SourceText::Literal(label))) => {
                 writeln!(out, "\n  Runner: {}", label.escape_debug())?
             }
-            Some(RunnerRequirement::Labels(labels)) => writeln!(
+            Some(RunnerRequirement::Label(SourceText::Unevaluated(label))) => writeln!(
                 out,
-                "\n  Runner labels: [{}]",
-                labels
-                    .iter()
-                    .map(|label| format!("{label:?}"))
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                "\n  Runner: {} (unevaluated; expression syntax not validated)",
+                label.escape_debug()
             )?,
+            Some(RunnerRequirement::Labels(labels)) => {
+                let unevaluated = labels
+                    .iter()
+                    .any(|label| matches!(label, SourceText::Unevaluated(_)));
+                write!(
+                    out,
+                    "\n  Runner labels: [{}]",
+                    labels
+                        .iter()
+                        .map(
+                            |(SourceText::Literal(label) | SourceText::Unevaluated(label))| {
+                                format!("{label:?}")
+                            }
+                        )
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )?;
+                if unevaluated {
+                    write!(out, " (some unevaluated; expression syntax not validated)")?;
+                }
+                writeln!(out)?
+            }
         }
         if !job.needs.is_empty() {
             writeln!(
@@ -290,7 +308,7 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                 }
             }
             if let Some(name) = step.name {
-                write!(out, " ({})", name.escape_debug())?;
+                write!(out, " ({})", display_name(name))?;
             }
             writeln!(out)?;
             if let Some(condition) = step.condition {
@@ -452,6 +470,17 @@ fn render_fields<const N: usize>(
         }
     }
     Ok(())
+}
+
+/// A job or step name as shown in parentheses after its heading.
+fn display_name(name: SourceText) -> String {
+    match name {
+        SourceText::Literal(name) => name.escape_debug().to_string(),
+        SourceText::Unevaluated(name) => format!(
+            "{}; unevaluated; expression syntax not validated",
+            name.escape_debug()
+        ),
+    }
 }
 
 fn render_values(

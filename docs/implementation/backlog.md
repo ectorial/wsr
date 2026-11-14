@@ -338,7 +338,8 @@ Schedule A takes only ready slices.
 
 ## B-24 Job and step `name` and job `runs-on` expressions as unevaluated text
 
-- Status: ready
+- Status: **delivered on merge of the B-24 PR** (Schedule A); see [slice record](inspection-name-runner-expressions.md).
+  Job/step names and runner labels became `SourceText`; runner-selector mappings stay unsupported.
 
 - Behavior: `${{` text in job `name`, step `name` and job `runs-on` is reported as unevaluated source text
   (contexts: `string-strategy-context`, `step-name`, `runs-on`), using D-033 `SourceText` where the summary

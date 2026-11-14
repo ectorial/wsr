@@ -126,40 +126,17 @@ fn expressions_in_fields_without_a_schema_expression_context_are_invalid_at_thei
 }
 
 // Definitions with a schema expression context hold valid GHA that WSR does not evaluate:
-// string-strategy-context (job `name`), step-name, string-steps-context (`run`) and runs-on.
+// string-steps-context (`run`). B-24 contract change: job `name`, step `name` and `runs-on`
+// expressions are now reported unevaluated (`name_runner_expressions.rs`).
 #[test]
 fn expressions_in_fields_with_a_schema_expression_context_are_unsupported_at_their_route() {
-    for (source, route) in [
+    assert_eq!(
+        diagnose("jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: ${{ x }}\n"),
         (
-            "jobs:\n  b:\n    name: ${{ x }}\n    runs-on: linux\n    steps:\n      - run: a\n"
-                .to_owned(),
-            "jobs.b.name",
-        ),
-        (
-            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: a\n        name: ${{ x }}\n"
-                .to_owned(),
-            "jobs.b.steps[1].name",
-        ),
-        (
-            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: ${{ x }}\n".to_owned(),
-            "jobs.b.steps[1].run",
-        ),
-        (
-            "jobs:\n  b:\n    runs-on: ${{ x }}\n    steps:\n      - run: a\n".to_owned(),
-            "jobs.b.runs-on",
-        ),
-        (
-            "jobs:\n  b:\n    runs-on: [linux, '${{ x }}']\n    steps:\n      - run: a\n"
-                .to_owned(),
-            "jobs.b.runs-on[2]",
-        ),
-    ] {
-        assert_eq!(
-            diagnose(&source),
-            (Category::Unsupported, Some(route.to_owned())),
-            "{source}"
-        );
-    }
+            Category::Unsupported,
+            Some("jobs.b.steps[1].run".to_owned())
+        )
+    );
 }
 
 #[test]
