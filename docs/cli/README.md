@@ -96,13 +96,33 @@ Each `on` event prints `Trigger: <event> (not evaluated)` in source order, from 
 (`on: workflow_call`), a sequence (`on: [push, workflow_dispatch]`) or a mapping whose
 non-dispatch bodies are null or `{}` (`on: {workflow_call: null, push: {}}`). Every event name of the
 [pinned workflow schema](https://github.com/actions/languageservices/blob/4043eda158e16579cc5fb1b0b07a4bce2a76f0b5/workflow-parser/src/workflow-v1.0.json)
-is accepted; an unknown name is invalid (`on[2]: unknown event 'bogus'`). Non-empty bodies
-(branch/path/type filters, `workflow_call` inputs, secrets and outputs) and any `schedule` sequence
-are unsupported (`on.push: event configuration is not inspected yet`), as is a repeated sequence
+is accepted; an unknown name is invalid (`on[2]: unknown event 'bogus'`). Other non-empty bodies
+(type filters, `workflow_call` inputs, secrets and outputs) and any `schedule` sequence are
+unsupported (`on.release: event configuration is not inspected yet`), as is a repeated sequence
 entry or an empty sequence or mapping (`on: an empty event list is not inspected yet`). A body on a
 null-only event such as `create` (`expected null`), a null `schedule`, other body shapes and `null`
 are invalid. No
 event is subscribed to, matched or delivered.
+
+### Event filters
+
+`push`, `pull_request` and `pull_request_target` bodies with branch, tag or path filters print the
+filters in source order, each as a pattern list (a single string is one pattern), never matched:
+
+```text
+Trigger: push (not evaluated)
+  Filters (not matched):
+    branches: ["main"]
+```
+
+Per the pinned schema, `push` takes `branches`, `branches-ignore`, `tags`, `tags-ignore`, `paths` and
+`paths-ignore`; the pull request events take the same without the tag filters, plus `types`, which is
+unsupported (``on.pull_request.types: unsupported field `types`; …``). Any other key is invalid
+(``on.pull_request: unknown field `tags` ``). A pattern must be a non-empty string; filters have no
+expression context, so `${{` text is invalid, as are null, nested values and a filter given with its
+`-ignore` counterpart (``on.push.branches-ignore: cannot be combined with `branches` ``). Numbers and
+booleans, which the pinned reader converts to strings, are unsupported. An empty list is reported as
+`[]`.
 
 ### Manual-trigger input declarations
 

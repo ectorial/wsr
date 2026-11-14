@@ -184,6 +184,23 @@ pub enum Trigger {
     Manual(ManualTrigger),
     /// Any other pinned-schema event name, declared without configuration.
     Event(String),
+    /// `push`, `pull_request` or `pull_request_target` with branch, tag or path filters in
+    /// source order, never matched.
+    Filtered {
+        /// Event name.
+        event: String,
+        /// Declared filters.
+        filters: Vec<EventFilter>,
+    },
+}
+
+/// One declared event filter (D-033 temporary GHA-derived type), never matched.
+#[derive(Debug, PartialEq, Eq)]
+pub struct EventFilter {
+    /// Filter key, such as `branches` or `paths-ignore`.
+    pub name: String,
+    /// Patterns as written; a single string is one pattern.
+    pub patterns: Vec<String>,
 }
 
 /// Source form of the supported manual trigger, never an invocation.

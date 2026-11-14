@@ -18,7 +18,8 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
             "jobs.b.cancel-timeout-minutes",
         ),
         // B-15 contract change: bare events now inspect; their configuration does not.
-        (format!("on: {{push: {{branches: [main]}}}}\n{JOB}"), "on.push"),
+        // B-22 inspects `push` filters; another event keeps this sample.
+        (format!("on: {{release: {{types: [published]}}}}\n{JOB}"), "on.release"),
         (format!("on: [push, push]\n{JOB}"), "on[2]"),
         (format!("on: {{schedule: [{{cron: '0 0 * * *'}}]}}\n{JOB}"), "on.schedule"),
         // B-16 contract change: `concurrency` is now inspected.

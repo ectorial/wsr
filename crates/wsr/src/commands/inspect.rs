@@ -105,6 +105,24 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                 writeln!(out, "Trigger: {} (not evaluated)", name.escape_debug())?;
                 continue;
             }
+            Trigger::Filtered { event, filters } => {
+                writeln!(out, "Trigger: {} (not evaluated)", event.escape_debug())?;
+                writeln!(out, "  Filters (not matched):")?;
+                for filter in filters {
+                    writeln!(
+                        out,
+                        "    {}: [{}]",
+                        filter.name.escape_debug(),
+                        filter
+                            .patterns
+                            .iter()
+                            .map(|v| format!("{v:?}"))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )?;
+                }
+                continue;
+            }
             Trigger::Manual(trigger) => trigger,
         };
         writeln!(out, "Trigger: workflow_dispatch (not evaluated)")?;

@@ -2,7 +2,8 @@
 use serde::Deserialize;
 use serde_yaml::{Mapping, Value};
 use wsr_types::inspection::{
-    DispatchBody, DispatchInput, DispatchInputType, InputDefault, ManualTrigger, Trigger,
+    DispatchBody, DispatchInput, DispatchInputType, EventFilter, InputDefault, ManualTrigger,
+    Trigger,
 };
 
 use super::{Category, Error, diagnostic};
@@ -109,6 +110,12 @@ fn parse(value: &Value) -> Result<Vec<Trigger>, Error> {
                         }),
                         _ => match body {
                             Value::Null => Ok(Trigger::Event(event)),
+                            Value::Mapping(body)
+                                if !body.is_empty() && FILTERED.contains(&event.as_str()) =>
+                            {
+                                let filters = event_filters(&event, body, &route)?;
+                                Ok(Trigger::Filtered { event, filters })
+                            }
                             _ if NULL_ONLY.contains(&event.as_str()) => {
                                 Err(Error::invalid(route, "expected null"))
                             }
@@ -128,6 +135,82 @@ fn parse(value: &Value) -> Result<Vec<Trigger>, Error> {
 }
 
 const CONFIGURATION: &str = "event configuration is not inspected yet";
+
+/// Events whose branch, tag and path filters are inspected.
+const FILTERED: &[&str] = &["push", "pull_request", "pull_request_target"];
+/// Filter keys of `push-mapping`; the pull request mappings have `types` and no tag filters.
+const PUSH_FILTERS: &[&str] = &[
+    "branches",
+    "branches-ignore",
+    "tags",
+    "tags-ignore",
+    "paths",
+    "paths-ignore",
+];
+const PULL_REQUEST_FILTERS: &[&str] = &[
+    "types",
+    "branches",
+    "branches-ignore",
+    "paths",
+    "paths-ignore",
+];
+
+/// Filters in source order. Each is a non-empty string or a sequence of them, with no expression
+/// context; a filter and its `-ignore` counterpart cannot both be given.
+fn event_filters(event: &str, body: &Mapping, route: &str) -> Result<Vec<EventFilter>, Error> {
+    let allowed = if event == "push" {
+        PUSH_FILTERS
+    } else {
+        PULL_REQUEST_FILTERS
+    };
+    fields(body, allowed, route)?;
+    let mut filters: Vec<EventFilter> = Vec::new();
+    for (name, value) in body {
+        let name = text(name, route)?;
+        let route = format!("{route}.{name}");
+        if name == "types" {
+            return Err(Error::unsupported(
+                route,
+                "unsupported field `types`; this field is not inspected yet",
+            ));
+        }
+        let counterpart = match name.strip_suffix("-ignore") {
+            Some(base) => base.to_owned(),
+            None => format!("{name}-ignore"),
+        };
+        if filters.iter().any(|filter| filter.name == counterpart) {
+            return Err(Error::invalid(
+                route,
+                format_args!("cannot be combined with `{counterpart}`"),
+            ));
+        }
+        let patterns = match value {
+            Value::Sequence(values) => values
+                .iter()
+                .enumerate()
+                .map(|(index, value)| pattern(value, &format!("{route}[{}]", index + 1)))
+                .collect::<Result<_, _>>()?,
+            _ => vec![pattern(value, &route)?],
+        };
+        filters.push(EventFilter { name, patterns });
+    }
+    Ok(filters)
+}
+
+/// One `non-empty-string` pattern; the reader converts numbers and booleans, never null.
+fn pattern(value: &Value, route: &str) -> Result<String, Error> {
+    match value {
+        Value::Bool(_) | Value::Number(_) => Err(Error::unsupported(route, super::NON_STRING)),
+        Value::String(text) if text.is_empty() => {
+            Err(Error::invalid(route, "expected a non-empty string"))
+        }
+        Value::String(_) => text(value, route),
+        _ => Err(Error::invalid(
+            route,
+            "expected a non-empty string or a sequence of them",
+        )),
+    }
+}
 // The strict schema sets no minimum size; whether GitHub accepts no events is not established.
 const EMPTY: &str = "an empty event list is not inspected yet";
 
