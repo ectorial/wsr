@@ -11,7 +11,7 @@ category. Categories and routes are unchanged.
 
 | Case | Category | Text |
 | --- | --- | --- |
-| key in the level's pinned-schema list (workflow `description`, job `strategy`, step `parallel`, …) | Unsupported | ``unsupported field `{key}`; this field is not inspected yet`` |
+| key in the level's pinned-schema list (workflow `description` until B-33, job `strategy`, step `parallel`, …) | Unsupported | ``unsupported field `{key}`; this field is not inspected yet`` |
 | any other key at a derived struct level | Invalid | serde text, including ``expected one of …`` |
 | step `background`, `wait`, `wait-all`, `cancel` | Invalid (was Unsupported) | serde text |
 | invalid key under `on` | Invalid | `unknown event '{x}'`, as scalar `on: x` |

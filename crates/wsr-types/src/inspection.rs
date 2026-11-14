@@ -6,6 +6,8 @@
 pub struct WorkflowSummary {
     /// Optional source display name.
     pub name: Option<String>,
+    /// Optional source description text as written (D-033; GHA-derived, temporary).
+    pub description: Option<String>,
     /// Optional source run-name text, never evaluated.
     pub run_name: Option<SourceText>,
     /// `on` events in source order, never subscribed to or evaluated; empty without `on`.

@@ -85,6 +85,9 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
             .unwrap_or("(unnamed)")
             .escape_debug()
     )?;
+    if let Some(description) = &summary.description {
+        writeln!(out, "Description: {}", description.escape_debug())?;
+    }
     match summary.run_name {
         Some(SourceText::Literal(text)) => {
             writeln!(out, "Run name: {} (literal)", text.escape_debug())?

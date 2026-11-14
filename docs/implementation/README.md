@@ -15,6 +15,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | [Classification iteration](inspection-classification.md) | Backlog B-8: expression category by schema context, schema-valid values no longer Invalid, job-ID-first route safety |
 | [Job strategy iteration](inspection-job-strategy.md) | Backlog B-30: job strategies as source text, never expanded |
 | [Matrix size iteration](inspection-matrix-size.md) | Backlog B-32: literal matrices inspect; only alias amplification is rejected |
+| [Workflow description iteration](inspection-workflow-description.md) | Backlog B-33: root `description` retained as written |
 | [Job container iteration](inspection-job-container.md) | Backlog B-29: job `container` as source text, never pulled or started |
 | [Run expression iteration](inspection-run-expressions.md) | Backlog B-28: `${{` in step `run` kept unevaluated; the script is never printed |
 | [Require-on iteration](inspection-require-on.md) | Backlog B-25: a workflow without `on` is invalid |
