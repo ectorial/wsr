@@ -23,10 +23,15 @@ explicitly (`check_literal`/`check_required`); the helper has no default.
 | step `uses` | `step-uses` | none | Invalid |
 | dispatch input ID | `workflow-dispatch-input-name` | none | Invalid |
 | dispatch input `description`, `type`, `required`, `default`, `options` | `workflow-dispatch-input` | none | Invalid |
-| job `name` | `string-strategy-context` | github, inputs, vars, needs, strategy, matrix | Unsupported |
-| step `name` | `step-name` | steps-level contexts | Unsupported |
-| step `run` | `string-steps-context` | steps-level contexts | Unsupported |
-| `runs-on` and labels | `runs-on` | github, inputs, vars, needs, strategy, matrix | Unsupported |
+| job `name` | `string-strategy-context` | github, inputs, vars, needs, strategy, matrix | Unsupported; reported unevaluated since B-24 |
+| step `name` | `step-name` | steps-level contexts | Unsupported; reported unevaluated since B-24 |
+| step `run` | `string-steps-context` | steps-level contexts | Unsupported; reported unevaluated since B-28 |
+| `runs-on` and labels | `runs-on` | github, inputs, vars, needs, strategy, matrix | Unsupported; reported unevaluated since B-24 |
+
+Later slices accept some expression-context fields as unevaluated source text instead of rejecting
+them: see [name and runner expressions](inspection-name-runner-expressions.md) (B-24) and
+[run expressions](inspection-run-expressions.md) (B-28). Fields without an expression context stay
+`Invalid`.
 
 This reverses the acceptance assertions in `crates/wsr-gha/tests/diagnostics.rs` (workflow `name`, `on`)
 and `compiler.rs` (job ID, step ID), which came from erroneous B-0 backlog text. It is a contract

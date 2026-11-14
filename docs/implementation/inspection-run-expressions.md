@@ -1,8 +1,12 @@
 # Run expression iteration: `${{` in step `run` (backlog B-28)
 
-Status: **in progress** on branch `feat/b28-run-expressions` from `e4a7ac8` (Schedule A).
-Implemented by Claude (claude-opus-5-5, orchestrator, steady mode); cross-review by Codex
-gpt-6.1-sol (high). Evidence lives in the [checkpoint](inspection-progress.md).
+Status: **delivered on merge of its PR**, branch `feat/b28-run-expressions` from `e4a7ac8`
+(Schedule A). Implemented by Claude (claude-opus-5-5, orchestrator, steady mode); cross-reviewed by
+Codex gpt-6.1-sol (high): no code findings; one P3 fixed (the B-8 classification table still listed
+`run`, and the B-24 fields, as `Unsupported`). Evidence lives in the [checkpoint](inspection-progress.md).
+
+Contract change: `diagnostics.rs` used `run: ${{ x }}` as its expression-context `Unsupported`
+sample; it now uses a whole step `env` mapping given as an expression (`jobs.b.steps[1].env`).
 
 ## Scope
 

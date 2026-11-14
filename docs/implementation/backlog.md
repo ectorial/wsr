@@ -395,6 +395,8 @@ Schedule A takes only ready slices.
 
 ## B-28 `${{` in step `run` kept unevaluated
 
+- Status: **delivered on merge of the B-28 PR** (Schedule A); see [slice record](inspection-run-expressions.md).
+
 - Behavior: `${{` text in a step `run` (schema `string-steps-context`) is reported as unevaluated source, as
   for step `name` (B-24). The script is still never printed or retained; `StepSummaryKind::Run` gains an
   unevaluated flag, and the heading reads `Step N: run (script has unevaluated expressions; not evaluated)`.
