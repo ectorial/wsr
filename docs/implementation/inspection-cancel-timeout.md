@@ -49,3 +49,9 @@ Final validation: `cargo xtask ci` passed (format, locked workspace compilation 
 workspace tests and strict documentation). The cancellation-timeout category suite passed 3 tests,
 CLI inspection passed 72, diagnostics passed 9, and call-job regressions passed 4.
 `git diff --check` passed.
+
+Orchestrator fix (found while reviewing the diff): past the B-23 scan budget, a
+`cancel-timeout-minutes` before `uses` was decoded and accepted silently, as `container` was in B-29.
+`call::decode` now lists it among the keys that cannot be combined with `uses`. Red observed
+(`cancel_timeout_before_uses_is_invalid_when_the_scan_budget_is_exhausted`: inspection
+succeeded), then green.
