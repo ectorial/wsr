@@ -1,6 +1,36 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-29 job container implemented; PR pending checks
+## Current checkpoint — B-30 job strategy implemented; PR pending checks
+
+Same Schedule A run, after the PR #59 wake (lock retaken 2026-11-14). PR #59 squash-merged as
+`05562b9` after all four required checks passed on `5657cae`, with no reviews or comments. The
+`wsr` and `wsr-gha` suites were verified on synced main. B-30 is on `feat/b30-job-strategy` from
+`05562b9`; slice record [inspection-job-strategy.md](inspection-job-strategy.md). Steady rotation
+slice 3 (the 2:1 cycle is now complete: B-28 and B-29 by Claude, B-30 by Codex). Implemented by Codex
+gpt-6.1-sol (reasoningEffort medium; `wsr-types` `Strategy` under D-033), commit `22c3fa2`.
+Cross-reviewed by Claude (claude-opus-5-5, medium): two P2s and three P3s. The orchestrator fixed both
+P2s and two P3s; one P3 (ESC pre-escaped in the golden) is noted. Next rotation: Claude, Claude, Codex.
+
+- Red (observed by Codex): ``jobs.a: unsupported field `strategy`; this field is not inspected yet
+  at line 4 column 5``.
+- Review fixes, each with an observed red:
+  - Alias-amplified matrix: the test failed because inspection succeeded. The fix is a 512,000-byte
+    bound, Unsupported, covered by a `wsr-gha` test and a CLI test.
+  - Boolean or number matrix and filter-item keys: the test reported ``expected a string key``
+    (Invalid). They are now Unsupported.
+- Contract change: the label `Matrix (YAML source)` became `Matrix (normalized YAML)`.
+- `release.yml`: the repository test now expects exit 0 (B-28..B-30). With B-30, every repository
+  workflow passes inspection; this establishes static inspection only.
+- Green: `wsr-gha` strategy tests (6) and the CLI suite (68). `cargo xtask ci` and `git diff --check`
+  pass.
+- Residual (pre-existing, for Schedule B): the decoder materializes YAML aliases before any bound
+  applies (B-23 follow-up).
+
+B-30 is delivered on merge of this PR. With B-28..B-30 delivered, the backlog has no ready slice.
+Next action: watch the PR and merge on green with no unresolved findings, then report and exit until
+Schedule B or the owner adds a slice.
+
+## Previous checkpoint — B-29 job container delivered (PR #59, `05562b9`)
 
 Same Schedule A run, after the PR #58 wake (lock retaken 2026-11-14). PR #58 squash-merged as
 `094c0e0` after all four required checks passed on `e1364d1`, with no reviews or comments. The

@@ -148,6 +148,29 @@ fn inspect_does_not_quote_container_credentials_in_decoder_errors() {
     assert!(!stderr.contains("hunter2"), "{stderr}");
 }
 
+// A matrix amplified through YAML aliases is rejected, not rendered (B-30 review P2).
+#[test]
+fn inspect_rejects_alias_amplified_matrices_without_output() {
+    let directory = tempfile::tempdir().unwrap();
+    let scalar = "x".repeat(10_000);
+    let refs = |name: &str| vec![format!("*{name}"); 10].join(", ");
+    let workflow = format!(
+        "jobs:\n  a:\n    runs-on: linux\n    strategy:\n      matrix: {{a: &a ['{scalar}'], b: &b [{}], c: &c [{}]}}\n    steps:\n      - run: echo\n",
+        refs("a"),
+        refs("b")
+    );
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty());
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr.contains("jobs.a.strategy.matrix: matrix expands beyond 512,000 bytes"),
+        "{stderr}"
+    );
+    assert!(stderr.len() < 1_000, "{stderr}");
+}
+
 #[test]
 fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
     let directory = tempfile::tempdir().unwrap();
@@ -2172,7 +2195,7 @@ fn inspect_repository_workflows_from_temporary_copies() {
         (
             "release.yml",
             Ok(
-                "  Strategy (not expanded):\n    Fail-fast: false\n    Matrix (YAML source): ${{ fromJson(needs.plan.outputs.val).ci.github.artifacts_matrix }} (unevaluated; expression syntax not validated)\n",
+                "  Strategy (not expanded):\n    Fail-fast: false\n    Matrix (normalized YAML): ${{ fromJson(needs.plan.outputs.val).ci.github.artifacts_matrix }} (unevaluated; expression syntax not validated)\n",
             ),
         ),
     ];
@@ -2604,7 +2627,7 @@ fn inspect_reports_job_strategies_without_expanding_or_executing() {
     assert!(output.stderr.is_empty());
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
-        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Strategy (not expanded):\n    Fail-fast: false\n    Max-parallel: 2\n    Matrix (YAML source): os:\\n- \\\"$(touch executed)\\\\e[31m\\u{202e}\\\"\\n\n  Step 1: run\n"
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Strategy (not expanded):\n    Fail-fast: false\n    Max-parallel: 2\n    Matrix (normalized YAML): os:\\n- \\\"$(touch executed)\\\\e[31m\\u{202e}\\\"\\n\n  Step 1: run\n"
     );
     assert!(!directory.path().join("executed").exists());
     assert_eq!(

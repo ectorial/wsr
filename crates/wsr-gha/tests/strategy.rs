@@ -46,7 +46,9 @@ fn strategy_categories_follow_schema() {
         ("{matrix: []}", Invalid, ".matrix"),
         ("{matrix: {a: 1}}", Invalid, ".matrix.a"),
         ("{matrix: {'': []}}", Invalid, ".matrix."),
-        ("{matrix: {true: []}}", Invalid, ".matrix"),
+        // The pinned reader converts a non-string loose key to a string (review P2).
+        ("{matrix: {true: []}}", Unsupported, ".matrix"),
+        ("{matrix: {5: [2]}}", Unsupported, ".matrix"),
         ("{matrix: {include: {a: 1}}}", Invalid, ".matrix.include"),
         ("{matrix: {exclude: [1]}}", Invalid, ".matrix.exclude[1]"),
         (
@@ -56,7 +58,7 @@ fn strategy_categories_follow_schema() {
         ),
         (
             "{matrix: {exclude: [{true: 1}]}}",
-            Invalid,
+            Unsupported,
             ".matrix.exclude[1]",
         ),
     ] {
@@ -117,4 +119,26 @@ fn decoder_errors_do_not_quote_matrix_values() {
     assert_eq!(error.category(), wsr_gha::Category::Invalid);
     assert!(!error.to_string().contains("private-value"));
     assert!(error.to_string().contains("detail withheld"));
+}
+
+// Aliases can amplify a small matrix; past the cap the matrix is not retained (review P2).
+#[test]
+fn alias_amplified_matrices_are_not_retained() {
+    let scalar = "x".repeat(10_000);
+    let refs = |name: &str| vec![format!("*{name}"); 10].join(", ");
+    let source = format!(
+        "{{matrix: {{a: &a ['{scalar}'], b: &b [{}], c: &c [{}]}}}}",
+        refs("a"),
+        refs("b")
+    );
+    let error = inspect_strategy(&source).unwrap_err();
+    assert_eq!(
+        (error.category(), error.route()),
+        (
+            wsr_gha::Category::Unsupported,
+            Some("jobs.a.strategy.matrix")
+        ),
+        "{error}"
+    );
+    assert!(!error.to_string().contains(&scalar[..16]), "{error}");
 }

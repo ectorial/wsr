@@ -290,7 +290,7 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                     [
                         ("Fail-fast", fail_fast),
                         ("Max-parallel", max_parallel),
-                        ("Matrix (YAML source)", matrix),
+                        ("Matrix (normalized YAML)", matrix),
                     ],
                 )?,
             }

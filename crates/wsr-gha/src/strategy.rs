@@ -33,6 +33,12 @@ pub(crate) fn decode(route: &str, value: Value) -> Result<Strategy, Error> {
             "max-parallel" => max_parallel = Some(scalar(&field, value, false)?),
             "matrix" => {
                 validate_matrix(&field, &value)?;
+                if !within(&value, &mut MATRIX_LIMIT.clone()) {
+                    return Err(Error::unsupported(
+                        &field,
+                        "matrix expands beyond 512,000 bytes through YAML aliases; not inspected yet",
+                    ));
+                }
                 matrix = Some(match value {
                     Value::String(text) => SourceText::Unevaluated(text),
                     value => crate::source_text(
@@ -75,6 +81,41 @@ fn scalar(route: &str, value: Value, boolean: bool) -> Result<SourceText, Error>
     }
 }
 
+// GitHub's documented workflow size (D-032): a matrix written out literally cannot be larger, so
+// a bigger one is alias amplification, and is not rendered.
+const MATRIX_LIMIT: usize = 512_000;
+
+/// Whether `value`'s scalar text fits in `budget` bytes, stopping as soon as it does not.
+fn within(value: &Value, budget: &mut usize) -> bool {
+    let size = match value {
+        Value::String(text) => text.len(),
+        _ => 8,
+    };
+    let Some(rest) = budget.checked_sub(size) else {
+        return false;
+    };
+    *budget = rest;
+    match value {
+        Value::Sequence(items) => items.iter().all(|item| within(item, budget)),
+        Value::Mapping(entries) => entries
+            .iter()
+            .all(|(key, value)| within(key, budget) && within(value, budget)),
+        Value::Tagged(tagged) => within(&tagged.value, budget),
+        _ => true,
+    }
+}
+
+/// A matrix or filter-item key: the pinned reader converts a boolean or number key to a string.
+fn loose_key_text<'a>(route: &str, key: &'a Value) -> Result<&'a str, Error> {
+    match key {
+        Value::Bool(_) | Value::Number(_) => Err(Error::unsupported(
+            route,
+            "non-string key is not inspected yet",
+        )),
+        key => key_text(route, key),
+    }
+}
+
 fn key_text<'a>(route: &str, key: &'a Value) -> Result<&'a str, Error> {
     match key {
         Value::String(text) if text.contains("${{") => Err(Error::unsupported(
@@ -98,7 +139,7 @@ fn validate_matrix(route: &str, value: &Value) -> Result<(), Error> {
         return Err(Error::invalid(route, "expected a mapping"));
     };
     for (key, value) in entries {
-        let key = key_text(route, key)?;
+        let key = loose_key_text(route, key)?;
         let field = format!("{route}.{key}");
         if key.is_empty() {
             return Err(Error::invalid(field, "expected a nonempty string key"));
@@ -119,7 +160,7 @@ fn validate_matrix(route: &str, value: &Value) -> Result<(), Error> {
                     return Err(Error::invalid(field, "expected a mapping"));
                 };
                 for key in entries.keys() {
-                    if key_text(&field, key)?.is_empty() {
+                    if loose_key_text(&field, key)?.is_empty() {
                         return Err(Error::invalid(&field, "expected a nonempty string key"));
                     }
                 }

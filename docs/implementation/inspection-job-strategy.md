@@ -34,18 +34,20 @@ converter in that directory. Nested definitions inherit the strategy expression 
 | max-parallel number, including zero and negative | Literal; `number` has no minimum |
 | max-parallel expression | Unevaluated; inherited context |
 | other max-parallel value, including quoted number/null/bool | Invalid; reader string fallback does not create a number |
-| matrix mapping or whole expression | Source YAML or Unevaluated; `matrix.mapping` with inherited context |
+| matrix mapping or whole expression | Normalized YAML or Unevaluated; `matrix.mapping` with inherited context |
 | other matrix shape | Invalid; mapping required |
-| matrix variable sequence, including empty | Source YAML; loose values are `sequence` |
+| matrix variable sequence, including empty | Normalized YAML; loose values are `sequence` |
 | whole variable sequence expression | Unevaluated within matrix source; inherited context |
 | other variable value | Invalid; sequence required |
-| include/exclude sequences of mappings or expression items | Source YAML; `matrix-filter` and `matrix-filter-item` with inherited context |
+| include/exclude sequences of mappings or expression items | Normalized YAML; `matrix-filter` and `matrix-filter-item` with inherited context |
 | whole include/exclude expression | Unevaluated within matrix source; inherited context |
 | other include/exclude shape/item | Invalid; sequence/mapping required |
-| empty or non-string variable/filter-item key | Invalid; `non-empty-string` loose key type; whitespace accepted |
-| arbitrary nested variable sequence items/filter values | Source YAML; `sequence` items and filter loose values are `any`; no matching validation |
+| empty or null variable/filter-item key | Invalid; `non-empty-string` loose key type; whitespace accepted |
+| boolean or number variable/filter-item key | Unsupported; the reader converts it to a string ("Convert to StringToken"), as for step `env` keys |
+| arbitrary nested variable sequence items/filter values | Normalized YAML; `sequence` items and filter loose values are `any`; no matching validation |
 | strategy with uses, including beyond scan budget | Inspected; `workflow-job` explicitly lists strategy and converter retains it; no FACTORY_ONLY/presence prohibition added |
-| decoder error | Invalid, detail withheld so arbitrary matrix text cannot leak through a mismatched YAML tag |
+| decoder error | Invalid, detail withheld so arbitrary matrix text cannot leak through a mismatched YAML tag | This includes serde_yaml's alias repetition limit, a WSR resource limit rather than a pinned-parser rejection |
+| matrix whose scalar text exceeds 512,000 bytes (alias amplification) | Unsupported; a literal matrix in a GitHub-sized file cannot be larger (D-032), so it is not rendered |
 
 ## Acceptance and evidence
 
@@ -54,7 +56,18 @@ Expected and observed behavioral red: ``jobs.a: unsupported field `strategy`; th
 CLI golden covers hostile command text, escape and bidi text, an `executed` sentinel and unchanged input.
 Existing unsupported-field tests now use still-unsupported `services`; its call-job prohibition stays Invalid.
 The repository workflow pin now requires release.yml success and its exact strategy expression report.
-This proves inspection only, not execution compatibility. Cross-review is performed by the orchestrator.
+This proves inspection only, not execution compatibility. Cross-reviewed by Claude (claude-opus-5-5, medium). Two P2s and three P3s were found; four are fixed
+and one is open:
+- P2, fixed: alias amplification turned a 400 KB workflow into 444 MB of stdout. The matrix is now
+  size-bounded before rendering, and a `wsr-gha` test and a CLI test cover it.
+- P2, fixed: boolean or number matrix and filter-item keys were Invalid; they are now Unsupported.
+- P3, fixed: the label read "YAML source"; it is now `Matrix (normalized YAML)`.
+- P3, fixed: the repetition limit was undocumented; the table now records it.
+- P3, open: the hostile golden's ESC is pre-escaped by the YAML emitter (U+202E still exercises the
+  escape path).
+
+Residual: aliases are still materialized by the decoder before the bound applies. This is the same
+pre-existing memory follow-up recorded for step and call `with` values in B-23.
 
 Validation: five strategy tests and 67 CLI inspection tests pass. `cargo xtask ci` and
 `git diff --check` pass; this is local verification, not hosted CI.

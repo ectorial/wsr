@@ -560,5 +560,7 @@ and `max-parallel` retain literals or unevaluated expressions; matrix mappings r
 arbitrary nested values, include and exclude as deterministic normalized YAML text with escaped
 controls and bidi characters. Whole-matrix expressions are retained unevaluated. YAML comments,
 alias syntax and quoting style are not preserved. No matrix expansion, combination, matching or
-scheduling occurs, and each source job is reported once. See the
+scheduling occurs, and each source job is reported once. Boolean or number matrix keys are
+unsupported. A matrix whose text would exceed 512,000 bytes through YAML aliases is unsupported and
+not rendered. See the
 [category record](../implementation/inspection-job-strategy.md).
