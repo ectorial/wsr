@@ -66,6 +66,8 @@ pub struct JobSummary {
     pub outputs: Option<BTreeMap<String, SourceText>>,
     /// Optional `environment`, never selected; no protection rules are evaluated.
     pub environment: Option<Environment>,
+    /// Optional `container`, never pulled or started.
+    pub container: Option<Container>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }
@@ -138,6 +140,33 @@ pub struct Environment {
     pub url: Option<SourceText>,
     /// `deployment`: a literal boolean rendered as text, or unevaluated text.
     pub deployment: Option<SourceText>,
+}
+
+/// Declared job `container` (D-033 temporary GHA-derived type); the string form is the image.
+/// No image is pulled and no container is created, started, bound, exposed or mounted.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Container {
+    /// Image text, literal or unevaluated.
+    pub image: SourceText,
+    /// Optional registry credentials, never used.
+    pub credentials: Option<ContainerCredentials>,
+    /// Optional container environment by name, never bound.
+    pub env: Option<BTreeMap<String, StepValue>>,
+    /// Optional port entries in source order, never exposed.
+    pub ports: Option<Vec<StepValue>>,
+    /// Optional volume entries in source order, never mounted.
+    pub volumes: Option<Vec<StepValue>>,
+    /// Optional `docker create` options text, never passed.
+    pub options: Option<SourceText>,
+}
+
+/// Declared container registry credentials as source text; never used to log in.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ContainerCredentials {
+    /// Username text, literal or unevaluated.
+    pub username: Option<SourceText>,
+    /// Password text, literal or unevaluated; hosts should not display it.
+    pub password: Option<SourceText>,
 }
 
 /// Declared `defaults.run` settings; `defaults: {}` and `defaults: {run: {}}` both have neither.

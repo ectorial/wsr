@@ -412,6 +412,8 @@ Schedule A takes only ready slices.
 
 ## B-29 Job `container` as source text
 
+- Status: **delivered on merge of the B-29 PR** (Schedule A); see [slice record](inspection-job-container.md).
+
 - Behavior: a job `container` is a string image or a `container-mapping` (`image`, `credentials`, `env`,
   `ports`, `volumes`, `options`), reported as written and rendered "not pulled; not started". The pinned schema
   decides each sub-key's category (B-8, B-13, B-20 rules). It stays `Invalid` with `uses`. A D-033 job field.

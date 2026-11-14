@@ -12,6 +12,7 @@ use wsr_types::inspection::{
 
 mod call;
 mod concurrency;
+mod container;
 mod defaults;
 mod diagnostic;
 mod dispatch;
@@ -108,6 +109,8 @@ struct JobFields {
     outputs: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_value")]
     environment: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "container::deserialize")]
+    container: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_steps")]
     steps: Option<Vec<Step>>,
     #[serde(default, deserialize_with = "present_string")]
@@ -146,13 +149,8 @@ impl diagnostic::Level for Job {
     }
 
     // The union of the pinned schema's job-factory and reusable workflow-job keys.
-    const SCHEMA: &'static [&'static str] = &[
-        "cancel-timeout-minutes",
-        "container",
-        "services",
-        "snapshot",
-        "strategy",
-    ];
+    const SCHEMA: &'static [&'static str] =
+        &["cancel-timeout-minutes", "services", "snapshot", "strategy"];
 }
 
 #[derive(Deserialize)]
@@ -296,6 +294,10 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             .environment
             .map(|value| environment::decode(&format!("jobs.{id}.environment"), value))
             .transpose()?;
+        let container = job
+            .container
+            .map(|value| container::decode(&format!("jobs.{id}.container"), value))
+            .transpose()?;
         let mut steps = Vec::new();
         let mut step_ids = BTreeMap::new();
         for (index, step) in job.steps.into_iter().flatten().enumerate() {
@@ -432,6 +434,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             concurrency,
             outputs,
             environment,
+            container,
             steps,
         });
     }

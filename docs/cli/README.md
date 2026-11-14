@@ -89,7 +89,7 @@ parser's ``unknown field `x`, expected one of …`` text. Event names and dispat
 routes are unchanged ([record](../implementation/inspection-diagnostic-text.md)).
 
 Event configuration other than `workflow_dispatch` inputs, runner-group objects, matrices,
-services and other GHA constructs are rejected explicitly in this first slice.
+service containers and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection remains pending.
 
@@ -360,6 +360,37 @@ Empty or blank names and URLs, and number, boolean or null ones (which the pinne
 to strings), are unsupported. Unknown keys, a missing `name`, a non-boolean `deployment` (including
 the string `'false'`), nested values and other shapes are invalid. No environment is selected or
 created, no protection rule, secret or variable is evaluated, and no URL is opened.
+
+### Job containers
+
+A job `container` prints after its environment as a block. The string form is the image:
+
+```text
+  Container (not pulled; not started):
+    Image: ${{ matrix.image }} (unevaluated; expression syntax not validated)
+    Credentials (not used):
+      Username: bot
+      Password: set (not shown)
+    Env (not bound):
+      A: "x"
+    Ports (not exposed): [80, "${{ inputs.port }}"] (some unevaluated; expression syntax not validated)
+    Volumes (not mounted): ["/data"]
+    Options: "--cpus 1" (not passed)
+```
+
+The pinned `container` has an expression context that nested values inherit, so `${{` text is
+unevaluated in any value. An expression key, a whole `env`, `ports`, `volumes` or `credentials` given
+as an expression, and an empty string form (which the runner treats as no container) are unsupported.
+Null, boolean and number values are also unsupported, because the pinned reader converts them to
+strings. Port and volume entries keep their YAML type. `image`, `username` and `password` must be
+nonempty strings; the pinned check is length only, so whitespace is kept as written, and a null value
+(converted to an empty string) is invalid. Unknown keys, an empty or null entry and other shapes are
+invalid. A YAML decoder error inside a container is reported without the decoder's detail, so a
+mis-tagged credential is never quoted. A missing `image`
+is invalid, except where an expression elsewhere in the container makes the pinned converter defer
+the check, which is unsupported. `container` with `uses` stays invalid. The password is never
+printed, even as written. No image is pulled, no registry is contacted, no credential is used, and no
+container is created or started. Nothing is bound, exposed or mounted, and no option is passed.
 
 ### Reusable-workflow calls
 

@@ -3,8 +3,9 @@ use std::io::{ErrorKind, Read as _, Write as _};
 use std::path::Path;
 
 use wsr_types::inspection::{
-    CallSecrets, Concurrency, DispatchInputType, InputDefault, ManualTrigger, PermissionLevel,
-    Permissions, RunDefaults, RunnerRequirement, SourceText, StepSummaryKind, StepValue, Trigger,
+    CallSecrets, Concurrency, Container, DispatchInputType, InputDefault, ManualTrigger,
+    PermissionLevel, Permissions, RunDefaults, RunnerRequirement, SourceText, StepSummaryKind,
+    StepValue, Trigger,
 };
 
 // GitHub documents a 500 KB workflow file limit (D-032); 512,000 bytes is WSR's reading of it.
@@ -271,6 +272,9 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                 ],
             )?;
         }
+        if let Some(container) = job.container {
+            render_container(&mut out, container)?;
+        }
         if let Some(outputs) = job.outputs {
             let outputs = outputs
                 .into_iter()
@@ -450,6 +454,64 @@ fn render_concurrency(
             ("Queue", concurrency.queue),
         ],
     )
+}
+
+fn render_container(out: &mut String, container: Container) -> std::fmt::Result {
+    render_fields(
+        out,
+        "  ",
+        "Container (not pulled; not started)",
+        [("Image", Some(container.image))],
+    )?;
+    if let Some(credentials) = container.credentials {
+        render_fields(
+            out,
+            "    ",
+            "Credentials (not used)",
+            [("Username", credentials.username)],
+        )?;
+        // A password is never displayed, even as written.
+        if credentials.password.is_some() {
+            writeln!(out, "      Password: set (not shown)")?;
+        }
+    }
+    if let Some(env) = container.env {
+        render_values(out, "    ", "Env (not bound)", env)?;
+    }
+    for (label, entries) in [
+        ("Ports (not exposed)", container.ports),
+        ("Volumes (not mounted)", container.volumes),
+    ] {
+        let Some(entries) = entries else { continue };
+        let unevaluated = entries
+            .iter()
+            .any(|entry| matches!(entry, StepValue::Text(SourceText::Unevaluated(_))));
+        let entries = entries
+            .into_iter()
+            .map(|entry| match entry {
+                StepValue::Text(SourceText::Literal(text) | SourceText::Unevaluated(text)) => {
+                    format!("{text:?}")
+                }
+                StepValue::Boolean(value) => value.to_string(),
+                StepValue::Number(value) => value,
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        write!(out, "    {label}: [{entries}]")?;
+        if unevaluated {
+            write!(out, " (some unevaluated; expression syntax not validated)")?;
+        }
+        writeln!(out)?;
+    }
+    match container.options {
+        Some(SourceText::Literal(text)) => writeln!(out, "    Options: {text:?} (not passed)")?,
+        Some(SourceText::Unevaluated(text)) => writeln!(
+            out,
+            "    Options: {text:?} (unevaluated; expression syntax not validated; not passed)"
+        )?,
+        None => {}
+    }
+    Ok(())
 }
 
 /// A titled block of optional source-text lines.
