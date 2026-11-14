@@ -30,7 +30,9 @@ selects a reusable-workflow job when `uses` is present; `workflows/file-referenc
   to record each job's form by position; `diagnostic::Level::placement` then rejects the key with
   its parser location. The scan reads only the first `jobs` and stops after one job key per source
   byte (aliases can repeat job bodies); a job it did not finish without reading `uses` falls back to
-  post-decode checks;
+  post-decode checks, and `Job::placement` treats the job as a call from the `uses` key it reads, so
+  keys after `uses` stay `Invalid` (B-27); only a factory-only key placed before `uses` in such a job
+  is reported `Unsupported` where the pinned reader reports it `Invalid`;
 - `uses` with `${{`, empty or not a reference is `Invalid`; `$/` is `Unsupported` (as for step `uses`);
 - `with` and a `secrets` mapping reuse the step `with` decoder; an expression replacing the mapping or
   in a key is `Invalid` (the definitions have no context); `secrets` other than `inherit` or a mapping

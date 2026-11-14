@@ -451,7 +451,11 @@ stack rather than recursive calls, including a tested 4,096-job chain.
 
 Malformed types, null, empty identifiers and expressions in `needs` fail before any stdout summary.
 Job identifiers are validated before `needs` is resolved, so an invalid identifier is reported
-ahead of an unknown dependency.
+ahead of an unknown dependency. A job identifier follows the step rule: fewer than 100 ASCII
+identifier characters (a letter or underscore first, then letters, digits, underscores or hyphens)
+with no `__` prefix, checked on the identifier as written (99 characters pass, 100 fail; `_build` and
+`a__b` pass, `__build` fails), for runner jobs and call jobs alike. The pinned reader has no such limit
+on manual-input identifiers, outputs or call `with`/`secrets` keys, so none is applied there.
 A job identifier is also validated before its body is decoded, so a hostile identifier cannot forge
 the route of a body diagnostic; when both are wrong, the identifier is the one reported. An expression in a field the pinned schema gives no expression
 context (workflow `name`, `on`, job and step identifiers, `needs`, `uses`, manual-input

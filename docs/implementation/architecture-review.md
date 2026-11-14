@@ -136,3 +136,31 @@ Findings are classified (a) bounded correction, (b) owner decision — see
   (B-21..B-25).
 - Next focus: B-22/B-23 make `ci.yml` inspect; keep the B-8/B-13 category rules and the B-20 wording for new
   fields; Gate 1b remains blocked on pin schema, canonical-IR boundary and Component host contract.
+
+## 2026-11-14 run 5
+
+- Audited range: `ba2c704..0792966` (PRs #51–#55; no open Schedule A PR). Auditor: claude-opus-5-5 (effort
+  high), burn mode. Second opinion on F38: Codex gpt-6.1-sol (reasoning high), which confirmed F38 as medium
+  diagnostic correctness, class (a), with the boundary >=100 rejected / 99 accepted on the ID as written, and
+  found the rule must not extend to dispatch inputs, outputs or call `with`/`secrets`; `needs` references close
+  with declaration validation. Implementer: claude-sonnet-5-5 (high).
+  Cross-review: Codex gpt-6.1-sol (reasoning high): PENDING
+- Verified clean: boundaries (legacy types only in `wsr-types/src/lib.rs`; no `Serialize` on inspection types;
+  no IO in `wsr-gha`/`wsr-types`; D-033 labels on `WorkflowCall`, `CallSecrets`, `EventFilter`,
+  `Trigger::Filtered`, `SourceText`); exit codes 0/1/2 and empty stdout on failure; byte-identical repeat output;
+  B-21 matches `template-reader.ts` L208-216; ~15 B-22 filter probes; ~25 B-23 call probes (a FIFO at the
+  referenced path is never opened); B-24 contexts; B-25 `on` handling; escaping on the new fields; 7 of 8
+  repository workflows inspect (`release.yml` is blocked by `strategy`, `container` and `${{` in `run`).
+
+| ID | Finding | Class | Disposition |
+| --- | --- | --- | --- |
+| F38 | job IDs of 100+ characters or with a `__` prefix are accepted; the pinned converter rejects them | (a) | Fixed in this PR (B-26) |
+| F39 | with an exhausted scan budget, a call job's `container`, `services`, `snapshot`, `cancel-timeout-minutes` is `Unsupported` instead of `Invalid` | (a) | Fixed in this PR (B-27) |
+| F40 | the repository-workflow test does not assert its case names equal the workflow files | (a) | Backlog B-28 |
+| F41 | `JobSummary` can represent impossible states (runner and call); the job form travels via thread-local state | (c) | Temporary D-033 type; revisit with the canonical IR |
+| F12 | carried: unused `wsr-expr` dependency, deprecated `serde_yaml` | (c) | Revisit before Component packaging |
+
+- No decision requests filed. After B-30, Gate 1a has no defined "inspection complete" field set; the owner may
+  need to scope one later.
+- PR: this PR (`arch/review-2026-11-14-run5`). Ready backlog depth after this PR: 3 (B-28..B-30).
+- Next focus: B-28..B-30 make `release.yml` inspect; keep the B-8/B-13/B-20 rules for new fields.

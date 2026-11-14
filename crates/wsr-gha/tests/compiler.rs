@@ -150,6 +150,32 @@ fn job_and_step_identifier_rules_are_enforced() {
     }
 }
 
+// The pinned converter (`job.ts` -> `id-builder.ts`) rejects a job ID of 100 or more characters or
+// with a `__` prefix, checked on the ID as written; only a prefix matters, and 99 characters pass.
+#[test]
+fn job_identifier_length_and_reserved_prefix_follow_the_pinned_builder() {
+    let runner =
+        |id: &str| format!("jobs:\n  {id}:\n    runs-on: linux\n    steps:\n      - run: echo\n");
+    let call = |id: &str| format!("jobs:\n  {id}:\n    uses: ./w.yml\n");
+    let long = "j".repeat(100);
+    for build in [runner, call] {
+        for accepted in ["j".repeat(99).as_str(), "_build", "a__b"] {
+            let summary = common::inspect(build(accepted).as_bytes())
+                .unwrap_or_else(|error| panic!("{accepted}: {error}"));
+            assert_eq!(summary.jobs[0].id, accepted);
+        }
+        for rejected in [long.as_str(), "__build", "__"] {
+            let (category, route, message) = failure(&build(rejected));
+            assert_eq!(
+                (category, route.as_deref()),
+                (Category::Invalid, Some(format!("jobs.{rejected}").as_str())),
+                "{message}"
+            );
+            assert!(message.contains("invalid job identifier"), "{message}");
+        }
+    }
+}
+
 #[test]
 fn step_identifier_length_boundary_is_accepted() {
     let summary = common::inspect(STEP_ID.replace("ID", &"s".repeat(99)).as_bytes()).unwrap();

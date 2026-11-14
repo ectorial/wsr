@@ -129,6 +129,11 @@ impl diagnostic::Level for Job {
     const NAME: &'static str = "Job";
 
     fn placement(key: &str) -> Option<String> {
+        // A job the scan did not finish is a call from `uses` on, so later keys are placed.
+        if CALL.get().is_none() && key == "uses" {
+            CALL.set(Some(true));
+            return None;
+        }
         match CALL.get()? {
             true if call::FACTORY_ONLY.contains(&key) => {
                 Some(format!("`{key}` cannot be combined with `uses`"))
@@ -534,11 +539,14 @@ fn check_action_reference(reference: &str, location: &str) -> Result<(), Error> 
     ))
 }
 
-/// A job ID has no schema expression context and must be an identifier.
+/// A job ID has no schema expression context and must be an identifier; the pinned builder also
+/// rejects 100 or more characters and a `__` prefix.
 fn check_job_id(id: &str) -> Result<(), Error> {
     let route = format!("jobs.{id}");
     check_literal(Some(id), &route, Category::Invalid)?;
-    if !id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+    if id.len() >= 100
+        || id.starts_with("__")
+        || !id.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
         || !id
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
