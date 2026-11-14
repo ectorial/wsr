@@ -30,3 +30,17 @@ in [decisions.md](../context/decisions.md). Do not implement a request's options
   dependencies; (3) leave as is.
 - Recommendation: (1), so the inspection milestone can be completed and verified independently.
 - Blocks: declaring Gate 1 progress beyond static inspection; any scheduling of canonical-model work.
+
+## DR-005 Inspection completion scope (audit run 6, 2026-11-14)
+
+- Question: does "inspection complete" mean the already-met bounded Gate 1a acceptance in
+  `docs/context/roadmap.md`, or a larger named field set? `docs/context/status.md` still lists an
+  undefined broader "complete inspection milestone".
+- Options: (1) close Gate 1a against its current dogfood/warning/no-execution contract and track
+  further inspection support as an inventory; (2) approve an explicit field inventory and
+  acceptance set before declaring inspection complete.
+- Recommendation: option 1 with a maintained supported/unsupported inventory.
+- Blocks: broader completion claims and an unbounded autonomous inspection roadmap; not B-31..B-36.
+- Remaining unsupported inventory: workflow `description`; job `cancel-timeout-minutes`, `services`,
+  `snapshot`, runs-on group/labels mapping; step `parallel`; events `schedule`, configured
+  `workflow_call` inputs/secrets/outputs, `pull_request[_target].types`, other nonempty event configurations.

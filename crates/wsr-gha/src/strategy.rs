@@ -39,6 +39,7 @@ pub(crate) fn decode(route: &str, value: Value) -> Result<Strategy, Error> {
                         "matrix expands beyond 512,000 bytes through YAML aliases; not inspected yet",
                     ));
                 }
+                unique_matrix_keys(&field, &value)?;
                 matrix = Some(match value {
                     Value::String(text) => SourceText::Unevaluated(text),
                     value => crate::source_text(
@@ -166,6 +167,53 @@ fn validate_matrix(route: &str, value: &Value) -> Result<(), Error> {
                 }
             }
         }
+    }
+    Ok(())
+}
+
+// Match the pinned reader and env/with key normalization, including arbitrary nested values.
+fn unique_matrix_keys(route: &str, value: &Value) -> Result<(), Error> {
+    match value {
+        Value::Mapping(entries) => {
+            let mut spellings = std::collections::BTreeMap::new();
+            for (key, value) in entries {
+                let field = if let Value::String(key) = key {
+                    let field = format!("{route}.{key}");
+                    // The pinned reader does not compare expression keys.
+                    if key.contains("${{") {
+                        unique_matrix_keys(&field, value)?;
+                        continue;
+                    }
+                    if let Some(first) = spellings.insert(key.to_uppercase(), key) {
+                        return Err(Error::invalid(
+                            field,
+                            format_args!(
+                                "duplicate key '{}'; already defined as '{}'",
+                                key.escape_debug(),
+                                first.escape_debug()
+                            ),
+                        ));
+                    }
+                    field
+                } else if matches!(key, Value::Bool(_) | Value::Number(_)) {
+                    // The pinned parser converts these keys to strings before comparing them.
+                    return Err(Error::unsupported(
+                        route,
+                        "non-string key is not inspected yet",
+                    ));
+                } else {
+                    route.to_owned()
+                };
+                unique_matrix_keys(&field, value)?;
+            }
+        }
+        Value::Sequence(items) => {
+            for (index, item) in items.iter().enumerate() {
+                unique_matrix_keys(&format!("{route}[{}]", index + 1), item)?;
+            }
+        }
+        Value::Tagged(tagged) => unique_matrix_keys(route, &tagged.value)?,
+        _ => {}
     }
     Ok(())
 }

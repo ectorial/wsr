@@ -672,3 +672,10 @@ pending. Next run must finish this PR before another slice. After merge, add ste
 runner label lists with acceptance tests, then static `needs` graph validation, broader unsupported/
 dynamic diagnostics and canonical example-workflow integration. Do not mark the entire milestone
 complete or pause its schedule yet. Compiler/model-only changes do not count as delivered features.
+
+## 2026-11-14 architecture audit run 6
+
+F42 delivered as B-31 (matrix keys unique ignoring case); F44 corrects strategy documentation;
+F45 adds positive-controlled PATH traps to the B-28/B-30 goldens. F43 is ready backlog B-32;
+B-33..B-36 retain the remaining bounded field work. DR-005 requests owner scope for broader
+inspection completion. Cross-review is pending; no broader completion claim is made.

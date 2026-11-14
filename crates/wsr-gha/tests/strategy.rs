@@ -142,3 +142,34 @@ fn alias_amplified_matrices_are_not_retained() {
     );
     assert!(!error.to_string().contains(&scalar[..16]), "{error}");
 }
+
+#[test]
+fn matrix_keys_are_unique_ignoring_case() {
+    for (matrix, route) in [
+        ("{a: [1], A: [2]}", ".A"),
+        ("{include: [{x: 1, X: 2}]}", ".include[1].X"),
+        ("{exclude: [{x: 1, X: 2}]}", ".exclude[1].X"),
+        ("{a: [{nested: [{x: 1, X: 2}]}]}", ".a[1].nested[1].X"),
+    ] {
+        let result = inspect_strategy(&format!("{{matrix: {matrix}}}"));
+        assert!(result.is_err(), "accepted duplicate matrix keys: {matrix}");
+        let error = result.unwrap_err();
+        assert_eq!(error.category(), wsr_gha::Category::Invalid);
+        assert_eq!(
+            error.route(),
+            Some(format!("jobs.a.strategy.matrix{route}").as_str())
+        );
+    }
+    assert!(inspect_strategy("{matrix: {a: [{x: 1, Y: 2}], B: [2]}}").is_ok());
+    // The pinned reader skips the duplicate check for expression keys.
+    assert!(inspect_strategy("{matrix: {a: [{'${{ x }}': 1, '${{ X }}': 2}]}}").is_ok());
+    for matrix in ["{a: [{1: x, '1': y}]}", "{a: [{true: x, 'TRUE': y}]}"] {
+        let error = inspect_strategy(&format!("{{matrix: {matrix}}}")).unwrap_err();
+        assert_eq!(error.category(), wsr_gha::Category::Unsupported, "{matrix}");
+        assert_eq!(
+            error.route(),
+            Some("jobs.a.strategy.matrix.a[1]"),
+            "{matrix}"
+        );
+    }
+}

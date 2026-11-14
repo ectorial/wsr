@@ -71,3 +71,28 @@ pre-existing memory follow-up recorded for step and call `with` values in B-23.
 
 Validation: five strategy tests and 67 CLI inspection tests pass. `cargo xtask ci` and
 `git diff --check` pass; this is local verification, not hosted CI.
+
+## B-31 / audit F42 (2026-11-14)
+
+Matrix mappings now reject keys duplicated ignoring case, using B-21's uppercase normalization,
+including axes, include/exclude items and mappings nested in arbitrary matrix values. Failures are
+`Invalid` at the repeated key's route; sequence indexes remain one-based. Distinct keys still pass.
+The alias/size guard is unchanged and runs before this recursive duplicate check.
+
+Observed red: `cargo test -q -p wsr-gha --test strategy matrix_keys_are_unique_ignoring_case`
+failed with `accepted duplicate matrix keys: {a: [1], A: [2]}` (0 passed, 1 failed).
+The CLI regression failed with `assertion left == right failed`, `left: Some(0)`, `right: Some(1)`.
+Green: all 7 strategy tests and 69 CLI inspection tests pass, including the repeated-key route,
+empty stdout and exit 1. B-28/B-30 goldens now share the repository-workflow positive-controlled
+PATH traps, retaining their full output and executed-sentinel assertions.
+
+Final regression: `cargo fmt --all` followed by `cargo xtask ci` passed (locked all-target/all-feature
+workspace compilation, Clippy with warnings denied, workspace tests and doctests, strict rustdoc).
+CLI probes were written outside the repository: `services` remains Unsupported; call-job strategy
+inspects successfully and renders "not expanded" without loading the reference. The B-33..B-36
+expected diagnostics in the backlog were captured from live CLI probes.
+
+Cross-review follow-up: like the pinned reader (template-reader.ts L180-195), keys containing `${{`
+are not compared, though their values still are; boolean or number keys are `Unsupported` at any
+depth (`non-string key is not inspected yet`), not only at the matrix and include/exclude level.
+Observed red: the `{a: [{'${{ x }}': 1, '${{ X }}': 2}]}` probe was rejected as a duplicate.

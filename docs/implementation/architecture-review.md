@@ -164,3 +164,34 @@ Findings are classified (a) bounded correction, (b) owner decision — see
   need to scope one later.
 - PR: this PR (`arch/review-2026-11-14-run5`). Ready backlog depth after this PR: 3 (B-28..B-30).
 - Next focus: B-28..B-30 make `release.yml` inspect; keep the B-8/B-13/B-20 rules for new fields.
+
+## 2026-11-14 run 6
+
+- Audited range: `0792966..52b43b7` (PRs #57–#60; #57 is run 5's architecture PR; no open Schedule A PR).
+  Auditor: Codex gpt-6.1-sol (reasoning high); burn mode ended 2026-11-14 00:00 America/Denver,
+  alternation resumes. Implementer: Codex gpt-6.1-sol (medium).
+- Cross-review: claude-opus-5-5 (high): P2 nested `${{` keys wrongly compared (the pinned reader skips them), P3
+  nested boolean/number keys never compared, P3 CLI guide silent on B-31, P3 loose CLI assertion and B-33 red text;
+  all fixed before PR (nested non-string keys now `Unsupported`; red observed on the expression-key probe).
+- Verified clean (audit baseline): 181 tests green; all 8 repository workflows inspect including
+  `release.yml`, byte-identical repeat output; exit codes 0/1/2, empty stdout on failure;
+  control/bidi escaping; no legacy WorkflowIR/WorkflowProvider adoption, no Serialize on inspection
+  types, no IO in wsr-gha/wsr-types; D-033 labels on container/strategy additions; no matrix expansion
+  (40-axis declaration stays one job); container passwords never printed; specific routes such as
+  `jobs.a.container.credentials.password`.
+
+| ID | Finding | Class | Disposition |
+| --- | --- | --- | --- |
+| F42 | matrix keys duplicated ignoring case accepted | (a) | Fixed in this PR (B-31) |
+| F43 | literal matrix size confused with alias amplification | (a) | Backlog B-32 |
+| F44 | CLI guide's strategy support claims stale | (a) | Fixed in this PR |
+| F45 | B-28/B-30 goldens inherit PATH | (a) | Fixed in this PR |
+| F12 | carried: unused wsr-expr dependency / deprecated serde_yaml | (c) | Revisit before Component packaging |
+| F41 | carried: impossible JobSummary states and thread-local job form | (c) | Revisit with canonical IR |
+
+- Residual: alias materialization precedes the matrix guard, so the guard is not an enforced
+  inspection memory budget (covered by B-32).
+- Decision requests: DR-005.
+- PR: this PR (`arch/review-2026-11-14-run6`). Ready backlog depth after this PR: 5 (B-32..B-36).
+- Next focus: B-32 then B-33..B-36; owner DR-005; Gate 1b remains blocked on pin schema,
+  canonical-IR boundary and Component host contract.
