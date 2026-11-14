@@ -270,9 +270,9 @@ pub enum Trigger {
 /// One declared event filter (D-033 temporary GHA-derived type), never matched.
 #[derive(Debug, PartialEq, Eq)]
 pub struct EventFilter {
-    /// Filter key, such as `branches` or `paths-ignore`.
+    /// Filter key, such as `branches`, `paths-ignore` or `types` (pull request activity types).
     pub name: String,
-    /// Patterns as written; a single string is one pattern.
+    /// Patterns or activity types as written; a single string is one entry.
     pub patterns: Vec<String>,
 }
 

@@ -384,12 +384,22 @@ red: ``jobs.b: unsupported field `uses` `` (Unsupported). Contract change: `JobS
 `crates/wsr-gha/tests/triggers.rs` asserts source-order `Trigger::Filtered` lists for all three
 events and 19 categories: tag filters and `types` under the wrong event, unknown keys, expressions,
 empty, null, mapping and nested patterns and filter/`-ignore` pairs are `Invalid`; number and boolean
-patterns and pull request `types` are `Unsupported`. Two CLI tests pin a golden with a hostile pattern
+patterns and pull request `types` were `Unsupported` (pull request `types` are inspected since B-36). Two CLI tests pin a golden with a hostile pattern
 escaped plus an `executed` sentinel, and six exact diagnostics. Observed red:
 `on.pull_request: event configuration is not inspected yet`. Contract changes: the `push` Unsupported
 samples in `diagnostics.rs`, `triggers.rs` and the CLI dispatch test became `release`/`types`
 configuration. Audit F33: the repository-workflow test now traps every PATH command and pins the
 first diagnostic of temporary `ci.yml` and `release.yml` copies. The CLI inspection suite lists 60 tests.
+
+## Pull request activity types (backlog B-36)
+
+`crates/wsr-gha/tests/activity_types.rs` asserts source-order `types` entries beside B-22 filters,
+all 22 pinned names for both pull request events, `types: []`, and `Invalid` for 12 shapes each
+(unknown names, case variants, `${{`, empty, number, boolean, null, mapping, nested and bad list
+entries), plus the exact message for converted scalars. A CLI golden pins the report with a hostile
+neighbouring branch pattern, an escaped hostile type diagnostic, the `executed` sentinel and the
+PATH traps. Observed red: ``on.pull_request.types: unsupported field `types`; this field is not
+inspected yet``. Contract changes: `types` samples in `triggers.rs` and the CLI filter test.
 
 ## Job environments (backlog B-19)
 

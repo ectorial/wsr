@@ -50,7 +50,8 @@ fn events_are_kept_in_source_order() {
 #[test]
 fn event_configuration_stays_unsupported() {
     for (on, route) in [
-        ("{pull_request: {types: [opened]}}", "on.pull_request.types"),
+        // B-36 contract change: pull request `types` now inspect (activity_types.rs).
+        ("{release: {types: [published]}}", "on.release"),
         ("{workflow_call: {inputs: {}}}", "on.workflow_call"),
         (
             "{workflow_call: {secrets: {token: {required: true}}}}",
@@ -252,9 +253,10 @@ fn filter_categories_follow_the_pinned_schema() {
             Category::Unsupported,
             "on.push.tags[1]",
         ),
+        // B-36 contract change: `types` now inspect; an unknown activity type is invalid.
         (
-            "{pull_request: {types: opened}}",
-            Category::Unsupported,
+            "{pull_request: {types: open}}",
+            Category::Invalid,
             "on.pull_request.types",
         ),
     ] {

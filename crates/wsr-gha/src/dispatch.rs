@@ -169,10 +169,16 @@ fn event_filters(event: &str, body: &Mapping, route: &str) -> Result<Vec<EventFi
         let name = text(name, route)?;
         let route = format!("{route}.{name}");
         if name == "types" {
-            return Err(Error::unsupported(
-                route,
-                "unsupported field `types`; this field is not inspected yet",
-            ));
+            let patterns = match value {
+                Value::Sequence(values) => values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| activity(value, &format!("{route}[{}]", index + 1)))
+                    .collect::<Result<_, _>>()?,
+                _ => vec![activity(value, &route)?],
+            };
+            filters.push(EventFilter { name, patterns });
+            continue;
         }
         let counterpart = match name.strip_suffix("-ignore") {
             Some(base) => base.to_owned(),
@@ -195,6 +201,55 @@ fn event_filters(event: &str, body: &Mapping, route: &str) -> Result<Vec<EventFi
         filters.push(EventFilter { name, patterns });
     }
     Ok(filters)
+}
+
+/// The pinned pull request activity `allowed-values`: case-sensitive constants, no expression context.
+const ACTIVITY_TYPES: &[&str] = &[
+    "assigned",
+    "unassigned",
+    "labeled",
+    "unlabeled",
+    "opened",
+    "edited",
+    "closed",
+    "reopened",
+    "synchronize",
+    "converted_to_draft",
+    "locked",
+    "unlocked",
+    "enqueued",
+    "dequeued",
+    "milestoned",
+    "demilestoned",
+    "ready_for_review",
+    "review_requested",
+    "review_request_removed",
+    "auto_merge_enabled",
+    "auto_merge_disabled",
+    "stacked",
+];
+
+/// One activity type; a converted number or boolean matches no allowed value.
+fn activity(value: &Value, route: &str) -> Result<String, Error> {
+    match value {
+        Value::String(text) if ACTIVITY_TYPES.contains(&text.as_str()) => Ok(text.clone()),
+        Value::String(text) => Err(Error::invalid(
+            route,
+            format_args!("unknown activity type '{}'", text.escape_debug()),
+        )),
+        Value::Bool(value) => Err(Error::invalid(
+            route,
+            format_args!("unknown activity type '{value}'"),
+        )),
+        Value::Number(value) => Err(Error::invalid(
+            route,
+            format_args!("unknown activity type '{value}'"),
+        )),
+        _ => Err(Error::invalid(
+            route,
+            "expected an activity type or a sequence of them",
+        )),
+    }
 }
 
 /// One `non-empty-string` pattern; the reader converts numbers and booleans, never null.

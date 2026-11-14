@@ -508,7 +508,8 @@ Schedule A takes only ready slices.
 
 ## B-36 pull_request / pull_request_target activity types
 
-- Status: ready.
+- Status: **delivered on merge of the B-36 PR** (Schedule A); see [slice record](inspection-activity-types.md).
+  Entries reuse `EventFilter` (`name: "types"`). With B-32..B-36 delivered, no ready slice remains; DR-005 is open.
 - Behavior: report ordered `types` as "not matched"; validate allowed values per the pinned schema;
   coexist with B-22 filters.
 - Acceptance: category tests and a CLI golden with hostile text, the executed sentinel and the
