@@ -342,6 +342,18 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Name and runner expressions (backlog B-24)
+
+`crates/wsr-gha/tests/name_runner_expressions.rs` asserts `SourceText::Unevaluated` job, step and call
+job names and scalar and list runner labels, and that workflow `name` expressions stay `Invalid`,
+blank labels `Invalid` and selector mappings `Unsupported`. A CLI golden pins escaped hostile name and
+label text with an `executed` sentinel. Observed red: ``jobs.a.name: expression is unevaluated; dynamic
+inspection is not supported yet`` (Unsupported). Contract changes: the `diagnostics.rs` expression
+context test keeps only `run`; the CLI test that rejected a `runs-on` expression became the golden, and
+two expression rows left the runner-label rejection table; names and labels are `SourceText`
+(`compiler.rs`, `runner_labels.rs`, `scalar_conversion.rs`, `calls.rs`). The CLI inspection suite
+lists 62 tests.
+
 ## Reusable-workflow calls (backlog B-23)
 
 `crates/wsr-gha/tests/calls.rs` asserts kept `WorkflowCall` values (local and remote references,

@@ -62,7 +62,10 @@ fn call_jobs_keep_reference_inputs_and_secrets() {
     )
     .unwrap();
     assert_eq!(summary.jobs[1].needs, ["a"]);
-    assert_eq!(summary.jobs[1].name.as_deref(), Some("call"));
+    assert_eq!(
+        summary.jobs[1].name,
+        Some(SourceText::Literal("call".into()))
+    );
 }
 
 #[test]

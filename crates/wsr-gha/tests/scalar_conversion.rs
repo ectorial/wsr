@@ -400,8 +400,8 @@ fn quoted_scalars_keep_their_source_text_apart_from_unquoted_ones() {
     assert_eq!(summary.run_name, Some(SourceText::Literal("5".into())));
     assert_eq!(summary.name.as_deref(), Some("5"));
     let job = &summary.jobs[0];
-    assert_eq!(job.name.as_deref(), Some("1"));
-    assert_eq!(job.steps[0].name.as_deref(), Some("4"));
+    assert_eq!(job.name, Some(SourceText::Literal("1".into())));
+    assert_eq!(job.steps[0].name, Some(SourceText::Literal("4".into())));
     assert_eq!(
         job.steps[0].working_directory,
         Some(SourceText::Literal("6".into()))

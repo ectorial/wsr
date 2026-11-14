@@ -36,8 +36,8 @@ pub enum SourceText {
 pub struct JobSummary {
     /// Source identifier.
     pub id: String,
-    /// Optional display name.
-    pub name: Option<String>,
+    /// Optional display name, literal or unevaluated (D-033 `SourceText`).
+    pub name: Option<SourceText>,
     /// Literal runner requirement, not a resolved environment; None only for a reusable-workflow
     /// call job.
     pub runner: Option<RunnerRequirement>,
@@ -96,8 +96,8 @@ pub enum CallSecrets {
 pub struct StepSummary {
     /// Optional explicit source identifier; inspection never generates an ID.
     pub id: Option<String>,
-    /// Optional display name.
-    pub name: Option<String>,
+    /// Optional display name, literal or unevaluated (D-033 `SourceText`).
+    pub name: Option<SourceText>,
     /// Optional `if` text as written, bare or fenced; never parsed or evaluated.
     pub condition: Option<String>,
     /// Optional `continue-on-error`: a literal boolean rendered as text, or unevaluated text.
@@ -172,10 +172,10 @@ pub enum StepSummaryKind {
 /// Literal source requirement, not a selected or provisioned runner.
 #[derive(Debug, PartialEq, Eq)]
 pub enum RunnerRequirement {
-    /// One source label in scalar form.
-    Label(String),
-    /// Source list, retaining order, spelling and repetitions.
-    Labels(Vec<String>),
+    /// One source label in scalar form, literal or unevaluated (D-033 `SourceText`).
+    Label(SourceText),
+    /// Source list, retaining order, spelling and repetitions; entries may be unevaluated.
+    Labels(Vec<SourceText>),
 }
 
 use std::collections::BTreeMap;

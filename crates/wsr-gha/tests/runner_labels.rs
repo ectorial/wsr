@@ -1,13 +1,17 @@
-use wsr_types::inspection::RunnerRequirement;
+use wsr_types::inspection::{RunnerRequirement, SourceText};
+
+fn literal(text: &str) -> SourceText {
+    SourceText::Literal(text.into())
+}
 
 #[test]
 fn source_summary_retains_scalar_and_list_forms() {
     for (source, expected) in [
-        ("linux", RunnerRequirement::Label("linux".into())),
-        ("[linux]", RunnerRequirement::Labels(vec!["linux".into()])),
+        ("linux", RunnerRequirement::Label(literal("linux"))),
+        ("[linux]", RunnerRequirement::Labels(vec![literal("linux")])),
         (
             "[Linux, x64, Linux]",
-            RunnerRequirement::Labels(vec!["Linux".into(), "x64".into(), "Linux".into()]),
+            RunnerRequirement::Labels(vec![literal("Linux"), literal("x64"), literal("Linux")]),
         ),
     ] {
         let raw = format!(

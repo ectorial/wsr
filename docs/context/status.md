@@ -69,6 +69,8 @@ for delivery gates.
   pattern lists in source order, never matched (B-22). See [contract](../cli/README.md#event-filters).
 - [x] Reusable-workflow call jobs in inspection: `uses`, `with` and `secrets` as written; the
   referenced workflow is never opened, loaded or resolved (B-23). See [contract](../cli/README.md#reusable-workflow-calls).
+- [x] Job and step `name` and job `runs-on` expressions in inspection: kept as unevaluated text, never
+  evaluated or used to select a runner (B-24). See [contract](../cli/README.md#literal-runner-labels).
 - [x] Manual-trigger mappings and input declarations in inspection: typed metadata/defaults,
   deterministic reports, explicit unsupported/dynamic diagnostics and distinct declaration states.
   See [manual-input contract](../cli/README.md#manual-trigger-input-declarations). No input binding,

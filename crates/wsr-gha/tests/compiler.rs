@@ -1,7 +1,7 @@
 //! Owning-crate characterization of the static inspection compiler, independent of host rendering.
 
 use wsr_gha::Category;
-use wsr_types::inspection::{RunnerRequirement, StepSummaryKind};
+use wsr_types::inspection::{RunnerRequirement, SourceText, StepSummaryKind};
 
 fn job(id: &str, needs: &str) -> String {
     format!("  {id}:\n    runs-on: linux\n{needs}    steps:\n      - run: echo\n")
@@ -176,22 +176,22 @@ fn summaries_preserve_runner_forms_and_step_kinds() {
     )
     .unwrap();
     let job = &summary.jobs[0];
-    assert!(
-        matches!(&job.runner, Some(RunnerRequirement::Labels(labels)) if labels == &["self-hosted", "linux", "linux"]),
-        "{:?}",
-        job.runner
+    assert_eq!(
+        job.runner,
+        Some(RunnerRequirement::Labels(
+            ["self-hosted", "linux", "linux"]
+                .map(|label| SourceText::Literal(label.into()))
+                .into()
+        ))
     );
     let [first, second] = &job.steps[..] else {
         panic!("expected two steps");
     };
-    assert_eq!(
-        (first.id.as_deref(), first.name.as_deref()),
-        (Some("one"), None)
-    );
+    assert_eq!((first.id.as_deref(), &first.name), (Some("one"), &None));
     assert!(matches!(first.kind, StepSummaryKind::Run));
     assert_eq!(
-        (second.id.as_deref(), second.name.as_deref()),
-        (None, Some("Use"))
+        (second.id.as_deref(), &second.name),
+        (None, &Some(SourceText::Literal("Use".into())))
     );
     assert!(
         matches!(&second.kind, StepSummaryKind::Uses(reference) if reference == "owner/action@v1")

@@ -35,23 +35,21 @@ fn inspect_reports_static_jobs_and_steps_without_running_them() {
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 2);
 }
 
+// B-24 contract change: `${{` text in job and step `name` and in `runs-on` was rejected as
+// unsupported; it is now reported as written, never evaluated.
 #[test]
-fn inspect_rejects_unevaluated_expressions_in_static_fields() {
+fn inspect_reports_name_and_runner_expressions_unevaluated() {
     let directory = tempfile::tempdir().unwrap();
-    fs::write(
-        directory.path().join("ci.yml"),
-        "jobs:\n  test:\n    runs-on: ${{ matrix.os }}\n    steps:\n      - run: echo hello\n",
-    )
-    .unwrap();
+    let workflow = "jobs:\n  a:\n    name: \"${{ matrix.os }}$(touch executed)\\e[31m\\u202E\"\n    runs-on: ${{ matrix.os }}\n    steps:\n      - name: ${{ inputs.step }}\n        run: touch executed\n  b:\n    runs-on: [linux, \"${{ vars.POOL }}\\e\"]\n    steps:\n      - run: echo hello\n";
+    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
     let output = inspect(directory.path(), "ci.yml");
-    assert_eq!(output.status.code(), Some(1), "{output:?}");
-    assert!(output.stdout.is_empty());
-    let error = String::from_utf8(output.stderr).unwrap();
-    assert!(
-        error.contains("ci.yml") && error.contains("jobs.test.runs-on"),
-        "{error}"
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: a (${{ matrix.os }}$(touch executed)\\u{1b}[31m\\u{202e}; unevaluated; expression syntax not validated)\n  Runner: ${{ matrix.os }} (unevaluated; expression syntax not validated)\n  Step 1: run (${{ inputs.step }}; unevaluated; expression syntax not validated)\nJob: b\n  Runner labels: [\"linux\", \"${{ vars.POOL }}\\u{1b}\"] (some unevaluated; expression syntax not validated)\n  Step 1: run\n"
     );
-    assert!(error.contains("expression is unevaluated"), "{error}");
+    assert!(!directory.path().join("executed").exists());
 }
 
 #[test]
@@ -520,16 +518,12 @@ fn inspect_runner_label_lists_preserve_steps_dependencies_and_sentinels() {
 }
 
 #[test]
-fn inspect_runner_labels_reject_empty_invalid_and_dynamic_values() {
+fn inspect_runner_labels_reject_empty_and_invalid_values() {
     let directory = tempfile::tempdir().unwrap();
     for (value, diagnostic) in [
         ("[]", "runs-on: expected at least one label"),
         ("[linux, ' ']", "runs-on[2]: expected a nonempty string"),
-        (
-            "[linux, '${{ matrix.os }}']",
-            "runs-on[2]: expression is unevaluated",
-        ),
-        ("'${{ matrix.os }}'", "runs-on: expression is unevaluated"),
+        // B-24: `${{` labels now inspect (`inspect_reports_name_and_runner_expressions_unevaluated`).
         ("null", "runs-on: expected a string or list of strings"),
         ("42", "runs-on: non-string value is not inspected yet"),
         ("true", "runs-on: non-string value is not inspected yet"),
