@@ -269,6 +269,24 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         // kept unevaluated (B-24).
         let labels = match &job.runner {
             None => Vec::new(),
+            Some(RunnerRequirement::Selector { group, labels }) => {
+                if let Some(group) = group {
+                    check_group(group, &format!("jobs.{id}.runs-on.group"))?;
+                }
+                match labels.as_deref() {
+                    Some(RunnerRequirement::Label(label)) => {
+                        vec![(label, format!("jobs.{id}.runs-on.labels"))]
+                    }
+                    Some(RunnerRequirement::Labels(labels)) => labels
+                        .iter()
+                        .enumerate()
+                        .map(|(index, label)| {
+                            (label, format!("jobs.{id}.runs-on.labels[{}]", index + 1))
+                        })
+                        .collect(),
+                    _ => Vec::new(),
+                }
+            }
             Some(RunnerRequirement::Label(label)) => vec![(label, format!("jobs.{id}.runs-on"))],
             Some(RunnerRequirement::Labels(labels)) => {
                 if labels.is_empty() {
@@ -503,6 +521,30 @@ fn check_literal(value: Option<&str>, location: &str, expression: Category) -> R
         ));
     }
     Ok(())
+}
+
+/// The pinned converter accepts a literal group without `/`, or `org`, `organization`, `ent` or
+/// `enterprise` and a non-empty name around one `/`; it skips an expression group.
+fn check_group(group: &SourceText, route: &str) -> Result<(), Error> {
+    if written(group).trim().is_empty() {
+        return Err(Error::invalid(route, "expected a nonempty string"));
+    }
+    let SourceText::Literal(group) = group else {
+        return Ok(());
+    };
+    match group.split('/').collect::<Vec<_>>()[..] {
+        [_] => Ok(()),
+        [prefix, name]
+            if ["org", "organization", "ent", "enterprise"].contains(&prefix)
+                && !name.is_empty() =>
+        {
+            Ok(())
+        }
+        _ => Err(Error::invalid(
+            route,
+            "invalid runner group name; use an `organization/` or `enterprise/` prefix to target a single group",
+        )),
+    }
 }
 
 fn check_required(value: &str, location: &str, expression: Category) -> Result<(), Error> {
@@ -846,28 +888,53 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
         serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
             Err(diagnostic::raise(Error::unsupported("runs-on", NON_STRING)))
         }
-        // The pinned schema's selector accepts a `group` string and a `labels` string or list;
-        // the reader converts a number or boolean in either to a string.
-        serde_yaml::Value::Mapping(selector) => Err(diagnostic::raise(Error::new(
-            if !selector.is_empty()
-                && selector.iter().all(|(key, value)| match key.as_str() {
-                    Some("group") => is_label(value),
-                    Some("labels") => {
-                        is_label(value)
-                            || value
-                                .as_sequence()
-                                .is_some_and(|labels| labels.iter().all(is_label))
+        // The pinned `runs-on-mapping`: `group` and `labels` inherit the runs-on contexts (B-35).
+        serde_yaml::Value::Mapping(selector) => {
+            if selector.is_empty() {
+                return Err(diagnostic::raise(Error::unsupported(
+                    "runs-on",
+                    "empty runner-selector mapping; not inspected yet",
+                )));
+            }
+            let (mut group, mut labels) = (None, None);
+            for (key, value) in selector {
+                let serde_yaml::Value::String(key) = key else {
+                    return Err(diagnostic::raise(Error::invalid(
+                        "runs-on",
+                        "expected a string key",
+                    )));
+                };
+                match key.as_str() {
+                    "group" => group = Some(selector_text("runs-on.group", value)?),
+                    "labels" => {
+                        labels = Some(Box::new(match value {
+                            serde_yaml::Value::Sequence(items) => RunnerRequirement::Labels(
+                                items
+                                    .into_iter()
+                                    .enumerate()
+                                    .map(|(index, item)| {
+                                        selector_text(
+                                            &format!("runs-on.labels[{}]", index + 1),
+                                            item,
+                                        )
+                                    })
+                                    .collect::<Result<_, _>>()?,
+                            ),
+                            value => {
+                                RunnerRequirement::Label(selector_text("runs-on.labels", value)?)
+                            }
+                        }))
                     }
-                    _ => false,
-                })
-            {
-                Category::Unsupported
-            } else {
-                Category::Invalid
-            },
-            "runs-on",
-            "unsupported runner-selector mapping",
-        ))),
+                    _ => {
+                        return Err(diagnostic::raise(Error::invalid(
+                            format!("runs-on.{key}"),
+                            format_args!("unknown field `{key}`, expected `group` or `labels`"),
+                        )));
+                    }
+                }
+            }
+            Ok(RunnerRequirement::Selector { group, labels })
+        }
         _ => Err(diagnostic::raise(Error::invalid(
             "runs-on",
             "expected a string or list of strings",
@@ -875,9 +942,19 @@ fn runner_requirement<'de, D: serde::Deserializer<'de>>(
     }
 }
 
-fn is_label(value: &serde_yaml::Value) -> bool {
-    matches!(
-        value,
-        serde_yaml::Value::String(_) | serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_)
-    )
+/// A selector `group` or label: a number or boolean is converted to a string by the pinned reader.
+fn selector_text<E: serde::de::Error>(
+    route: &str,
+    value: serde_yaml::Value,
+) -> Result<SourceText, E> {
+    match value {
+        serde_yaml::Value::String(text) => Ok(source_text(text)),
+        serde_yaml::Value::Bool(_) | serde_yaml::Value::Number(_) => {
+            Err(diagnostic::raise(Error::unsupported(route, NON_STRING)))
+        }
+        _ => Err(diagnostic::raise(Error::invalid(
+            route,
+            "expected a string",
+        ))),
+    }
 }

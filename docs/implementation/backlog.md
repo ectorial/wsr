@@ -496,7 +496,8 @@ Schedule A takes only ready slices.
 
 ## B-35 runs-on group/labels selector mapping
 
-- Status: ready.
+- Status: **delivered on merge of the B-35 PR** (Schedule A); see [slice record](inspection-runner-selector.md).
+  An empty `{}` stays Unsupported, and whitespace-only text is Invalid (the existing WSR label rule; the pin rejects only `""`).
 - Behavior: retain `group` and scalar/sequence `labels` (expressions unevaluated) without selecting
   a runner; follow pinned converter rules for group prefixes, duplicate/unknown keys and scalar categories.
 - Acceptance: category tests and a CLI golden with hostile text, the executed sentinel and the

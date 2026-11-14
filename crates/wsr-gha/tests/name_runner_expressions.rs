@@ -53,8 +53,10 @@ fn other_name_and_runner_rules_are_unchanged() {
             Category::Invalid,
             "jobs.b.runs-on[2]",
         ),
+        // B-35 contract change: a selector `${{` group now inspects (runner_selector.rs); an
+        // empty selector stays unsupported.
         (
-            "jobs:\n  b:\n    runs-on: {group: '${{ x }}'}\n    steps:\n      - run: a\n",
+            "jobs:\n  b:\n    runs-on: {}\n    steps:\n      - run: a\n",
             Category::Unsupported,
             "jobs.b.runs-on",
         ),

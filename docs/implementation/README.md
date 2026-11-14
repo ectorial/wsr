@@ -16,6 +16,7 @@ Moving or indexing these documents does not resume the worker or create a schedu
 | [Job strategy iteration](inspection-job-strategy.md) | Backlog B-30: job strategies as source text, never expanded |
 | [Matrix size iteration](inspection-matrix-size.md) | Backlog B-32: literal matrices inspect; only alias amplification is rejected |
 | [Workflow description iteration](inspection-workflow-description.md) | Backlog B-33: root `description` retained as written |
+| [Runner selector iteration](inspection-runner-selector.md) | Backlog B-35: `runs-on` group/labels retained without selecting a runner |
 | [Job cancellation timeout inspection](inspection-cancel-timeout.md) | Backlog B-34: job `cancel-timeout-minutes` retained, never applied |
 | [Job container iteration](inspection-job-container.md) | Backlog B-29: job `container` as source text, never pulled or started |
 | [Run expression iteration](inspection-run-expressions.md) | Backlog B-28: `${{` in step `run` kept unevaluated; the script is never printed |
