@@ -1,7 +1,11 @@
 # Workflow-call iteration: reusable-workflow call jobs (backlog B-23)
 
 Status: **delivered on merge of its PR**, branch `feat/b23-reusable-calls` from `568793f`
-(Schedule A). Evidence lives in the [checkpoint](inspection-progress.md).
+(Schedule A). Implemented by Claude
+(claude-opus-5-5, burn mode; `wsr-types` call types under D-033); cross-reviewed by Codex gpt-6.1-sol
+(high) in four rounds: placement by key order and eager decoding (two P2s), then a materializing
+pre-scan (three P2s), then scan amplification and a lost call form (two P2s), then job-body alias
+amplification (one P2); all fixed with regression tests or measured probes. Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Scope
 
@@ -24,7 +28,9 @@ selects a reusable-workflow job when `uses` is present; `workflows/file-referenc
   whatever the key order and before the value is decoded: `call::scan` streams the source once,
   skipping values with `IgnoredAny` (never materialized) and reading keys as the typed decoder does,
   to record each job's form by position; `diagnostic::Level::placement` then rejects the key with
-  its parser location. A job the scan did not finish falls back to post-decode checks;
+  its parser location. The scan reads only the first `jobs` and stops after one job key per source
+  byte (aliases can repeat job bodies); a job it did not finish without reading `uses` falls back to
+  post-decode checks;
 - `uses` with `${{`, empty or not a reference is `Invalid`; `$/` is `Unsupported` (as for step `uses`);
 - `with` and a `secrets` mapping reuse the step `with` decoder; an expression replacing the mapping or
   in a key is `Invalid` (the definitions have no context); `secrets` other than `inherit` or a mapping

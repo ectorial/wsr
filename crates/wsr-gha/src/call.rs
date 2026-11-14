@@ -26,17 +26,21 @@ pub(super) const FACTORY_ONLY: &[&str] = &[
 /// form is known before any of its keys is decoded. Values are skipped, never materialized, and keys
 /// are read as the typed decoder reads them. The scan stops at the first failure; a job it did not
 /// finish without having read `uses` is absent, and the typed decode fails at the same point or
-/// earlier.
+/// earlier. Aliases can repeat job bodies, so the scan also stops after one job key per source byte;
+/// later jobs are then checked after decoding, in key order.
 pub(super) fn scan(raw: &[u8]) -> Vec<bool> {
     let mut forms = Vec::new();
-    let _ = Scan::Root(&mut forms).deserialize(serde_yaml::Deserializer::from_slice(raw));
+    let mut budget = raw.len();
+    let _ =
+        Scan::Root(&mut forms, &mut budget).deserialize(serde_yaml::Deserializer::from_slice(raw));
     forms
 }
 
+/// A scan level with the remaining job-key budget.
 enum Scan<'a> {
-    Root(&'a mut Vec<bool>),
-    Jobs(&'a mut Vec<bool>),
-    Job(&'a mut bool),
+    Root(&'a mut Vec<bool>, &'a mut usize),
+    Jobs(&'a mut Vec<bool>, &'a mut usize),
+    Job(&'a mut bool, &'a mut usize),
 }
 
 impl<'de> DeserializeSeed<'de> for Scan<'_> {
@@ -56,22 +60,22 @@ impl<'de> Visitor<'de> for Scan<'_> {
 
     fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<(), M::Error> {
         match self {
-            Scan::Root(forms) => {
+            Scan::Root(forms, budget) => {
                 let mut scanned = false;
                 while let Some(Name(name)) = map.next_key()? {
                     // The typed decoder reads the first `jobs` and rejects any repeat.
                     if name.as_deref() == Some("jobs") && !scanned {
                         scanned = true;
-                        map.next_value_seed(Scan::Jobs(forms))?;
+                        map.next_value_seed(Scan::Jobs(&mut *forms, &mut *budget))?;
                     } else {
                         map.next_value::<IgnoredAny>()?;
                     }
                 }
             }
-            Scan::Jobs(forms) => {
+            Scan::Jobs(forms, budget) => {
                 while map.next_key::<IgnoredAny>()?.is_some() {
                     let mut call = false;
-                    let scanned = map.next_value_seed(Scan::Job(&mut call));
+                    let scanned = map.next_value_seed(Scan::Job(&mut call, &mut *budget));
                     // A `uses` key already read decides the form even if a later key fails.
                     if scanned.is_ok() || call {
                         forms.push(call);
@@ -79,8 +83,11 @@ impl<'de> Visitor<'de> for Scan<'_> {
                     scanned?;
                 }
             }
-            Scan::Job(call) => {
+            Scan::Job(call, budget) => {
                 while let Some(Name(name)) = map.next_key()? {
+                    *budget = budget
+                        .checked_sub(1)
+                        .ok_or_else(|| serde::de::Error::custom("scan budget exhausted"))?;
                     *call |= name.as_deref() == Some("uses");
                     map.next_value::<IgnoredAny>()?;
                 }
