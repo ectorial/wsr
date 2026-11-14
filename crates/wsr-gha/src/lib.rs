@@ -119,24 +119,10 @@ struct JobFields {
 }
 
 thread_local! {
-    // Job identifiers whose mapping has `uses`, from a pre-scan of the source; None if unknown.
-    static CALLS: std::cell::RefCell<Option<std::collections::BTreeSet<String>>> =
-        const { std::cell::RefCell::new(None) };
-    // Whether the job being decoded is a reusable-workflow call; None if unknown.
+    // Per job, in source position, whether its mapping has `uses` (`call::scan`).
+    static CALLS: std::cell::RefCell<Vec<bool>> = const { std::cell::RefCell::new(Vec::new()) };
+    // Whether the job being decoded is a reusable-workflow call; None if the scan did not finish it.
     static CALL: std::cell::Cell<Option<bool>> = const { std::cell::Cell::new(None) };
-}
-
-/// Identifiers of jobs with a `uses` key, so the job form is known before any key is decoded.
-/// A source the plain YAML reader rejects fails the typed decode as well.
-fn call_jobs(raw: &[u8]) -> Option<std::collections::BTreeSet<String>> {
-    let source: serde_yaml::Value = serde_yaml::from_slice(raw).ok()?;
-    let jobs = source.get("jobs")?.as_mapping()?;
-    Some(
-        jobs.iter()
-            .filter(|(_, job)| job.get("uses").is_some())
-            .filter_map(|(id, _)| id.as_str().map(str::to_owned))
-            .collect(),
-    )
 }
 
 impl diagnostic::Level for Job {
@@ -217,9 +203,10 @@ impl diagnostic::Level for Step {
 /// Unsupported fields are rejected rather than silently omitted. The summary is intentionally
 /// separate from the legacy execution model; the same compiler can later be packaged as a Component.
 pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
-    CALLS.set(call_jobs(raw));
+    CALLS.set(call::scan(raw));
+    CALL.set(None);
     let decoded = diagnostic::decode::<Fields<Workflow>>(raw);
-    CALLS.set(None);
+    CALLS.take();
     CALL.set(None);
     let Fields(workflow) = decoded?;
     if workflow.jobs.is_empty() {
@@ -573,18 +560,15 @@ fn unique_jobs<'de, D: serde::Deserializer<'de>>(
         ) -> Result<Self::Value, M::Error> {
             let mut jobs = BTreeMap::new();
             let mut spellings = BTreeMap::new();
+            let mut position = 0;
             while let Some(id) = map.next_key::<serde_yaml::Value>()? {
                 // The identifier is validated before its body is decoded, so it cannot forge
                 // the route of a body diagnostic.
                 if let serde_yaml::Value::String(id) = &id {
                     check_job_id(id).map_err(diagnostic::raise_unlocated)?;
                 }
-                CALL.set(match &id {
-                    serde_yaml::Value::String(id) => {
-                        CALLS.with_borrow(|calls| calls.as_ref().map(|calls| calls.contains(id)))
-                    }
-                    _ => None,
-                });
+                CALL.set(CALLS.with_borrow(|calls| calls.get(position).copied()));
+                position += 1;
                 let Fields(job) = map.next_value::<Fields<Job>>().inspect_err(|_| match &id {
                     serde_yaml::Value::String(id) => diagnostic::within(&format!("jobs.{id}")),
                     _ => diagnostic::within("jobs"),

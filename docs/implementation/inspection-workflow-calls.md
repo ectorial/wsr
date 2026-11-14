@@ -21,8 +21,10 @@ selects a reusable-workflow job when `uses` is present; `workflows/file-referenc
 - keys only `job-factory` has (`runs-on`, `timeout-minutes`, `cancel-timeout-minutes`,
   `continue-on-error`, `container`, `services`, `env`, `environment`, `outputs`, `defaults`, `steps`,
   `snapshot`) with `uses`, and `with`/`secrets` without it, are `Invalid` when the key is read,
-  whatever the key order and before the value is decoded (a pre-scan of the source records which
-  jobs have `uses`; `diagnostic::Level::placement` rejects the key with its parser location);
+  whatever the key order and before the value is decoded: `call::scan` streams the source once,
+  skipping values with `IgnoredAny` (never materialized) and reading keys as the typed decoder does,
+  to record each job's form by position; `diagnostic::Level::placement` then rejects the key with
+  its parser location. A job the scan did not finish falls back to post-decode checks;
 - `uses` with `${{`, empty or not a reference is `Invalid`; `$/` is `Unsupported` (as for step `uses`);
 - `with` and a `secrets` mapping reuse the step `with` decoder; an expression replacing the mapping or
   in a key is `Invalid` (the definitions have no context); `secrets` other than `inherit` or a mapping

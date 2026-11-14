@@ -150,6 +150,17 @@ fn call_job_categories_follow_the_pinned_schema() {
             Category::Invalid,
             "jobs.b.with",
         ),
+        // The scan reads keys as the typed decoder does and survives later failures.
+        (
+            "    !x uses: ./w.yml\n    with: {mode: fast}\n    container: alpine\n",
+            Category::Invalid,
+            "jobs.b.container",
+        ),
+        (
+            "    uses: ./w.yml\n    container: alpine\n    name: first\n    name: second\n",
+            Category::Invalid,
+            "jobs.b.container",
+        ),
         // Only workflow-job keys.
         (
             "    runs-on: linux\n    with: {a: b}\n    steps:\n      - run: echo\n",

@@ -1,6 +1,7 @@
 //! Reusable-workflow call jobs, retained as source text. The referenced workflow is never opened,
 //! loaded or resolved, and no input or secret is passed.
 
+use serde::de::{DeserializeSeed, Deserializer, IgnoredAny, MapAccess, Visitor};
 use wsr_types::inspection::{CallSecrets, WorkflowCall};
 
 use super::{Category, Error, JobFields, step_inputs};
@@ -21,11 +22,100 @@ pub(super) const FACTORY_ONLY: &[&str] = &[
     "snapshot",
 ];
 
+/// For each job of the source, in position order, whether its mapping has a `uses` key, so the job
+/// form is known before any of its keys is decoded. Values are skipped, never materialized, and keys
+/// are read as the typed decoder reads them. The scan stops at the first failure; a job it did not
+/// finish is absent, and the typed decode fails at the same point or earlier.
+pub(super) fn scan(raw: &[u8]) -> Vec<bool> {
+    let mut forms = Vec::new();
+    let _ = Scan::Root(&mut forms).deserialize(serde_yaml::Deserializer::from_slice(raw));
+    forms
+}
+
+enum Scan<'a> {
+    Root(&'a mut Vec<bool>),
+    Jobs(&'a mut Vec<bool>),
+    Job(&'a mut bool),
+}
+
+impl<'de> DeserializeSeed<'de> for Scan<'_> {
+    type Value = ();
+
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<(), D::Error> {
+        deserializer.deserialize_map(self)
+    }
+}
+
+impl<'de> Visitor<'de> for Scan<'_> {
+    type Value = ();
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("a mapping")
+    }
+
+    fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<(), M::Error> {
+        match self {
+            Scan::Root(forms) => {
+                while let Some(Name(name)) = map.next_key()? {
+                    if name.as_deref() == Some("jobs") {
+                        map.next_value_seed(Scan::Jobs(forms))?;
+                    } else {
+                        map.next_value::<IgnoredAny>()?;
+                    }
+                }
+            }
+            Scan::Jobs(forms) => {
+                while map.next_key::<IgnoredAny>()?.is_some() {
+                    let mut call = false;
+                    map.next_value_seed(Scan::Job(&mut call))?;
+                    forms.push(call);
+                }
+            }
+            Scan::Job(call) => {
+                while let Some(Name(name)) = map.next_key()? {
+                    *call |= name.as_deref() == Some("uses");
+                    map.next_value::<IgnoredAny>()?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+/// A mapping key read as a struct field identifier; None for a key that is not a string.
+struct Name(Option<String>);
+
+impl<'de> serde::Deserialize<'de> for Name {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Identifier;
+        impl Visitor<'_> for Identifier {
+            type Value = Name;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("an identifier")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, name: &str) -> Result<Name, E> {
+                Ok(Name(Some(name.to_owned())))
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, _: u64) -> Result<Name, E> {
+                Ok(Name(None))
+            }
+
+            fn visit_bytes<E: serde::de::Error>(self, _: &[u8]) -> Result<Name, E> {
+                Ok(Name(None))
+            }
+        }
+        deserializer.deserialize_identifier(Identifier)
+    }
+}
+
 /// A call job's `uses`, `with` and `secrets`; None for an ordinary job, which may not use them.
 pub(super) fn decode(id: &str, job: &JobFields) -> Result<Option<WorkflowCall>, Error> {
     let route = |field: &str| format!("jobs.{id}.{field}");
-    // `Job::placement` normally rejects these keys when they are read; the checks below cover a
-    // source whose pre-scan failed.
+    // `Job::placement` rejects these keys when they are read; the checks below cover a job the
+    // scan did not finish.
     let Some(uses) = &job.uses else {
         for (field, present) in [
             ("with", job.with.is_some()),
