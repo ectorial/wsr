@@ -109,7 +109,7 @@ struct JobFields {
     outputs: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_value")]
     environment: Option<serde_yaml::Value>,
-    #[serde(default, deserialize_with = "present_value")]
+    #[serde(default, deserialize_with = "container::deserialize")]
     container: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_steps")]
     steps: Option<Vec<Step>>,

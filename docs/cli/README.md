@@ -383,7 +383,10 @@ unevaluated in any value. An expression key, a whole `env`, `ports`, `volumes` o
 as an expression, and an empty string form (which the runner treats as no container) are unsupported.
 Null, boolean and number values are also unsupported, because the pinned reader converts them to
 strings. Port and volume entries keep their YAML type. `image`, `username` and `password` must be
-nonempty strings. Unknown keys, an empty or null entry and other shapes are invalid. A missing `image`
+nonempty strings; the pinned check is length only, so whitespace is kept as written, and a null value
+(converted to an empty string) is invalid. Unknown keys, an empty or null entry and other shapes are
+invalid. A YAML decoder error inside a container is reported without the decoder's detail, so a
+mis-tagged credential is never quoted. A missing `image`
 is invalid, except where an expression elsewhere in the container makes the pinned converter defer
 the check, which is unsupported. `container` with `uses` stays invalid. The password is never
 printed, even as written. No image is pulled, no registry is contacted, no credential is used, and no

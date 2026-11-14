@@ -1,8 +1,12 @@
 # Job container iteration: job `container` as source text (backlog B-29)
 
-Status: **in progress** on branch `feat/b29-job-container` from `094c0e0` (Schedule A).
+Status: **delivered on merge of its PR**, branch `feat/b29-job-container` from `094c0e0` (Schedule A).
 Implemented by Claude (claude-opus-5-5, orchestrator, steady mode; `wsr-types` `Container` under
-D-033); cross-review by Codex gpt-6.1-sol (high). Evidence lives in the [checkpoint](inspection-progress.md).
+D-033); cross-reviewed by Codex gpt-6.1-sol (high), and all three findings are fixed. The P1 was a
+password quoted by a YAML decoder error under a mismatched tag; the decoder detail is now withheld.
+The P2 was that whitespace-only `image`/`username`/`password` were Invalid; the pinned check is
+length only. The P3 was a table row that contradicted the null handling. Evidence lives in the
+[checkpoint](inspection-progress.md).
 
 ## Scope
 
@@ -20,19 +24,21 @@ when any token in the container is an expression. Without expressions, it requir
 | Source | Category |
 | --- | --- |
 | string form, `${{` text | image, literal or unevaluated |
-| empty or blank string form | Unsupported (the runner treats an empty image as no container) |
-| null, boolean or number (whole value, `image`, `options`, `username`, `password`) | Unsupported (converted to a string, B-13) |
+| empty string form | Unsupported (the runner treats an empty image as no container); whitespace is kept as written |
+| null, boolean or number as the whole value or `options` | Unsupported (converted to a string, B-13) |
+| boolean or number `image`, `username`, `password` | Unsupported (converted to a nonempty string) |
 | sequence or other non-mapping shape | Invalid |
 | mapping key with `${{` | Unsupported (valid in an expression context) |
 | unknown or non-string key | Invalid |
-| `image`, `username`, `password`: empty, blank or null | Invalid (`non-empty-string`) |
+| `image`, `username`, `password`: empty or null | Invalid (`non-empty-string` checks length only; whitespace is kept) |
 | `options`: any string | literal or unevaluated |
 | `env` | as step `env` (B-5): nonempty keys unique ignoring case, scalar values keeping their type |
 | `ports`, `volumes`: sequence of nonempty strings; numbers and booleans keep their type | items literal or unevaluated; empty or null items Invalid |
 | whole `env`, `ports`, `volumes` or `credentials` given as `${{` text | Unsupported |
 | missing `image`, no expression in the container | Invalid (``missing field `image` ``) |
 | missing `image` with an expression elsewhere | Unsupported (the converter defers the check) |
-| `container` with `uses` | Invalid (unchanged, B-23) |
+| `container` with `uses` | Invalid (unchanged, B-23; also when the scan budget is exhausted and `container` precedes `uses`) |
+| YAML decoder error inside the container (e.g. a mismatched `!!int` tag) | Invalid, with the decoder's detail withheld so no value is quoted |
 
 ## Acceptance and expected red
 

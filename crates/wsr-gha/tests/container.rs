@@ -45,6 +45,16 @@ fn string_and_mapping_forms_are_kept_as_written() {
         image(unevaluated("${{ matrix.image }}"))
     );
     assert_eq!(container("{image: node:20}"), image(literal("node:20")));
+    // `non-empty-string` checks length only, so whitespace is kept as written.
+    assert_eq!(container("'  '"), image(literal("  ")));
+    assert_eq!(container("{image: ' '}"), image(literal(" ")));
+    assert_eq!(
+        container("{image: i, credentials: {username: ' ', password: ' '}}").credentials,
+        Some(ContainerCredentials {
+            username: Some(literal(" ")),
+            password: Some(literal(" ")),
+        })
+    );
     assert_eq!(
         container(
             "\n      image: ghcr.io/o/i:1\n      credentials:\n        username: bot\n        password: ${{ secrets.TOKEN }}\n      env:\n        B: 2\n        A: ${{ vars.A }}\n      ports: [80, '8080:80', '${{ inputs.port }}']\n      volumes: [/data, true]\n      options: ''"
@@ -95,7 +105,6 @@ fn container_categories_follow_the_pinned_schema_and_converter() {
     let route = "jobs.a.container";
     for (source, category, at) in [
         ("''", Unsupported, route.to_owned()),
-        ("'  '", Unsupported, route.to_owned()),
         ("~", Unsupported, route.to_owned()),
         ("5", Unsupported, route.to_owned()),
         ("true", Unsupported, route.to_owned()),
@@ -113,7 +122,6 @@ fn container_categories_follow_the_pinned_schema_and_converter() {
         ("{image: i, Image: j}", Invalid, format!("{route}.Image")),
         ("{image: i, 5: j}", Invalid, route.to_owned()),
         ("{image: ''}", Invalid, format!("{route}.image")),
-        ("{image: ' '}", Invalid, format!("{route}.image")),
         ("{image: ~}", Invalid, format!("{route}.image")),
         ("{image: 5}", Unsupported, format!("{route}.image")),
         ("{image: [i]}", Invalid, format!("{route}.image")),
@@ -229,4 +237,19 @@ fn container_before_uses_is_invalid_when_the_scan_budget_is_exhausted() {
             .contains("`container` cannot be combined with `uses`"),
         "{error}"
     );
+}
+
+// Decoder errors inside a container can quote a credential, so their detail is withheld.
+#[test]
+fn decoder_errors_inside_a_container_do_not_quote_its_values() {
+    for value in [
+        "!!int hunter2-secret",
+        "!!bool hunter2-secret",
+        "!!float hunter2-secret",
+    ] {
+        let source = job(&format!("{{image: i, credentials: {{password: {value}}}}}"));
+        let error = common::inspect(source.as_bytes()).unwrap_err();
+        assert_eq!(error.category(), Invalid, "{value}: {error}");
+        assert!(!error.to_string().contains("hunter2"), "{value}: {error}");
+    }
 }

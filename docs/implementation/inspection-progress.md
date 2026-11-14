@@ -1,6 +1,35 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-28 run expressions implemented; PR pending checks
+## Current checkpoint — B-29 job container implemented; PR pending checks
+
+Same Schedule A run, after the PR #58 wake (lock retaken 2026-11-14). PR #58 squash-merged as
+`094c0e0` after all four required checks passed on `e1364d1`, with no reviews or comments. The
+`wsr` and `wsr-gha` suites were verified on synced main. B-29 is on `feat/b29-job-container` from
+`094c0e0`; slice record [inspection-job-container.md](inspection-job-container.md). Steady rotation
+slice 2: implemented by Claude (claude-opus-5-5, orchestrator; `wsr-types` `Container` and
+`ContainerCredentials` under D-033, plus a new `wsr-gha` `container` module). Cross-reviewed by
+Codex gpt-6.1-sol (high): one P1, one P2 and one P3, all fixed with regressions; no second review
+was run. Next rotation: B-30 Codex (gpt-6.1-sol, reasoningEffort medium), with a Claude review.
+
+- Red (observed): `container.rs` failed with ``unsupported field `container`; this field is not
+  inspected yet`` (Unsupported at `jobs.a.container`). A second red: past the B-23 scan budget, a
+  call job's `container` before `uses` was silently accepted. The fix adds `container` to the
+  call-job field check.
+- Review fixes: P1, a mismatched-tag password was quoted by a decoder error. Red was observed in a
+  `wsr-gha` test, and a CLI regression asserts secret-free stderr, empty stdout and exit 1. P2,
+  whitespace-only `image`/`username`/`password` are kept as written. P3, the table now matches the
+  null handling.
+- Green: `container.rs` (5 tests, 32 category cases) and 2 CLI tests (a hostile golden with a PATH
+  shim for `docker`, `podman` and `sh`, an `executed` sentinel and an unprinted password; plus the
+  redaction test). The CLI golden was written after the renderer, so its red was observed only at
+  the `wsr-gha` level. `cargo xtask ci` and `git diff --check` pass.
+- Process note: this run once invoked the read-only `git stash list` by mistake. It changed
+  nothing, and stash@{0} was verified unchanged.
+
+B-29 is delivered on merge of this PR. Next action: watch the PR and merge on green with no
+unresolved findings, then take B-30 (job `strategy`) with Codex as the implementer.
+
+## Previous checkpoint — B-28 run expressions delivered (PR #58, `094c0e0`)
 
 Schedule A run 2026-11-14 (lock taken fresh, none present). PR #55 had merged as `0792966` and Schedule
 B's PR #57 as `e4a7ac8`; main synced. B-28 on `feat/b28-run-expressions` from `e4a7ac8`; slice record

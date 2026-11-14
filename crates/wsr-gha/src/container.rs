@@ -9,6 +9,19 @@ use crate::step_inputs;
 
 const EXPRESSION: &str = "expression is unevaluated; dynamic inspection is not supported yet";
 
+/// Read `container` as a YAML value. A decoder error can quote a value, such as a password under
+/// a mismatched tag, so its detail is withheld.
+pub(crate) fn deserialize<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Value>, D::Error> {
+    use serde::Deserialize as _;
+    Value::deserialize(deserializer).map(Some).map_err(|_| {
+        serde::de::Error::custom(
+            "invalid YAML value; detail withheld because a container may hold credentials",
+        )
+    })
+}
+
 /// Decode `container` at `route`. The pinned `container` has an expression context that its values
 /// inherit, and is a string image or a `container-mapping`. `convertToJobContainer` skips its
 /// checks, including the required image, when any token is an expression.
@@ -16,7 +29,7 @@ pub(crate) fn decode(route: &str, value: Value) -> Result<Container, Error> {
     let entries = match value {
         Value::Mapping(entries) => entries,
         // The runner treats an empty image as no container, which WSR does not report.
-        Value::String(text) if text.trim().is_empty() => {
+        Value::String(text) if text.is_empty() => {
             return Err(Error::unsupported(route, "expected a nonempty string"));
         }
         Value::String(text) => {
@@ -127,10 +140,11 @@ fn credentials(route: &str, value: Value) -> Result<ContainerCredentials, Error>
     Ok(credentials)
 }
 
-/// A `non-empty-string`; the pinned reader converts null to an empty string.
+/// A `non-empty-string`, which checks length only; the pinned reader converts null to an empty
+/// string.
 fn required(route: &str, value: Value) -> Result<SourceText, Error> {
     match value {
-        Value::String(text) if text.trim().is_empty() => {
+        Value::String(text) if text.is_empty() => {
             Err(Error::invalid(route, "expected a nonempty string"))
         }
         Value::String(text) => Ok(source_text(text)),

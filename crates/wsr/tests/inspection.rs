@@ -134,6 +134,20 @@ fn inspect_reports_job_containers_without_pulling_or_starting_them() {
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
 }
 
+// A mismatched tag on a container password must not echo it through the decoder's error.
+#[test]
+fn inspect_does_not_quote_container_credentials_in_decoder_errors() {
+    let directory = tempfile::tempdir().unwrap();
+    let workflow = "jobs:\n  a:\n    runs-on: linux\n    container: {image: i, credentials: {password: !!int hunter2-secret}}\n    steps:\n      - run: echo\n";
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty(), "{output:?}");
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(stderr.contains("detail withheld"), "{stderr}");
+    assert!(!stderr.contains("hunter2"), "{stderr}");
+}
+
 #[test]
 fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
     let directory = tempfile::tempdir().unwrap();
