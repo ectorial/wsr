@@ -95,6 +95,45 @@ fn inspect_reports_run_expressions_without_printing_the_script() {
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
 }
 
+// Backlog B-29: a job `container` is reported as written; nothing is pulled, started or logged in
+// to, and a password is never printed.
+#[test]
+fn inspect_reports_job_containers_without_pulling_or_starting_them() {
+    let directory = tempfile::tempdir().unwrap();
+    let bin = tempfile::tempdir().unwrap();
+    let marker = directory.path().join("executed");
+    #[cfg(unix)]
+    for command in ["docker", "podman", "sh"] {
+        use std::os::unix::fs::PermissionsExt;
+        let path = bin.path().join(command);
+        fs::write(
+            &path,
+            "#!/bin/sh\n/usr/bin/touch \"$WSR_EXECUTION_MARKER\"\n",
+        )
+        .unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    let workflow = "jobs:\n  a:\n    runs-on: linux\n    container: \"alpine$(touch executed)\\e[31m\\u202E\"\n    steps:\n      - run: echo\n  b:\n    runs-on: linux\n    container:\n      image: ${{ matrix.image }}\n      credentials:\n        username: bot\n        password: hunter2-secret\n      env: {A: \"$(touch executed)\", N: 1}\n      ports: [80, '${{ inputs.port }}']\n      volumes: [/data]\n      options: --cpus 1 $(touch executed)\n    steps:\n      - run: echo\n";
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_wsr"))
+        .args(["inspect", "ci.yml"])
+        .current_dir(directory.path())
+        .env("PATH", bin.path())
+        .env("WSR_EXECUTION_MARKER", &marker)
+        .output()
+        .expect("run inspection");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    let report = String::from_utf8(output.stdout).unwrap();
+    assert_eq!(
+        report,
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Container (not pulled; not started):\n    Image: alpine$(touch executed)\\u{1b}[31m\\u{202e}\n  Step 1: run\nJob: b\n  Runner: linux\n  Container (not pulled; not started):\n    Image: ${{ matrix.image }} (unevaluated; expression syntax not validated)\n    Credentials (not used):\n      Username: bot\n      Password: set (not shown)\n    Env (not bound):\n      A: \"$(touch executed)\"\n      N: 1\n    Ports (not exposed): [80, \"${{ inputs.port }}\"] (some unevaluated; expression syntax not validated)\n    Volumes (not mounted): [\"/data\"]\n    Options: \"--cpus 1 $(touch executed)\" (not passed)\n  Step 1: run\n"
+    );
+    assert!(!report.contains("hunter2"), "{report}");
+    assert!(!marker.exists(), "a command was executed");
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
 #[test]
 fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
     let directory = tempfile::tempdir().unwrap();

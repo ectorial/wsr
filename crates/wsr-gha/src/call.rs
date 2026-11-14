@@ -153,6 +153,7 @@ pub(super) fn decode(id: &str, job: &JobFields) -> Result<Option<WorkflowCall>, 
         ("defaults", job.defaults.is_some()),
         ("outputs", job.outputs.is_some()),
         ("environment", job.environment.is_some()),
+        ("container", job.container.is_some()),
         ("steps", job.steps.is_some()),
     ];
     if let Some((field, _)) = present.iter().find(|(_, present)| *present) {
