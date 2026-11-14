@@ -25,7 +25,8 @@ pub(super) const FACTORY_ONLY: &[&str] = &[
 /// For each job of the source, in position order, whether its mapping has a `uses` key, so the job
 /// form is known before any of its keys is decoded. Values are skipped, never materialized, and keys
 /// are read as the typed decoder reads them. The scan stops at the first failure; a job it did not
-/// finish is absent, and the typed decode fails at the same point or earlier.
+/// finish without having read `uses` is absent, and the typed decode fails at the same point or
+/// earlier.
 pub(super) fn scan(raw: &[u8]) -> Vec<bool> {
     let mut forms = Vec::new();
     let _ = Scan::Root(&mut forms).deserialize(serde_yaml::Deserializer::from_slice(raw));
@@ -56,8 +57,11 @@ impl<'de> Visitor<'de> for Scan<'_> {
     fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<(), M::Error> {
         match self {
             Scan::Root(forms) => {
+                let mut scanned = false;
                 while let Some(Name(name)) = map.next_key()? {
-                    if name.as_deref() == Some("jobs") {
+                    // The typed decoder reads the first `jobs` and rejects any repeat.
+                    if name.as_deref() == Some("jobs") && !scanned {
+                        scanned = true;
                         map.next_value_seed(Scan::Jobs(forms))?;
                     } else {
                         map.next_value::<IgnoredAny>()?;
@@ -67,8 +71,12 @@ impl<'de> Visitor<'de> for Scan<'_> {
             Scan::Jobs(forms) => {
                 while map.next_key::<IgnoredAny>()?.is_some() {
                     let mut call = false;
-                    map.next_value_seed(Scan::Job(&mut call))?;
-                    forms.push(call);
+                    let scanned = map.next_value_seed(Scan::Job(&mut call));
+                    // A `uses` key already read decides the form even if a later key fails.
+                    if scanned.is_ok() || call {
+                        forms.push(call);
+                    }
+                    scanned?;
                 }
             }
             Scan::Job(call) => {

@@ -161,6 +161,11 @@ fn call_job_categories_follow_the_pinned_schema() {
             Category::Invalid,
             "jobs.b.container",
         ),
+        (
+            "    container: alpine\n    uses: ./w.yml\n    ? [x]\n    : y\n",
+            Category::Invalid,
+            "jobs.b.container",
+        ),
         // Only workflow-job keys.
         (
             "    runs-on: linux\n    with: {a: b}\n    steps:\n      - run: echo\n",
