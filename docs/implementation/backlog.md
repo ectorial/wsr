@@ -483,7 +483,9 @@ Schedule A takes only ready slices.
 
 ## B-34 Job cancel-timeout-minutes
 
-- Status: ready.
+- Status: **delivered on merge of the B-34 PR** (Schedule A); see [slice record](inspection-cancel-timeout.md).
+  Residual for Schedule B: past the B-23 scan budget, a non-positive value before `uses` is Unsupported, not Invalid
+  (inherited from job `timeout-minutes`).
 - Behavior: retain literal or unevaluated values rendered "not applied", following B-17's timeout
   subset; nonpositive/wrong types follow the pin; stays Invalid with `uses` (B-27).
 - Acceptance: category tests for these cases and a CLI golden with hostile text, the executed

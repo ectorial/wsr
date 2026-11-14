@@ -148,6 +148,10 @@ pub(super) fn decode(id: &str, job: &JobFields) -> Result<Option<WorkflowCall>, 
     let present = [
         ("runs-on", job.runner.is_some()),
         ("timeout-minutes", job.timeout_minutes.is_some()),
+        (
+            "cancel-timeout-minutes",
+            job.cancel_timeout_minutes.is_some(),
+        ),
         ("continue-on-error", job.continue_on_error.is_some()),
         ("env", job.env.is_some()),
         ("defaults", job.defaults.is_some()),

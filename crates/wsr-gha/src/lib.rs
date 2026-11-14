@@ -97,6 +97,12 @@ struct JobFields {
     )]
     timeout_minutes: Option<SourceText>,
     #[serde(
+        rename = "cancel-timeout-minutes",
+        default,
+        deserialize_with = "timeout_minutes"
+    )]
+    cancel_timeout_minutes: Option<SourceText>,
+    #[serde(
         rename = "continue-on-error",
         default,
         deserialize_with = "continue_on_error"
@@ -154,8 +160,7 @@ impl diagnostic::Level for Job {
     }
 
     // The union of the pinned schema's job-factory and reusable workflow-job keys.
-    const SCHEMA: &'static [&'static str] =
-        &["cancel-timeout-minutes", "services", "snapshot", "strategy"];
+    const SCHEMA: &'static [&'static str] = &["services", "snapshot", "strategy"];
 }
 
 #[derive(Deserialize)]
@@ -447,6 +452,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             condition: job.condition,
             permissions: job.permissions,
             timeout_minutes: job.timeout_minutes,
+            cancel_timeout_minutes: job.cancel_timeout_minutes,
             continue_on_error: job.continue_on_error,
             env,
             defaults,

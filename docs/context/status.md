@@ -76,6 +76,7 @@ for delivery gates.
 - [x] Job strategies are inspected as source text, never expanded or applied (B-30; delivered on merge of its PR). See [slice record](../implementation/inspection-job-strategy.md).
 - [x] Literal matrices inspect at any size; only alias amplification is rejected (B-32; delivered on merge of its PR). See [slice record](../implementation/inspection-matrix-size.md).
 - [x] The workflow `description` is inspected as written (B-33; delivered on merge of its PR). See [slice record](../implementation/inspection-workflow-description.md).
+- [x] Job `cancel-timeout-minutes` is inspected as source data, never applied (B-34; delivered on merge of its PR). See [slice record](../implementation/inspection-cancel-timeout.md).
 - [x] Step `run` expressions in inspection: a script with `${{` text is flagged in its step heading,
   never printed, evaluated or executed (B-28). See [contract](../cli/README.md#static-workflow-inspection).
 - [x] `on` required in inspection: a workflow without it is invalid, as in the pinned root schema (B-25).

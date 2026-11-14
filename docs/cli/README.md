@@ -219,8 +219,8 @@ expression context, so `${{` text fails as an unevaluated expression the field d
 
 ### Job timeouts and step shells
 
-A job's `timeout-minutes` and a run step's `shell` are reported as source data on lines after the
-job's runner, needs and permissions lines and after the step line:
+A job's `timeout-minutes` and `cancel-timeout-minutes`, and a run step's `shell` are reported as
+source data on lines after the job's runner, needs and permissions lines and after the step line:
 
 ```text
   Timeout minutes: 5 (not applied)
@@ -241,7 +241,9 @@ containing {0}`). A literal `uses` must be `./path` (or `.\path`), `docker://ima
 (`uses: invalid action reference 'actions/checkout'; …`); references are checked for shape only,
 and a `$/…` self-repository reference is unsupported.
 No timeout is applied and no shell is selected, located or invoked. Job `cancel-timeout-minutes`
-remains unsupported.
+follows the same decoder and category rules as `timeout-minutes`, rendering next to it as
+`Cancel timeout minutes: 5 (not applied)` (or escaped unevaluated text). It is invalid with job `uses`.
+See the [B-34 slice record](../implementation/inspection-cancel-timeout.md).
 
 ### Continue-on-error and step timeouts
 

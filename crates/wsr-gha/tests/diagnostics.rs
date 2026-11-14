@@ -13,10 +13,11 @@ fn valid_github_actions_source_outside_the_subset_is_unsupported_at_its_route() 
     for (source, route) in [
         // Job `if` (B-12) and then `continue-on-error` (B-17) were this example; see
         // conditions.rs and continue_timeout.rs.
+        // B-34 intended contract change: cancel-timeout-minutes now inspects; use services.
         (
-            "jobs:\n  b:\n    cancel-timeout-minutes: 5\n    runs-on: linux\n    steps:\n      - run: echo\n"
+            "jobs:\n  b:\n    services: {}\n    runs-on: linux\n    steps:\n      - run: echo\n"
                 .to_owned(),
-            "jobs.b.cancel-timeout-minutes",
+            "jobs.b.services",
         ),
         // B-15 contract change: bare events now inspect; their configuration does not.
         // B-22 inspects `push` filters; another event keeps this sample.
@@ -202,13 +203,14 @@ fn keys_and_shapes_outside_the_github_actions_schema_stay_invalid() {
 
 #[test]
 fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
+    // B-34 intended contract change: retain the Unsupported location sample using services.
     let error = common::inspect(
-        b"jobs:\n  b:\n    runs-on: linux\n    cancel-timeout-minutes: 5\n    steps:\n      - run: echo\n",
+        b"jobs:\n  b:\n    runs-on: linux\n    services: {}\n    steps:\n      - run: echo\n",
     )
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "jobs.b: unsupported field `cancel-timeout-minutes`; this field is not inspected yet at line 4 column 5"
+        "jobs.b: unsupported field `services`; this field is not inspected yet at line 4 column 5"
     );
     let duplicate = common::inspect(
         format!("on: {{workflow_dispatch: null, workflow_dispatch: {{}}}}\n{JOB}").as_bytes(),

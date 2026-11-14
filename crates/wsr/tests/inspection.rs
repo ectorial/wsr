@@ -2727,3 +2727,35 @@ fn inspect_with_execution_traps(directory: &Path, file: &str) -> Output {
     assert!(!marker.exists(), "a command was executed");
     output
 }
+
+#[test]
+fn inspect_reports_cancel_timeouts_without_applying_or_executing() {
+    for (value, line) in [
+        ("5", "5 (not applied)"),
+        (
+            "\"${{ $(touch executed)\\e[31m\\u202E }}\"",
+            "${{ $(touch executed)\\u{1b}[31m\\u{202e} }} (unevaluated; expression syntax not validated; not applied)",
+        ),
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        let source = format!(
+            "on: workflow_dispatch\njobs:\n  a:\n    runs-on: linux\n    timeout-minutes: 10\n    cancel-timeout-minutes: {value}\n    steps: [{{run: touch executed}}]\n"
+        );
+        fs::write(directory.path().join("ci.yml"), &source).unwrap();
+        let output = inspect_with_execution_traps(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(0), "{output:?}");
+        assert!(output.stderr.is_empty());
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap(),
+            format!(
+                "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Timeout minutes: 10 (not applied)\n  Cancel timeout minutes: {line}\n  Step 1: run\n"
+            )
+        );
+        assert!(!directory.path().join("executed").exists());
+        assert_eq!(
+            fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+            source
+        );
+        assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
+}
