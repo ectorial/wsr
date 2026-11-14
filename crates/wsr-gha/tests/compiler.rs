@@ -177,7 +177,7 @@ fn summaries_preserve_runner_forms_and_step_kinds() {
     .unwrap();
     let job = &summary.jobs[0];
     assert!(
-        matches!(&job.runner, RunnerRequirement::Labels(labels) if labels == &["self-hosted", "linux", "linux"]),
+        matches!(&job.runner, Some(RunnerRequirement::Labels(labels)) if labels == &["self-hosted", "linux", "linux"]),
         "{:?}",
         job.runner
     );

@@ -322,7 +322,8 @@ Schedule A takes only ready slices.
 
 ## B-23 Reusable-workflow call jobs (`uses`, `with`, `secrets`)
 
-- Status: ready
+- Status: **delivered on merge of the B-23 PR** (Schedule A); see [slice record](inspection-workflow-calls.md).
+  `JobSummary.runner` is now optional (None only for a call job) beside a new `call` field.
 
 - Behavior: a job with `uses`, `with` and `secrets: inherit` or a mapping is reported as source text only,
   "not loaded; not resolved". Mixing `uses` with `steps` or `runs-on` is `Invalid`; `uses` has no expression

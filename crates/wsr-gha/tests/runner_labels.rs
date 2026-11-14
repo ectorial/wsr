@@ -14,6 +14,6 @@ fn source_summary_retains_scalar_and_list_forms() {
             "jobs:\n  build:\n    runs-on: {source}\n    steps:\n      - run: echo hello\n"
         );
         let summary = wsr_gha::inspect(raw.as_bytes()).unwrap();
-        assert_eq!(summary.jobs[0].runner, expected);
+        assert_eq!(summary.jobs[0].runner, Some(expected));
     }
 }

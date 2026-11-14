@@ -38,8 +38,8 @@ impl Needs {
 
 pub(super) fn validate(jobs: &std::collections::BTreeMap<String, super::Job>) -> Result<(), Error> {
     for (id, job) in jobs {
-        for (index, target) in job.needs.values().iter().enumerate() {
-            let location = job.needs.location(id, index);
+        for (index, target) in job.0.needs.values().iter().enumerate() {
+            let location = job.0.needs.location(id, index);
             super::check_required(target, &location, Category::Invalid)?;
             if !jobs.contains_key(target) {
                 return Err(Error::invalid(
@@ -50,10 +50,10 @@ pub(super) fn validate(jobs: &std::collections::BTreeMap<String, super::Job>) ->
         }
     }
     for (id, job) in jobs {
-        for (index, target) in job.needs.values().iter().enumerate() {
+        for (index, target) in job.0.needs.values().iter().enumerate() {
             if target == id {
                 return Err(Error::invalid(
-                    job.needs.location(id, index),
+                    job.0.needs.location(id, index),
                     format_args!("job '{}' depends on itself", id.escape_debug()),
                 ));
             }
@@ -74,7 +74,7 @@ pub(super) fn validate(jobs: &std::collections::BTreeMap<String, super::Job>) ->
         visits.insert(root, Visit::Active(0));
         while let Some((current, next)) = stack.last_mut() {
             let id = *current;
-            let needs = &jobs[id].needs;
+            let needs = &jobs[id].0.needs;
             let Some(target) = needs.values().get(*next) else {
                 visits.insert(id, Visit::Complete);
                 stack.pop();

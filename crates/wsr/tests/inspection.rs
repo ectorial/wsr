@@ -2029,25 +2029,26 @@ fn inspect_repository_workflows_from_temporary_copies() {
         assert!(status.success() && marker.exists(), "{command} trap");
         fs::remove_file(&marker).unwrap();
     }
+    let call = "\nTrigger: workflow_call (not evaluated)\n";
     let cases = [
-        ("check-docs.yml", None),
-        ("check-fmt.yml", None),
-        ("check-lint.yml", None),
-        ("test.yml", None),
+        ("check-docs.yml", Ok(call)),
+        ("check-fmt.yml", Ok(call)),
+        ("check-lint.yml", Ok(call)),
+        ("test.yml", Ok(call)),
         (
             "ci.yml",
-            Some(
-                "jobs.check-fmt: unsupported field `uses`; this field is not inspected yet at line 19 column 5",
+            Ok(
+                "\nJob: check-fmt (format)\n  Calls workflow: ./.github/workflows/check-fmt.yml (not loaded; not resolved)\n",
             ),
         ),
         (
             "release.yml",
-            Some(
+            Err(
                 "jobs.build-local-artifacts: unsupported field `strategy`; this field is not inspected yet at line 97 column 5",
             ),
         ),
     ];
-    for (name, diagnostic) in cases {
+    for (name, expected) in cases {
         let source = fs::read_to_string(root.join(name)).unwrap();
         fs::write(directory.path().join(name), &source).unwrap();
         let output = Command::new(env!("CARGO_BIN_EXE_wsr"))
@@ -2057,17 +2058,14 @@ fn inspect_repository_workflows_from_temporary_copies() {
             .env("WSR_EXECUTION_MARKER", &marker)
             .output()
             .expect("run inspection");
-        match diagnostic {
-            None => {
+        match expected {
+            Ok(fragment) => {
                 assert_eq!(output.status.code(), Some(0), "{name}: {output:?}");
                 assert!(output.stderr.is_empty(), "{name}: {output:?}");
                 let report = String::from_utf8(output.stdout).unwrap();
-                assert!(
-                    report.contains("\nTrigger: workflow_call (not evaluated)\n"),
-                    "{name}: {report}"
-                );
+                assert!(report.contains(fragment), "{name}: {report}");
             }
-            Some(diagnostic) => {
+            Err(diagnostic) => {
                 assert_eq!(output.status.code(), Some(1), "{name}: {output:?}");
                 assert!(output.stdout.is_empty(), "{name}: {output:?}");
                 assert_eq!(
@@ -2083,6 +2081,85 @@ fn inspect_repository_workflows_from_temporary_copies() {
     }
     assert!(!marker.exists(), "a command was executed");
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), cases.len());
+}
+
+// Backlog B-23: a reusable-workflow call is reported as written; the target is never opened.
+#[test]
+fn inspect_reports_workflow_calls_without_loading_them() {
+    let directory = tempfile::tempdir().unwrap();
+    // A target beside the caller that would leave a marker if anything ran it.
+    fs::create_dir_all(directory.path().join(".github/workflows")).unwrap();
+    let target = "on: workflow_call\njobs:\n  t:\n    runs-on: linux\n    steps:\n      - run: touch executed\n";
+    fs::write(
+        directory.path().join(".github/workflows/target.yml"),
+        target,
+    )
+    .unwrap();
+    let workflow = "jobs:\n  a:\n    uses: ./.github/workflows/target.yml\n    with:\n      mode: \"x$(touch executed)\\e[31m\\u202E\"\n      ref: ${{ github.ref }}\n    secrets: inherit\n  b:\n    uses: ./.github/workflows/missing.yml\n    secrets:\n      token: ${{ secrets.T }}\n";
+    fs::write(directory.path().join("ci.yml"), workflow).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nJob: a\n  Calls workflow: ./.github/workflows/target.yml (not loaded; not resolved)\n  With (not passed):\n    mode: \"x$(touch executed)\\u{1b}[31m\\u{202e}\"\n    ref: \"${{ github.ref }}\" (unevaluated)\n  Secrets: inherit (not passed)\nJob: b\n  Calls workflow: ./.github/workflows/missing.yml (not loaded; not resolved)\n  Secrets (not passed):\n    token: \"${{ secrets.T }}\" (unevaluated)\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert!(
+        !directory
+            .path()
+            .join(".github/workflows/missing.yml")
+            .exists()
+    );
+    assert_eq!(
+        fs::read_to_string(directory.path().join(".github/workflows/target.yml")).unwrap(),
+        target
+    );
+}
+
+#[test]
+fn inspect_rejects_invalid_workflow_calls() {
+    let directory = tempfile::tempdir().unwrap();
+    for (job, diagnostic) in [
+        (
+            "    uses: ./w.yml\n    runs-on: linux\n",
+            "jobs.b.runs-on: `runs-on` cannot be combined with `uses` at line 4 column 5",
+        ),
+        (
+            "    uses: ./w.yml\n    steps:\n      - run: echo\n",
+            "jobs.b.steps: `steps` cannot be combined with `uses` at line 4 column 5",
+        ),
+        (
+            "    runs-on: linux\n    with: {a: b}\n    steps:\n      - run: echo\n",
+            "jobs.b.with: `with` applies only to a reusable workflow call at line 4 column 5",
+        ),
+        (
+            "    uses: '${{ x }}'\n",
+            "jobs.b.uses: expression is unevaluated; dynamic inspection is not supported yet",
+        ),
+        (
+            "    uses: octo/repo/w.yml\n",
+            "jobs.b.uses: invalid workflow reference 'octo/repo/w.yml'; expected ./path or owner/repo/path@ref",
+        ),
+        (
+            "    uses: ./w.yml\n    secrets: all\n",
+            "jobs.b.secrets: expected `inherit` or a mapping",
+        ),
+    ] {
+        fs::write(
+            directory.path().join("ci.yml"),
+            format!("jobs:\n  b:\n{job}"),
+        )
+        .unwrap();
+        let output = inspect(directory.path(), "ci.yml");
+        assert_eq!(output.status.code(), Some(1), "{job}: {output:?}");
+        assert!(output.stdout.is_empty(), "{job}: {output:?}");
+        assert_eq!(
+            String::from_utf8(output.stderr).unwrap(),
+            format!("error: wsr inspect: ci.yml: {diagnostic}\n"),
+            "{job}"
+        );
+    }
 }
 
 // Backlog B-22: `push` and pull request filters are reported as written, never matched.

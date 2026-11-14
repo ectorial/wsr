@@ -1,6 +1,30 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-22 event filters implemented; PR pending checks
+## Current checkpoint — B-23 reusable-workflow calls implemented; PR pending checks
+
+Same Schedule A run, after the PR #52 wake (lock retaken 2026-11-14). PR #52 squash-merged as
+`568793f` after all four required checks passed on `4d6791b` with no reviews or comments; `wsr` and
+`wsr-gha` tests (143) verified on synced main. B-23 on `feat/b23-reusable-calls` from `568793f`; slice
+record [inspection-workflow-calls.md](inspection-workflow-calls.md). Implemented by Claude
+(claude-opus-5-5, orchestrator, burn mode; `wsr-types` `WorkflowCall`/`CallSecrets` under D-033);
+cross-reviewed by Codex gpt-6.1-sol (high), four rounds, eight P2s, all fixed (see the record). The
+last fix (a scan budget of one job key per source byte) is small and measured (0.16 s, 8 MB on the
+reviewer's probe); no fifth review was run.
+
+- Red (observed): `calls.rs` failed with ``jobs.b: unsupported field `uses` `` (Unsupported); types
+  landed first so the red was an assertion failure.
+- Contract changes: `JobSummary.runner` is an `Option` (`compiler.rs`, `runner_labels.rs` wrap it in
+  `Some`); the repository-workflow test expects a temporary `ci.yml` copy to exit 0.
+- Green: `calls.rs` (3 tests, 36 category cases), 2 CLI tests; missing `runs-on`/`steps` keep wording
+  and location; CLI suite 62; `cargo xtask ci`; `git diff --check`.
+- Follow-up for Schedule B (pre-existing, not introduced here): YAML aliases inside step or call
+  `with` values are materialized and rendered expanded (a 65,536-character anchor aliased 1,024 times
+  peaks at ~140-200 MB and expands stdout).
+
+B-23 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-24 (job/step `name` and `runs-on` expressions).
+
+## Previous checkpoint — B-22 event filters delivered (PR #52, `568793f`)
 
 Same Schedule A run, after the PR #51 wake (lock retaken 2026-11-14). PR #51 squash-merged as
 `7c2225e` after all four required checks passed on `90cee4d` with no reviews or comments; `wsr` and

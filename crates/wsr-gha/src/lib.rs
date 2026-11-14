@@ -10,6 +10,7 @@ use wsr_types::inspection::{
     JobSummary, RunnerRequirement, SourceText, StepSummary, StepSummaryKind, WorkflowSummary,
 };
 
+mod call;
 mod concurrency;
 mod defaults;
 mod diagnostic;
@@ -49,13 +50,36 @@ impl diagnostic::Level for Workflow {
     const SCHEMA: &'static [&'static str] = &["description"];
 }
 
+/// The pinned `job` is `job-factory` or `workflow-job`; `runs-on` and `steps` are required unless
+/// `uses` selects a reusable-workflow call.
+#[derive(Deserialize)]
+#[serde(try_from = "JobFields")]
+struct Job(JobFields);
+
+impl TryFrom<JobFields> for Job {
+    type Error = &'static str;
+
+    fn try_from(job: JobFields) -> Result<Self, Self::Error> {
+        if job.uses.is_none() {
+            // The derived decoder's wording and location for an ordinary job.
+            if job.runner.is_none() {
+                return Err("missing field `runs-on`");
+            }
+            if job.steps.is_none() {
+                return Err("missing field `steps`");
+            }
+        }
+        Ok(Self(job))
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Job {
+struct JobFields {
     #[serde(default, deserialize_with = "optional_string")]
     name: Option<String>,
-    #[serde(rename = "runs-on", deserialize_with = "runner_requirement")]
-    runner: RunnerRequirement,
+    #[serde(rename = "runs-on", default, deserialize_with = "present_runner")]
+    runner: Option<RunnerRequirement>,
     #[serde(default)]
     needs: Needs,
     #[serde(rename = "if", default, deserialize_with = "condition")]
@@ -84,22 +108,45 @@ struct Job {
     outputs: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_value")]
     environment: Option<serde_yaml::Value>,
-    #[serde(deserialize_with = "steps")]
-    steps: Vec<Step>,
+    #[serde(default, deserialize_with = "present_steps")]
+    steps: Option<Vec<Step>>,
+    #[serde(default, deserialize_with = "present_string")]
+    uses: Option<String>,
+    #[serde(default, deserialize_with = "present_value")]
+    with: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "present_value")]
+    secrets: Option<serde_yaml::Value>,
+}
+
+thread_local! {
+    // Per job, in source position, whether its mapping has `uses` (`call::scan`).
+    static CALLS: std::cell::RefCell<Vec<bool>> = const { std::cell::RefCell::new(Vec::new()) };
+    // Whether the job being decoded is a reusable-workflow call; None if the scan did not finish it.
+    static CALL: std::cell::Cell<Option<bool>> = const { std::cell::Cell::new(None) };
 }
 
 impl diagnostic::Level for Job {
     const NAME: &'static str = "Job";
+
+    fn placement(key: &str) -> Option<String> {
+        match CALL.get()? {
+            true if call::FACTORY_ONLY.contains(&key) => {
+                Some(format!("`{key}` cannot be combined with `uses`"))
+            }
+            false if matches!(key, "with" | "secrets") => {
+                Some(format!("`{key}` applies only to a reusable workflow call"))
+            }
+            _ => None,
+        }
+    }
+
     // The union of the pinned schema's job-factory and reusable workflow-job keys.
     const SCHEMA: &'static [&'static str] = &[
         "cancel-timeout-minutes",
         "container",
-        "secrets",
         "services",
         "snapshot",
         "strategy",
-        "uses",
-        "with",
     ];
 }
 
@@ -156,7 +203,12 @@ impl diagnostic::Level for Step {
 /// Unsupported fields are rejected rather than silently omitted. The summary is intentionally
 /// separate from the legacy execution model; the same compiler can later be packaged as a Component.
 pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
-    let Fields(workflow) = diagnostic::decode::<Fields<Workflow>>(raw)?;
+    CALLS.set(call::scan(raw));
+    CALL.set(None);
+    let decoded = diagnostic::decode::<Fields<Workflow>>(raw);
+    CALLS.take();
+    CALL.set(None);
+    let Fields(workflow) = decoded?;
     if workflow.jobs.is_empty() {
         return Err(Error::invalid("jobs", "expected at least one job"));
     }
@@ -184,8 +236,9 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         .transpose()?;
     needs::validate(&workflow.jobs)?;
     let mut jobs = Vec::new();
-    for (id, job) in workflow.jobs {
-        if job.steps.is_empty() {
+    for (id, Job(job)) in workflow.jobs {
+        let call = call::decode(&id, &job)?;
+        if job.steps.as_ref().is_some_and(Vec::is_empty) {
             return Err(Error::invalid(
                 format!("jobs.{id}.steps"),
                 "expected at least one step",
@@ -197,10 +250,11 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             Category::Unsupported,
         )?;
         match &job.runner {
-            RunnerRequirement::Label(label) => {
+            None => {}
+            Some(RunnerRequirement::Label(label)) => {
                 check_required(label, &format!("jobs.{id}.runs-on"), Category::Unsupported)?
             }
-            RunnerRequirement::Labels(labels) => {
+            Some(RunnerRequirement::Labels(labels)) => {
                 if labels.is_empty() {
                     return Err(Error::invalid(
                         format!("jobs.{id}.runs-on"),
@@ -241,7 +295,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             .transpose()?;
         let mut steps = Vec::new();
         let mut step_ids = BTreeMap::new();
-        for (index, step) in job.steps.into_iter().enumerate() {
+        for (index, step) in job.steps.into_iter().flatten().enumerate() {
             let location = format!("jobs.{id}.steps[{}]", index + 1);
             if let Some(step_id) = &step.id {
                 let field = format!("{location}.id");
@@ -366,6 +420,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             id,
             name: job.name,
             runner: job.runner,
+            call,
             needs: job.needs.into_values(),
             condition: job.condition,
             permissions: job.permissions,
@@ -505,12 +560,15 @@ fn unique_jobs<'de, D: serde::Deserializer<'de>>(
         ) -> Result<Self::Value, M::Error> {
             let mut jobs = BTreeMap::new();
             let mut spellings = BTreeMap::new();
+            let mut position = 0;
             while let Some(id) = map.next_key::<serde_yaml::Value>()? {
                 // The identifier is validated before its body is decoded, so it cannot forge
                 // the route of a body diagnostic.
                 if let serde_yaml::Value::String(id) = &id {
                     check_job_id(id).map_err(diagnostic::raise_unlocated)?;
                 }
+                CALL.set(CALLS.with_borrow(|calls| calls.get(position).copied()));
+                position += 1;
                 let Fields(job) = map.next_value::<Fields<Job>>().inspect_err(|_| match &id {
                     serde_yaml::Value::String(id) => diagnostic::within(&format!("jobs.{id}")),
                     _ => diagnostic::within("jobs"),
@@ -624,6 +682,18 @@ fn step_id<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<S
         )),
         _ => Err(diagnostic::raise_unrouted("expected a string")),
     }
+}
+
+fn present_runner<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<RunnerRequirement>, D::Error> {
+    runner_requirement(deserializer).map(Some)
+}
+
+fn present_steps<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Vec<Step>>, D::Error> {
+    steps(deserializer).map(Some)
 }
 
 fn present_string<'de, D: serde::Deserializer<'de>>(

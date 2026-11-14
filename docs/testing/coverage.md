@@ -342,6 +342,19 @@ eight CLI inspection tests were updated as the B-13 contract change. The B-12 CL
 `(not evaluated; expression syntax not validated)` after a red change of the expected text; the dogfood
 goldens are unchanged. The CLI inspection suite lists 45 tests.
 
+## Reusable-workflow calls (backlog B-23)
+
+`crates/wsr-gha/tests/calls.rs` asserts kept `WorkflowCall` values (local and remote references,
+`with`, `secrets: inherit` and a mapping, keys shared with ordinary jobs), 36 categories (all twelve
+factory-only keys with `uses` in either key order and with values that would otherwise be
+Unsupported, `with`/`secrets` without it, reference shape, expressions, nested values, duplicate
+keys ignoring case, `$/` and `strategy` unsupported, tagged keys, a duplicate field and an unreadable key after `uses`), and that missing `runs-on`/`steps` keep their
+decoder wording and location. Two CLI tests pin a golden with a hostile input escaped, an existing
+target that would `touch executed` and a missing target (neither opened nor created), and six exact
+diagnostics. The repository-workflow test now expects a temporary `ci.yml` copy to exit 0. Observed
+red: ``jobs.b: unsupported field `uses` `` (Unsupported). Contract change: `JobSummary.runner` is an
+`Option` (`compiler.rs`, `runner_labels.rs` wrap it in `Some`). The CLI inspection suite lists 62 tests.
+
 ## Event filters (backlog B-22)
 
 `crates/wsr-gha/tests/triggers.rs` asserts source-order `Trigger::Filtered` lists for all three
