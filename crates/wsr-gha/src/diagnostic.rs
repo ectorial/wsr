@@ -201,6 +201,12 @@ pub(crate) trait Level: de::DeserializeOwned {
     const NAME: &'static str;
     /// Keys the pinned schema accepts at this level that this subset does not inspect.
     const SCHEMA: &'static [&'static str];
+
+    /// Why a key this level knows is still invalid in the mapping being decoded, such as a key of
+    /// the other job form. Checked when the key is read, before its value is decoded.
+    fn placement(_key: &str) -> Option<String> {
+        None
+    }
 }
 
 /// Decodes `T` unchanged while observing the key at which decoding fails.
@@ -311,6 +317,20 @@ impl<'de, D: Deserializer<'de>, T: Level> Deserializer<'de> for KeyDeserializer<
 struct KeyVisitor<'k, V, T>(V, &'k mut Option<String>, PhantomData<T>);
 
 impl<V, T: Level> KeyVisitor<'_, V, T> {
+    fn place<E: de::Error>(key: &str) -> Result<(), E> {
+        let Some(detail) = T::placement(key) else {
+            return Ok(());
+        };
+        DETECTED.set(Some(Detected {
+            category: Category::Invalid,
+            route: Some(key.to_owned()),
+            label: Some(key.to_owned()),
+            detail: Some(detail.clone()),
+            located: true,
+        }));
+        Err(E::custom(detail))
+    }
+
     fn classify<R, E: de::Error>(key: &str, result: Result<R, E>) -> Result<R, E> {
         if let Err(error) = &result {
             // Schema membership recognizes the key, not its value, so the text claims no more.
@@ -344,16 +364,19 @@ impl<'de, V: Visitor<'de>, T: Level> Visitor<'de> for KeyVisitor<'_, V, T> {
 
     fn visit_str<E: de::Error>(self, key: &str) -> Result<V::Value, E> {
         *self.1 = Some(key.to_owned());
+        Self::place(key)?;
         Self::classify(key, self.0.visit_str(key))
     }
 
     fn visit_borrowed_str<E: de::Error>(self, key: &'de str) -> Result<V::Value, E> {
         *self.1 = Some(key.to_owned());
+        Self::place(key)?;
         Self::classify(key, self.0.visit_borrowed_str(key))
     }
 
     fn visit_string<E: de::Error>(self, key: String) -> Result<V::Value, E> {
         *self.1 = Some(key.clone());
+        Self::place(&key)?;
         let classified = key.clone();
         Self::classify(&classified, self.0.visit_string(key))
     }

@@ -379,8 +379,9 @@ mapping render like step `with` (sorted, scalars, `${{` values unevaluated, keys
 case); the mappings themselves have no expression context, so an expression in place of either
 mapping or in a key is invalid. `secrets` is otherwise only `inherit`. `runs-on`, `steps` and other
 keys the pinned `job-factory` has but `workflow-job` lacks are invalid with `uses`
-(``jobs.b.runs-on: `runs-on` cannot be combined with `uses` ``), as are `with` and `secrets` without
-it; `strategy` stays unsupported. The referenced file is never opened, read or resolved, and no input
+(``jobs.b.runs-on: `runs-on` cannot be combined with `uses` at line 4 column 5``), as are `with` and
+`secrets` without it, whatever the key order and before the value is read; `strategy` stays
+unsupported. The referenced file is never opened, read or resolved, and no input
 or secret is passed.
 
 ### Unevaluated job and step conditions

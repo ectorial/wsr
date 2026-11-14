@@ -118,8 +118,42 @@ struct JobFields {
     secrets: Option<serde_yaml::Value>,
 }
 
+thread_local! {
+    // Job identifiers whose mapping has `uses`, from a pre-scan of the source; None if unknown.
+    static CALLS: std::cell::RefCell<Option<std::collections::BTreeSet<String>>> =
+        const { std::cell::RefCell::new(None) };
+    // Whether the job being decoded is a reusable-workflow call; None if unknown.
+    static CALL: std::cell::Cell<Option<bool>> = const { std::cell::Cell::new(None) };
+}
+
+/// Identifiers of jobs with a `uses` key, so the job form is known before any key is decoded.
+/// A source the plain YAML reader rejects fails the typed decode as well.
+fn call_jobs(raw: &[u8]) -> Option<std::collections::BTreeSet<String>> {
+    let source: serde_yaml::Value = serde_yaml::from_slice(raw).ok()?;
+    let jobs = source.get("jobs")?.as_mapping()?;
+    Some(
+        jobs.iter()
+            .filter(|(_, job)| job.get("uses").is_some())
+            .filter_map(|(id, _)| id.as_str().map(str::to_owned))
+            .collect(),
+    )
+}
+
 impl diagnostic::Level for Job {
     const NAME: &'static str = "Job";
+
+    fn placement(key: &str) -> Option<String> {
+        match CALL.get()? {
+            true if call::FACTORY_ONLY.contains(&key) => {
+                Some(format!("`{key}` cannot be combined with `uses`"))
+            }
+            false if matches!(key, "with" | "secrets") => {
+                Some(format!("`{key}` applies only to a reusable workflow call"))
+            }
+            _ => None,
+        }
+    }
+
     // The union of the pinned schema's job-factory and reusable workflow-job keys.
     const SCHEMA: &'static [&'static str] = &[
         "cancel-timeout-minutes",
@@ -183,7 +217,11 @@ impl diagnostic::Level for Step {
 /// Unsupported fields are rejected rather than silently omitted. The summary is intentionally
 /// separate from the legacy execution model; the same compiler can later be packaged as a Component.
 pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
-    let Fields(workflow) = diagnostic::decode::<Fields<Workflow>>(raw)?;
+    CALLS.set(call_jobs(raw));
+    let decoded = diagnostic::decode::<Fields<Workflow>>(raw);
+    CALLS.set(None);
+    CALL.set(None);
+    let Fields(workflow) = decoded?;
     if workflow.jobs.is_empty() {
         return Err(Error::invalid("jobs", "expected at least one job"));
     }
@@ -541,6 +579,12 @@ fn unique_jobs<'de, D: serde::Deserializer<'de>>(
                 if let serde_yaml::Value::String(id) = &id {
                     check_job_id(id).map_err(diagnostic::raise_unlocated)?;
                 }
+                CALL.set(match &id {
+                    serde_yaml::Value::String(id) => {
+                        CALLS.with_borrow(|calls| calls.as_ref().map(|calls| calls.contains(id)))
+                    }
+                    _ => None,
+                });
                 let Fields(job) = map.next_value::<Fields<Job>>().inspect_err(|_| match &id {
                     serde_yaml::Value::String(id) => diagnostic::within(&format!("jobs.{id}")),
                     _ => diagnostic::within("jobs"),

@@ -18,8 +18,11 @@ Per the [pinned schema](https://github.com/actions/languageservices/blob/4043eda
 selects a reusable-workflow job when `uses` is present; `workflows/file-reference.ts`
 `parseFileReference` accepts `./…`, `$/…` and `owner/repo[/path]@ref`. Hence:
 
-- keys only `job-factory` has (`runs-on`, `timeout-minutes`, `continue-on-error`, `env`, `defaults`,
-  `outputs`, `environment`, `steps`) with `uses`, and `with`/`secrets` without it, are `Invalid`;
+- keys only `job-factory` has (`runs-on`, `timeout-minutes`, `cancel-timeout-minutes`,
+  `continue-on-error`, `container`, `services`, `env`, `environment`, `outputs`, `defaults`, `steps`,
+  `snapshot`) with `uses`, and `with`/`secrets` without it, are `Invalid` when the key is read,
+  whatever the key order and before the value is decoded (a pre-scan of the source records which
+  jobs have `uses`; `diagnostic::Level::placement` rejects the key with its parser location);
 - `uses` with `${{`, empty or not a reference is `Invalid`; `$/` is `Unsupported` (as for step `uses`);
 - `with` and a `secrets` mapping reuse the step `with` decoder; an expression replacing the mapping or
   in a key is `Invalid` (the definitions have no context); `secrets` other than `inherit` or a mapping

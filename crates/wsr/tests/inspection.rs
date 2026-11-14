@@ -2123,15 +2123,15 @@ fn inspect_rejects_invalid_workflow_calls() {
     for (job, diagnostic) in [
         (
             "    uses: ./w.yml\n    runs-on: linux\n",
-            "jobs.b.runs-on: `runs-on` cannot be combined with `uses`",
+            "jobs.b.runs-on: `runs-on` cannot be combined with `uses` at line 4 column 5",
         ),
         (
             "    uses: ./w.yml\n    steps:\n      - run: echo\n",
-            "jobs.b.steps: `steps` cannot be combined with `uses`",
+            "jobs.b.steps: `steps` cannot be combined with `uses` at line 4 column 5",
         ),
         (
             "    runs-on: linux\n    with: {a: b}\n    steps:\n      - run: echo\n",
-            "jobs.b.with: `with` applies only to a reusable workflow call",
+            "jobs.b.with: `with` applies only to a reusable workflow call at line 4 column 5",
         ),
         (
             "    uses: '${{ x }}'\n",

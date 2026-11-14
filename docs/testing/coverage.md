@@ -345,8 +345,9 @@ goldens are unchanged. The CLI inspection suite lists 45 tests.
 ## Reusable-workflow calls (backlog B-23)
 
 `crates/wsr-gha/tests/calls.rs` asserts kept `WorkflowCall` values (local and remote references,
-`with`, `secrets: inherit` and a mapping, keys shared with ordinary jobs), 25 categories (factory-only
-keys with `uses`, `with`/`secrets` without it, reference shape, expressions, nested values, duplicate
+`with`, `secrets: inherit` and a mapping, keys shared with ordinary jobs), 33 categories (all twelve
+factory-only keys with `uses` in either key order and with values that would otherwise be
+Unsupported, `with`/`secrets` without it, reference shape, expressions, nested values, duplicate
 keys ignoring case, `$/` and `strategy` unsupported), and that missing `runs-on`/`steps` keep their
 decoder wording and location. Two CLI tests pin a golden with a hostile input escaped, an existing
 target that would `touch executed` and a missing target (neither opened nor created), and six exact

@@ -109,6 +109,47 @@ fn call_job_categories_follow_the_pinned_schema() {
             Category::Invalid,
             "jobs.b.continue-on-error",
         ),
+        // Rejected by placement before the value is decoded, whatever the key order.
+        (
+            "    runs-on: {group: fleet}\n    uses: ./w.yml\n",
+            Category::Invalid,
+            "jobs.b.runs-on",
+        ),
+        (
+            "    uses: ./w.yml\n    timeout-minutes: 0\n",
+            Category::Invalid,
+            "jobs.b.timeout-minutes",
+        ),
+        (
+            "    steps:\n      - bogus: 1\n    uses: ./w.yml\n",
+            Category::Invalid,
+            "jobs.b.steps",
+        ),
+        (
+            "    uses: ./w.yml\n    cancel-timeout-minutes: 5\n",
+            Category::Invalid,
+            "jobs.b.cancel-timeout-minutes",
+        ),
+        (
+            "    container: alpine\n    uses: ./w.yml\n",
+            Category::Invalid,
+            "jobs.b.container",
+        ),
+        (
+            "    uses: ./w.yml\n    services: {db: {image: pg}}\n",
+            Category::Invalid,
+            "jobs.b.services",
+        ),
+        (
+            "    uses: ./w.yml\n    snapshot: img\n",
+            Category::Invalid,
+            "jobs.b.snapshot",
+        ),
+        (
+            "    with: {a: '${{ x }}'}\n    runs-on: linux\n    steps:\n      - run: echo\n",
+            Category::Invalid,
+            "jobs.b.with",
+        ),
         // Only workflow-job keys.
         (
             "    runs-on: linux\n    with: {a: b}\n    steps:\n      - run: echo\n",

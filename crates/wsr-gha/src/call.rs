@@ -5,21 +5,27 @@ use wsr_types::inspection::{CallSecrets, WorkflowCall};
 
 use super::{Category, Error, JobFields, step_inputs};
 
-/// Keys of the pinned `job-factory` that `workflow-job` lacks, in report order.
-const FACTORY_ONLY: &[&str] = &[
+/// Keys of the pinned `job-factory` that `workflow-job` lacks.
+pub(super) const FACTORY_ONLY: &[&str] = &[
     "runs-on",
     "timeout-minutes",
+    "cancel-timeout-minutes",
     "continue-on-error",
+    "container",
+    "services",
     "env",
-    "defaults",
-    "outputs",
     "environment",
+    "outputs",
+    "defaults",
     "steps",
+    "snapshot",
 ];
 
 /// A call job's `uses`, `with` and `secrets`; None for an ordinary job, which may not use them.
 pub(super) fn decode(id: &str, job: &JobFields) -> Result<Option<WorkflowCall>, Error> {
     let route = |field: &str| format!("jobs.{id}.{field}");
+    // `Job::placement` normally rejects these keys when they are read; the checks below cover a
+    // source whose pre-scan failed.
     let Some(uses) = &job.uses else {
         for (field, present) in [
             ("with", job.with.is_some()),
@@ -35,20 +41,16 @@ pub(super) fn decode(id: &str, job: &JobFields) -> Result<Option<WorkflowCall>, 
         return Ok(None);
     };
     let present = [
-        job.runner.is_some(),
-        job.timeout_minutes.is_some(),
-        job.continue_on_error.is_some(),
-        job.env.is_some(),
-        job.defaults.is_some(),
-        job.outputs.is_some(),
-        job.environment.is_some(),
-        job.steps.is_some(),
+        ("runs-on", job.runner.is_some()),
+        ("timeout-minutes", job.timeout_minutes.is_some()),
+        ("continue-on-error", job.continue_on_error.is_some()),
+        ("env", job.env.is_some()),
+        ("defaults", job.defaults.is_some()),
+        ("outputs", job.outputs.is_some()),
+        ("environment", job.environment.is_some()),
+        ("steps", job.steps.is_some()),
     ];
-    if let Some((field, _)) = FACTORY_ONLY
-        .iter()
-        .zip(present)
-        .find(|(_, present)| *present)
-    {
+    if let Some((field, _)) = present.iter().find(|(_, present)| *present) {
         return Err(Error::invalid(
             route(field),
             format_args!("`{field}` cannot be combined with `uses`"),
