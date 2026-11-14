@@ -1,6 +1,27 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-32 matrix literal size implemented; PR pending checks
+## Current checkpoint — B-33 workflow description implemented; PR pending checks
+
+Same Schedule A run, after the PR #62 wake (lock retaken 2026-11-14). PR #62 squash-merged as
+`8d1d40e` after all four required checks passed on `e430f12`, with no reviews or comments; the
+`wsr-gha` strategy and CLI suites were verified on synced main. B-33 is on
+`feat/b33-workflow-description` from `8d1d40e`; slice record
+[inspection-workflow-description.md](inspection-workflow-description.md). Steady rotation: slice 2
+of the cycle, implemented by Claude (claude-opus-5-5, orchestrator; `WorkflowSummary.description`
+under D-033). Cross-reviewed by Codex gpt-6.1-sol (high): no findings. Next rotation: B-34 by Codex
+(gpt-6.1-sol, reasoningEffort medium) with a Claude review.
+
+- Red (observed): `description.rs` failed with ``unsupported field `description`; this field is not
+  inspected yet``; the CLI golden exited 1 with the backlog's live-probe text at line 2 column 1.
+- Contract change: `diagnostics.rs` used root `description` as its recognized-but-uninspected
+  sample in two tests; job `snapshot` replaces it with exact category, route and message.
+- Green: `description.rs` (2), `diagnostics.rs` (9), CLI suite (71), dogfood (3), `cargo xtask ci`,
+  `git diff --check`.
+
+B-33 is delivered on merge of this PR. Next action: watch the PR and merge on green with no
+unresolved findings, then take B-34 (job `cancel-timeout-minutes`) with Codex as the implementer.
+
+## Previous checkpoint — B-32 matrix literal size delivered (PR #62, `8d1d40e`)
 
 Schedule A run 2026-11-14 (lock taken fresh, none present). PR #60 (B-30) had merged as `52b43b7`
 and Schedule B's PR #61 as `4167a4e`; main synced. The only open PR is Dependabot #56 (not this

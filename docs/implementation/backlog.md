@@ -470,7 +470,8 @@ Schedule A takes only ready slices.
 
 ## B-33 Workflow description
 
-- Status: ready.
+- Status: **delivered on merge of the B-33 PR** (Schedule A); see [slice record](inspection-workflow-description.md).
+  A null description is absent, like `name`.
 - Behavior: retain literal `description` text (pinned schema type), with escaped rendering.
 - Acceptance: empty text, scalar conversions per B-13, wrong shapes and expression handling per
   the pinned schema context; a CLI golden with hostile text, the executed sentinel and the
