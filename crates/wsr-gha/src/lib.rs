@@ -241,6 +241,8 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
         .map(|value| concurrency::decode("concurrency", value, false))
         .transpose()?;
     needs::validate(&workflow.jobs)?;
+    // Shared by every matrix, so one anchor reused by many jobs is bounded too (B-32).
+    let mut matrix_budget = raw.len().saturating_mul(2);
     let mut jobs = Vec::new();
     for (id, Job(job)) in workflow.jobs {
         let call = call::decode(&id, &job)?;
@@ -303,7 +305,9 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             .transpose()?;
         let strategy = job
             .strategy
-            .map(|value| strategy::decode(&format!("jobs.{id}.strategy"), value))
+            .map(|value| {
+                strategy::decode(&format!("jobs.{id}.strategy"), value, &mut matrix_budget)
+            })
             .transpose()?;
         let mut steps = Vec::new();
         let mut step_ids = BTreeMap::new();

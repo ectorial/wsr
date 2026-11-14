@@ -562,6 +562,6 @@ alias syntax and quoting style are not preserved. No matrix expansion, combinati
 scheduling occurs, and each source job is reported once. Boolean or number matrix keys are
 unsupported at any depth. Matrix keys repeated ignoring case are invalid at the repeated key
 (`jobs.a.strategy.matrix.A: duplicate key 'A'; already defined as 'a'`); like the pinned reader,
-keys containing `${{` are not compared. A matrix whose text would exceed 512,000 bytes through YAML aliases is unsupported and
-not rendered. See the
+keys containing `${{` are not compared. Matrices that together would exceed twice the workflow source size through YAML aliases are
+unsupported and not rendered; a literal matrix is inspected at any size (B-32). See the
 [category record](../implementation/inspection-job-strategy.md).

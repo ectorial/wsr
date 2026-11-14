@@ -143,6 +143,44 @@ fn alias_amplified_matrices_are_not_retained() {
     assert!(!error.to_string().contains(&scalar[..16]), "{error}");
 }
 
+// A literal matrix is inspected whatever its size; only alias amplification is bounded (B-32).
+#[test]
+fn literal_matrices_are_not_mistaken_for_alias_amplification() {
+    let zeros = vec!["0"; 64_000].join(",");
+    let large = "x".repeat(512_001);
+    // `\L` decodes to three bytes from two, the most decoded text grows over its source.
+    let escapes = "\\L".repeat(100_000);
+    for matrix in [
+        format!("{{a: [[{zeros}]]}}"),
+        format!("{{a: ['{large}']}}"),
+        format!("{{a: [\"{escapes}\"]}}"),
+    ] {
+        let result = inspect_strategy(&format!("{{matrix: {matrix}}}"));
+        assert!(result.is_ok(), "{}", result.unwrap_err());
+    }
+}
+
+// The budget is shared, so one anchor reused by many jobs is still amplification (B-32).
+#[test]
+fn an_anchor_reused_across_jobs_is_alias_amplification() {
+    let scalar = "x".repeat(10_000);
+    let jobs: String = (0..10)
+        .map(|n| format!("  j{n}:\n    uses: ./missing.yml\n    strategy: {{matrix: *m}}\n"))
+        .collect();
+    let source = format!(
+        "jobs:\n  a:\n    uses: ./missing.yml\n    strategy: {{matrix: &m {{a: ['{scalar}']}}}}\n{jobs}"
+    );
+    let Err(error) = common::inspect(source.as_bytes()) else {
+        panic!("accepted an anchor reused across jobs");
+    };
+    assert_eq!(error.category(), wsr_gha::Category::Unsupported, "{error}");
+    assert!(
+        error.to_string().contains("twice the workflow source size"),
+        "{error}"
+    );
+    assert!(!error.to_string().contains(&scalar[..16]), "{error}");
+}
+
 #[test]
 fn matrix_keys_are_unique_ignoring_case() {
     for (matrix, route) in [
