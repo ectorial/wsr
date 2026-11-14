@@ -45,7 +45,9 @@ Current supported subset:
 - Job `name`, a nonempty string or string-list `runs-on` requirement, optional static `needs`, and a nonempty ordered `steps` sequence.
 - Or a reusable-workflow call job: `uses` with optional `with` and `secrets`, never loaded; see [workflow calls](#reusable-workflow-calls).
 - Step `name`, optional explicit `id`, and exactly one nonempty string `run` or `uses`. Scripts are not printed or retained
-  in the summary; action references are reported verbatim, never resolved, fetched or opened.
+  in the summary; a script holding `${{` text is reported only as
+  `Step 1: run (script has unevaluated expressions; not evaluated)`, before any step name, and is
+  never evaluated or executed. Action references are reported verbatim, never resolved, fetched or opened.
 
 Names are optional strings (null is treated as absent). Scalars keep their YAML type: `5` and `"5"`
 are different, and the converted text of a number or boolean is never rendered. The pinned reader
@@ -462,7 +464,8 @@ context (workflow `name`, `on`, job and step identifiers, `needs`, `uses`, manua
 declarations) is invalid; where the schema allows expressions it is valid GHA that inspection does
 not evaluate: job and step `name` and `runs-on` keep the text unevaluated
 (`Job: b (${{ matrix.os }}; unevaluated; expression syntax not validated)`, likewise after a step
-heading), while `run` stays unsupported. See the
+heading); a `run` script with `${{` text is flagged in its step heading without being printed.
+See the
 [classification record](../implementation/inspection-classification.md).
 
 ### Diagnostic routes

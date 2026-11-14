@@ -126,16 +126,19 @@ fn expressions_in_fields_without_a_schema_expression_context_are_invalid_at_thei
     }
 }
 
-// Definitions with a schema expression context hold valid GHA that WSR does not evaluate:
-// string-steps-context (`run`). B-24 contract change: job `name`, step `name` and `runs-on`
-// expressions are now reported unevaluated (`name_runner_expressions.rs`).
+// Definitions with a schema expression context hold valid GHA that WSR does not evaluate: a whole
+// step `env` mapping given as an expression. B-24 contract change: job `name`, step `name` and
+// `runs-on` expressions are now reported unevaluated (`name_runner_expressions.rs`); B-28 contract
+// change: likewise step `run` (`run_expressions.rs`).
 #[test]
 fn expressions_in_fields_with_a_schema_expression_context_are_unsupported_at_their_route() {
     assert_eq!(
-        diagnose("jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: ${{ x }}\n"),
+        diagnose(
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        env: ${{ x }}\n"
+        ),
         (
             Category::Unsupported,
-            Some("jobs.b.steps[1].run".to_owned())
+            Some("jobs.b.steps[1].env".to_owned())
         )
     );
 }

@@ -71,6 +71,8 @@ for delivery gates.
   referenced workflow is never opened, loaded or resolved (B-23). See [contract](../cli/README.md#reusable-workflow-calls).
 - [x] Job and step `name` and job `runs-on` expressions in inspection: kept as unevaluated text, never
   evaluated or used to select a runner (B-24). See [contract](../cli/README.md#literal-runner-labels).
+- [x] Step `run` expressions in inspection: a script with `${{` text is flagged in its step heading,
+  never printed, evaluated or executed (B-28). See [contract](../cli/README.md#static-workflow-inspection).
 - [x] `on` required in inspection: a workflow without it is invalid, as in the pinned root schema (B-25).
 - [x] Manual-trigger mappings and input declarations in inspection: typed metadata/defaults,
   deterministic reports, explicit unsupported/dynamic diagnostics and distinct declaration states.

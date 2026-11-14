@@ -1,6 +1,29 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-25 required `on` implemented; PR pending checks
+## Current checkpoint — B-28 run expressions implemented; PR pending checks
+
+Schedule A run 2026-11-14 (lock taken fresh, none present). PR #55 had merged as `0792966` and Schedule
+B's PR #57 as `e4a7ac8`; main synced. B-28 on `feat/b28-run-expressions` from `e4a7ac8`; slice record
+[inspection-run-expressions.md](inspection-run-expressions.md). **Steady mode** began at the
+2026-11-14 00:00 America/Denver reset. Rotation (2 Claude : 1 Codex): B-28 is steady slice 1,
+implemented by Claude (claude-opus-5-5, orchestrator; interface-touching: `StepSummaryKind::Run`
+gains `unevaluated`, D-033); cross-reviewed by Codex gpt-6.1-sol (high): no code findings, one P3
+fixed (stale classification table). Next rotation: B-29 Claude, B-30 Codex.
+
+- Baseline: the type change landed first with all `wsr-gha` and `wsr` suites green.
+- Red (observed): `run_expressions.rs` failed with ``jobs.a.steps[1].run: expression is unevaluated;
+  dynamic inspection is not supported yet`` (`Unsupported`); the CLI golden exited 1.
+- Contract change: the `diagnostics.rs` expression-context sample moved from `run` to a whole step
+  `env` expression (still `Unsupported`, same route shape).
+- F40: the repository-workflow test asserts its cases equal sorted `.github/workflows/*.yml` minus
+  `example-*` (passes with the current six).
+- Green: `run_expressions.rs` (2 tests), CLI golden with hostile script text, the `executed`
+  sentinel and a no-script-text assertion; CLI suite 64; `cargo xtask ci`; `git diff --check`.
+
+B-28 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-29 (job `container`, Claude).
+
+## Previous checkpoint — B-25 required `on` delivered (PR #55, `0792966`)
 
 Same Schedule A run, after the PR #54 wake (lock retaken 2026-11-14). PR #54 squash-merged as
 `d061843` after all four required checks passed on `153af59` with no reviews or comments; `wsr` and
