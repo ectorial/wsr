@@ -68,6 +68,8 @@ pub struct JobSummary {
     pub environment: Option<Environment>,
     /// Optional `container`, never pulled or started.
     pub container: Option<Container>,
+    /// Declared strategy, never expanded or applied (D-033).
+    pub strategy: Option<Strategy>,
     /// Steps in source order.
     pub steps: Vec<StepSummary>,
 }
@@ -318,4 +320,21 @@ pub enum InputDefault {
     Boolean(bool),
     /// YAML number represented as text, without conversion to a string default.
     Number(String),
+}
+
+/// Temporary GHA-derived job strategy (D-033), never expanded (D-012).
+#[derive(Debug, PartialEq, Eq)]
+pub enum Strategy {
+    /// Whole strategy expression, never evaluated.
+    Unevaluated(String),
+    /// Declared strategy fields.
+    Mapping {
+        /// Boolean literal or expression text.
+        fail_fast: Option<SourceText>,
+        /// Number literal or expression text; no positivity constraint is imposed.
+        max_parallel: Option<SourceText>,
+        /// Matrix as deterministic YAML text, or a whole-matrix expression.
+        /// Includes arbitrary nested values and include/exclude entries without combining them.
+        matrix: Option<SourceText>,
+    },
 }

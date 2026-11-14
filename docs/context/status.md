@@ -73,6 +73,7 @@ for delivery gates.
   evaluated or used to select a runner (B-24). See [contract](../cli/README.md#literal-runner-labels).
 - [x] Job `container` in inspection: string image or mapping as written, never pulled, started or
   logged in to; passwords never printed (B-29). See [contract](../cli/README.md#job-containers).
+- [x] Job strategies are inspected as source text, never expanded or applied (B-30; delivered on merge of its PR). See [slice record](../implementation/inspection-job-strategy.md).
 - [x] Step `run` expressions in inspection: a script with `${{` text is flagged in its step heading,
   never printed, evaluated or executed (B-28). See [contract](../cli/README.md#static-workflow-inspection).
 - [x] `on` required in inspection: a workflow without it is invalid, as in the pinned root schema (B-25).

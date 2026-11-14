@@ -245,11 +245,11 @@ fn unsupported_fields_say_so_and_unknown_fields_keep_the_serde_text() {
             unsupported("description"),
         ),
         (
-            "jobs:\n  b:\n    runs-on: linux\n    strategy: {matrix: {a: [1]}}\n    steps:\n      - run: echo\n"
+            "jobs:\n  b:\n    runs-on: linux\n    services: {}\n    steps:\n      - run: echo\n"
                 .to_owned(),
             Category::Unsupported,
-            "jobs.b.strategy",
-            format!("jobs.b: {} at line 4 column 5", unsupported("strategy")),
+            "jobs.b.services",
+            format!("jobs.b: {} at line 4 column 5", unsupported("services")),
         ),
         (
             "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - parallel: [{run: echo}]\n"

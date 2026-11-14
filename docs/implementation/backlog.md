@@ -426,6 +426,8 @@ Schedule A takes only ready slices.
 
 ## B-30 Job `strategy` as source text
 
+- Status: **delivered on merge of the B-30 PR** (Schedule A); see [slice record](inspection-job-strategy.md).
+
 - Behavior: `fail-fast` and `max-parallel` as a literal or unevaluated text; `matrix` variables and values,
   `include` and `exclude` as written or unevaluated text. Rendered "not expanded"; the job is never
   multiplied (D-012 keeps matrix expansion core-owned). A D-033 job field.

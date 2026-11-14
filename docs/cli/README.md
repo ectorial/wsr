@@ -552,3 +552,15 @@ syntax for an explicit broad-access profile, not an implemented option. There is
 subcommand. Hooks/daemon behavior is not the primary product commitment.
 
 See [PLAN.md](../context/decisions.md) and [the security model](../security/README.md).
+
+### Job strategies
+
+Job `strategy` is reported as `Strategy (not expanded)` on runner and call jobs. `fail-fast`
+and `max-parallel` retain literals or unevaluated expressions; matrix mappings retain variables,
+arbitrary nested values, include and exclude as deterministic normalized YAML text with escaped
+controls and bidi characters. Whole-matrix expressions are retained unevaluated. YAML comments,
+alias syntax and quoting style are not preserved. No matrix expansion, combination, matching or
+scheduling occurs, and each source job is reported once. Boolean or number matrix keys are
+unsupported. A matrix whose text would exceed 512,000 bytes through YAML aliases is unsupported and
+not rendered. See the
+[category record](../implementation/inspection-job-strategy.md).

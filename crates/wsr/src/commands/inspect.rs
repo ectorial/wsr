@@ -272,6 +272,29 @@ fn render(file: &Path) -> anyhow::Result<(usize, String)> {
                 ],
             )?;
         }
+        if let Some(strategy) = job.strategy {
+            use wsr_types::inspection::Strategy;
+            match strategy {
+                Strategy::Unevaluated(text) => writeln!(
+                    out,
+                    "  Strategy (not expanded): {text:?} (unevaluated; expression syntax not validated)"
+                )?,
+                Strategy::Mapping {
+                    fail_fast,
+                    max_parallel,
+                    matrix,
+                } => render_fields(
+                    &mut out,
+                    "  ",
+                    "Strategy (not expanded)",
+                    [
+                        ("Fail-fast", fail_fast),
+                        ("Max-parallel", max_parallel),
+                        ("Matrix (normalized YAML)", matrix),
+                    ],
+                )?,
+            }
+        }
         if let Some(container) = job.container {
             render_container(&mut out, container)?;
         }

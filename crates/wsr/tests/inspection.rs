@@ -148,6 +148,29 @@ fn inspect_does_not_quote_container_credentials_in_decoder_errors() {
     assert!(!stderr.contains("hunter2"), "{stderr}");
 }
 
+// A matrix amplified through YAML aliases is rejected, not rendered (B-30 review P2).
+#[test]
+fn inspect_rejects_alias_amplified_matrices_without_output() {
+    let directory = tempfile::tempdir().unwrap();
+    let scalar = "x".repeat(10_000);
+    let refs = |name: &str| vec![format!("*{name}"); 10].join(", ");
+    let workflow = format!(
+        "jobs:\n  a:\n    runs-on: linux\n    strategy:\n      matrix: {{a: &a ['{scalar}'], b: &b [{}], c: &c [{}]}}\n    steps:\n      - run: echo\n",
+        refs("a"),
+        refs("b")
+    );
+    fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty());
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr.contains("jobs.a.strategy.matrix: matrix expands beyond 512,000 bytes"),
+        "{stderr}"
+    );
+    assert!(stderr.len() < 1_000, "{stderr}");
+}
+
 #[test]
 fn inspect_diagnoses_invalid_or_unsupported_source_without_partial_output() {
     let directory = tempfile::tempdir().unwrap();
@@ -1105,7 +1128,7 @@ fn inspect_run_name_rejects_wrong_shapes_and_blank_text_before_rendering() {
 fn inspect_reports_unsupported_fields_without_claiming_them_valid() {
     let directory = tempfile::tempdir().unwrap();
     fs::write(
-        directory.path().join("ci.yml"), with_on("jobs:\n  b:\n    runs-on: linux\n    strategy: {matrix: {a: [1]}}\n    steps:\n      - run: touch executed\n"),
+        directory.path().join("ci.yml"), with_on("jobs:\n  b:\n    runs-on: linux\n    services: {}\n    steps:\n      - run: touch executed\n"),
     )
     .unwrap();
     let output = inspect(directory.path(), "ci.yml");
@@ -1113,7 +1136,7 @@ fn inspect_reports_unsupported_fields_without_claiming_them_valid() {
     assert!(output.stdout.is_empty(), "{output:?}");
     assert_eq!(
         String::from_utf8(output.stderr).unwrap(),
-        "error: wsr inspect: ci.yml: jobs.b: unsupported field `strategy`; this field is not inspected yet at line 4 column 5\n"
+        "error: wsr inspect: ci.yml: jobs.b: unsupported field `services`; this field is not inspected yet at line 4 column 5\n"
     );
     assert!(!directory.path().join("executed").exists());
 }
@@ -2158,7 +2181,7 @@ fn inspect_repository_workflows_from_temporary_copies() {
         fs::remove_file(&marker).unwrap();
     }
     let call = "\nTrigger: workflow_call (not evaluated)\n";
-    let cases = [
+    let cases: [(&str, Result<&str, &str>); 6] = [
         ("check-docs.yml", Ok(call)),
         ("check-fmt.yml", Ok(call)),
         ("check-lint.yml", Ok(call)),
@@ -2171,8 +2194,8 @@ fn inspect_repository_workflows_from_temporary_copies() {
         ),
         (
             "release.yml",
-            Err(
-                "jobs.build-local-artifacts: unsupported field `strategy`; this field is not inspected yet at line 97 column 5",
+            Ok(
+                "  Strategy (not expanded):\n    Fail-fast: false\n    Matrix (normalized YAML): ${{ fromJson(needs.plan.outputs.val).ci.github.artifacts_matrix }} (unevaluated; expression syntax not validated)\n",
             ),
         ),
     ];
@@ -2592,4 +2615,24 @@ fn inspect_rejects_a_workflow_without_on() {
         fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
         source
     );
+}
+
+#[test]
+fn inspect_reports_job_strategies_without_expanding_or_executing() {
+    let directory = tempfile::tempdir().unwrap();
+    let source = "on: workflow_dispatch\njobs:\n  a:\n    runs-on: linux\n    strategy:\n      fail-fast: false\n      max-parallel: 2\n      matrix:\n        os: [\"$(touch executed)\\e[31m\\u202E\"]\n    steps: [{run: touch executed}]\n";
+    fs::write(directory.path().join("ci.yml"), source).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stderr.is_empty());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        "Workflow: (unnamed)\nInspection only; execution compatibility is not assessed.\nTrigger: workflow_dispatch (not evaluated)\nJob: a\n  Runner: linux\n  Strategy (not expanded):\n    Fail-fast: false\n    Max-parallel: 2\n    Matrix (normalized YAML): os:\\n- \\\"$(touch executed)\\\\e[31m\\u{202e}\\\"\\n\n  Step 1: run\n"
+    );
+    assert!(!directory.path().join("executed").exists());
+    assert_eq!(
+        fs::read_to_string(directory.path().join("ci.yml")).unwrap(),
+        source
+    );
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
 }
