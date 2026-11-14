@@ -1,6 +1,26 @@
 # Workflow inspection worker checkpoint
 
-## Current checkpoint — B-23 reusable-workflow calls implemented; PR pending checks
+## Current checkpoint — B-24 name and runner expressions implemented; PR pending checks
+
+Same Schedule A run, after the PR #53 wake (lock retaken 2026-11-14). PR #53 squash-merged as
+`4136fab` after all four required checks passed on `3449c00` with no reviews or comments; `wsr` and
+`wsr-gha` tests (148) verified on synced main. B-24 on `feat/b24-name-runs-on-expressions` from
+`4136fab`; slice record [inspection-name-runner-expressions.md](inspection-name-runner-expressions.md).
+Implemented by Claude (claude-opus-5-5, orchestrator, burn mode; names and runner labels became
+D-033 `SourceText`); cross-reviewed by Codex gpt-6.1-sol (high): no findings.
+
+- Red (observed): `name_runner_expressions.rs` failed with `jobs.a.name: expression is unevaluated;
+  dynamic inspection is not supported yet` (Unsupported); the type change landed first with all
+  existing suites green.
+- Contract changes: `diagnostics.rs` keeps only `run` as its expression-context sample; the CLI
+  `runs-on` expression rejection became a success golden and two rows left the runner-label table;
+  name/label assertions use `SourceText`.
+- Green: 2 `wsr-gha` tests, 1 CLI golden; CLI suite 62; `cargo xtask ci`; `git diff --check`.
+
+B-24 is delivered on merge of this PR. Next action: watch the PR; merge on green with no unresolved
+findings; then take B-25 (require `on`).
+
+## Previous checkpoint — B-23 reusable-workflow calls delivered (PR #53, `4136fab`)
 
 Same Schedule A run, after the PR #52 wake (lock retaken 2026-11-14). PR #52 squash-merged as
 `568793f` after all four required checks passed on `4d6791b` with no reviews or comments; `wsr` and

@@ -1,7 +1,9 @@
 # Name and runner expression iteration: job/step `name` and `runs-on` (backlog B-24)
 
 Status: **delivered on merge of its PR**, branch `feat/b24-name-runs-on-expressions` from `4136fab`
-(Schedule A). Evidence lives in the [checkpoint](inspection-progress.md).
+(Schedule A). Implemented by Claude
+(claude-opus-5-5, burn mode; `wsr-types` fields under D-033); cross-reviewed by Codex gpt-6.1-sol
+(high): no findings. Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Scope
 
