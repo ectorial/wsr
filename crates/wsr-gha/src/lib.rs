@@ -21,6 +21,7 @@ mod needs;
 mod outputs;
 mod permissions;
 mod step_inputs;
+mod strategy;
 use diagnostic::Fields;
 pub use diagnostic::{Category, Error};
 use needs::Needs;
@@ -111,6 +112,8 @@ struct JobFields {
     environment: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "container::deserialize")]
     container: Option<serde_yaml::Value>,
+    #[serde(default, deserialize_with = "strategy::deserialize")]
+    strategy: Option<serde_yaml::Value>,
     #[serde(default, deserialize_with = "present_steps")]
     steps: Option<Vec<Step>>,
     #[serde(default, deserialize_with = "present_string")]
@@ -298,6 +301,10 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             .container
             .map(|value| container::decode(&format!("jobs.{id}.container"), value))
             .transpose()?;
+        let strategy = job
+            .strategy
+            .map(|value| strategy::decode(&format!("jobs.{id}.strategy"), value))
+            .transpose()?;
         let mut steps = Vec::new();
         let mut step_ids = BTreeMap::new();
         for (index, step) in job.steps.into_iter().flatten().enumerate() {
@@ -435,6 +442,7 @@ pub fn inspect(raw: &[u8]) -> Result<WorkflowSummary, Error> {
             outputs,
             environment,
             container,
+            strategy,
             steps,
         });
     }

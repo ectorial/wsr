@@ -231,9 +231,9 @@ fn call_job_categories_follow_the_pinned_schema() {
             "jobs.b.secrets.a",
         ),
         (
-            "    uses: ./w.yml\n    strategy: {matrix: {a: [1]}}\n",
-            Category::Unsupported,
-            "jobs.b.strategy",
+            "    uses: ./w.yml\n    services: {}\n",
+            Category::Invalid,
+            "jobs.b.services",
         ),
     ] {
         assert_eq!(failure(body), (category, Some(route.to_owned())), "{body}");
