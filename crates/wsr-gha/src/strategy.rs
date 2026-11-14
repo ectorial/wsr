@@ -83,14 +83,13 @@ fn scalar(route: &str, value: Value, boolean: bool) -> Result<SourceText, Error>
     }
 }
 
-/// Whether `value` fits in `budget`, stopping as soon as it does not. Each value is charged no more
-/// than the source bytes that write it literally (decoded text is at most 1.5 times its source, via
-/// `\L`/`\P`), so literal matrices fit in twice the source size (D-032: no size cap); a bigger one
-/// is alias amplification, and is not rendered.
+/// Whether `value` fits in `budget` charge units, stopping as soon as it does not. A string is
+/// charged its decoded length (at most 1.5 times its source, via `\L`/`\P`) and every other node,
+/// empty string or null 1, so a literal matrix costs at most twice its source bytes (D-032: no size
+/// cap); a costlier one is alias amplification, and is not rendered.
 fn within(value: &Value, budget: &mut usize) -> bool {
     let size = match value {
-        Value::String(text) => text.len(),
-        Value::Null | Value::Tagged(_) => 0,
+        Value::String(text) => text.len().max(1),
         _ => 1,
     };
     let Some(rest) = budget.checked_sub(size) else {

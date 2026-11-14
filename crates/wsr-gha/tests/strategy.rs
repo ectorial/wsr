@@ -160,6 +160,20 @@ fn literal_matrices_are_not_mistaken_for_alias_amplification() {
     }
 }
 
+// Nulls and empty strings are charged too, so aliased empty values cannot slip through (B-32 review P2).
+#[test]
+fn aliased_null_items_are_alias_amplification() {
+    let nulls = vec!["null"; 1_000].join(", ");
+    let refs = vec!["*a"; 100].join(", ");
+    for item in [nulls, vec!["''"; 1_000].join(", ")] {
+        let source = format!("{{matrix: {{a: &a [{item}], b: [{refs}]}}}}");
+        let Err(error) = inspect_strategy(&source) else {
+            panic!("accepted aliased empty items");
+        };
+        assert_eq!(error.category(), wsr_gha::Category::Unsupported, "{error}");
+    }
+}
+
 // The budget is shared, so one anchor reused by many jobs is still amplification (B-32).
 #[test]
 fn an_anchor_reused_across_jobs_is_alias_amplification() {

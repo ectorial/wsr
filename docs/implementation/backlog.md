@@ -452,7 +452,8 @@ Schedule A takes only ready slices.
 
 ## B-32 Matrix literal size versus alias amplification (audit F43)
 
-- Status: ready.
+- Status: **delivered on merge of the B-32 PR** (Schedule A); see [slice record](inspection-matrix-size.md).
+  The shared budget is twice the source size in charge units; aliased nulls and empty strings are charged.
 - Behavior: the strategy guard (`crates/wsr-gha/src/strategy.rs`) charges 8 bytes per number/container
   against a fixed 512,000 budget and rejects as Unsupported "through YAML aliases" even without an
   alias: a 128,110-byte workflow containing a nested sequence of 64,000 zeros exits 1; a single
