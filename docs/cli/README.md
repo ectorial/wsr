@@ -60,7 +60,8 @@ states that execution compatibility is not assessed; runner names do not establi
 Success exits 0 and writes a deterministic human-readable summary to stdout, with empty stderr except the 500 KB size warning below.
 Unreadable/malformed source, invalid supported shapes, unknown fields and expressions in inspected
 strings exit 1, leave stdout empty and write a diagnostic to stderr. Diagnostics identify the file;
-YAML decoding errors include available line/column information and structural context. Semantic
+YAML decoding errors include available line/column information and structural context. A location,
+when present, is the start of the enclosing mapping (for an unknown field, the field's own key) and may be absent. Semantic
 checks identify a field path (step indices are one-based). Dynamic values are explicitly unevaluated.
 Clap invocation errors retain exit code 2. The output is pre-alpha, not a frozen machine protocol.
 
@@ -76,7 +77,13 @@ Every character `char::escape_debug` escapes is escaped, including combining mar
 backslashes stay as written. If stdout is closed early (for example
 `wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
 
-Event configuration other than `workflow_dispatch` inputs, runner-group objects, matrices, environment,
+A key the pinned schema recognizes but WSR does not inspect reads ``unsupported field `strategy`; this field is
+not inspected yet`` (the key is recognized, nothing is claimed about its value); an unknown key keeps the
+parser's ``unknown field `x`, expected one of …`` text. Event names and dispatch fields that are invalid read
+`unknown event 'x'` and ``unknown field `x` ``. B-20 intentionally changed this presentation; categories and
+routes are unchanged ([record](../implementation/inspection-diagnostic-text.md)).
+
+Event configuration other than `workflow_dispatch` inputs, runner-group objects, matrices,
 services and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection remains pending.
@@ -127,8 +134,8 @@ semantic checks do not introduce exact source spans. The pinned official schema
 and converter references and intentional source-preservation differences are recorded in the
 [iteration record](../implementation/inspection-dispatch-inputs.md).
 
-The canonical example workflows still contain unsupported fields outside these declarations.
-Their manual reference runs are not evidence of WSR execution support.
+The canonical example workflows inspect (their reports are the dogfood goldens). Their manual
+reference runs are not evidence of WSR execution support.
 
 ### Unevaluated run names
 

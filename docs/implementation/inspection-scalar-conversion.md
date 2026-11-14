@@ -84,6 +84,9 @@ change is the message text for the Unsupported rows.
 
 ## Upstream references
 
+The pinned `workflow-v1.0.json` (fetched from the `4043eda` raw URL, 99,316 bytes) has SHA-256
+`ba07953f8becf1eae45c56efdbc2577b8121db9f57ed065a4c43edbfaf444c66` (closes audit F27).
+
 All pinned to actions/languageservices `4043eda158e16579cc5fb1b0b07a4bce2a76f0b5` unless noted:
 
 - `template-reader.ts` L411-445: unmatched null, boolean and number are converted to strings and validated.

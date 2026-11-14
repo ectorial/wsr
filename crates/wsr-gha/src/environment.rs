@@ -11,6 +11,9 @@ use crate::diagnostic::Error;
 pub(crate) fn decode(route: &str, value: Value) -> Result<Environment, Error> {
     let entries = match value {
         Value::Mapping(entries) => entries,
+        Value::Sequence(_) | Value::Tagged(_) => {
+            return Err(Error::invalid(route, "expected a string or mapping"));
+        }
         value => {
             return Ok(Environment {
                 name: text(route, value)?,

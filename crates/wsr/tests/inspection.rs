@@ -723,7 +723,7 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
         ),
         (
             "        unexpected: true",
-            ".unexpected: unsupported field or event",
+            "on.workflow_dispatch.inputs.value: unknown field `unexpected`",
         ),
     ] {
         fs::write(directory.path().join("ci.yml"), dispatch_workflow(fields)).unwrap();
@@ -750,7 +750,7 @@ fn inspect_dispatch_rejects_malformed_unsupported_and_dynamic_declarations() {
         ),
         (
             "{workflow_dispatch: {unexpected: true}}",
-            "on.workflow_dispatch.unexpected",
+            "on.workflow_dispatch: unknown field `unexpected`",
         ),
         (
             "{workflow_dispatch: []}",
@@ -992,6 +992,24 @@ fn inspect_run_name_rejects_wrong_shapes_and_blank_text_before_rendering() {
             "{declaration}: {error}"
         );
     }
+}
+
+#[test]
+fn inspect_reports_unsupported_fields_without_claiming_them_valid() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(
+        directory.path().join("ci.yml"),
+        "jobs:\n  b:\n    runs-on: linux\n    strategy: {matrix: {a: [1]}}\n    steps:\n      - run: touch executed\n",
+    )
+    .unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1), "{output:?}");
+    assert!(output.stdout.is_empty(), "{output:?}");
+    assert_eq!(
+        String::from_utf8(output.stderr).unwrap(),
+        "error: wsr inspect: ci.yml: jobs.b: unsupported field `strategy`; this field is not inspected yet at line 4 column 5\n"
+    );
+    assert!(!directory.path().join("executed").exists());
 }
 
 #[test]

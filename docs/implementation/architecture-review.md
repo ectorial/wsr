@@ -102,3 +102,37 @@ Findings are classified (a) bounded correction, (b) owner decision — see
 - PR: this PR (`arch/review-2026-11-13-run3`). Ready backlog depth after this PR: 6 (B-14..B-19).
 - Next focus: B-15/B-16 unblock the repo's own non-dogfood workflows; keep the B-8/B-13 category rules for every
   new field; Gate 1b remains blocked on pin schema, canonical-IR boundary and Component host contract.
+
+## 2026-11-13 run 4
+
+- Audited range: `6f58e96..7ecb135` (PRs #43–#49; #43 is run 3's architecture PR). No open Schedule A PR.
+  Auditor: claude-opus-5-5 (effort high), burn mode. Second opinion on F29: Codex gpt-6.1-sol (reasoning high),
+  which confirmed F29 as medium diagnostic correctness/low operational impact, class (a), corrected the wording
+  (no "valid GitHub Actions" claim, since schema membership recognizes the key, not the value) and found F37.
+  Implementer: claude-sonnet-5-5 (high). Cross-review: Codex gpt-6.1-sol (reasoning high): pending.
+- Verified clean: no legacy `WorkflowIR`/`WorkflowProvider` outside `wsr-types/src/lib.rs`; D-033 labels on
+  `Trigger`, `Concurrency` and `Environment`; no `Serialize` on inspection types; no IO in `wsr-gha`/`wsr-types`;
+  exit codes 0/1/2 and empty stdout on failure; byte-identical repeat output; 101 category probes over the
+  B-14..B-19 fields match the pinned schema and reader; stdout/stderr control and bidi escaping for the new
+  fields; no grant, selection or evaluation claims; the B-14 shell rule matches runner `8cfa1049`.
+
+| ID | Finding | Class | Disposition |
+| --- | --- | --- | --- |
+| F29 | an `Unsupported` key reads serde's ``unknown field … expected one of`` text | (a) | Fixed in this PR (B-20) |
+| F30 | job IDs and dispatch input IDs differing only by case are accepted; the pinned reader rejects them | (a) | Backlog B-21 |
+| F31 | dead `schema` parameter in `dispatch.rs` `fields`; `on` and dispatch key text and the `environment` sequence message inconsistent | (a) | Fixed in this PR (B-20) |
+| F32 | CLI guide does not say a location may be absent or is the enclosing mapping's start | (a) | Docs fixed in this PR |
+| F33 | repository-workflow inspection test lacks the dogfood PATH shim and executed sentinel | (a) | Folded into backlog B-22 |
+| F34 | CLI guide lists `environment` as rejected and says example workflows still contain unsupported fields | (a) | Fixed in this PR |
+| F35 | env/with/outputs `(unevaluated)` lacks "expression syntax not validated" | (c) | No false claim; revisit with machine-readable output |
+| F36 | `uses: docker://` with an empty image is Invalid though the parser accepts it | (c) | The runner fails it; semantic allowance |
+| F37 | step `background`, `wait`, `wait-all`, `cancel` are Unsupported; the pinned reader rejects them unless `allowBackgroundSteps` (default false) | (a) | Fixed in this PR (B-20) |
+| F11 | carried: missing `on` is accepted; pinned root schema requires it | (a) | Backlog B-25 |
+| F27 | pinned schema only linked, not vendored | (c) | Closed: SHA-256 recorded in the [scalar-conversion record](inspection-scalar-conversion.md) |
+| F12 | carried: unused `wsr-expr` dependency, deprecated `serde_yaml` | (c) | Revisit before Component packaging |
+
+- No decision requests filed.
+- PR: this PR (`arch/review-2026-11-13-run4`). Gate 1a met as stated. Ready backlog depth after this PR: 5
+  (B-21..B-25).
+- Next focus: B-22/B-23 make `ci.yml` inspect; keep the B-8/B-13 category rules and the B-20 wording for new
+  fields; Gate 1b remains blocked on pin schema, canonical-IR boundary and Component host contract.

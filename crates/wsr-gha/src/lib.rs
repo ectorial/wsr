@@ -145,9 +145,10 @@ struct Step {
 
 impl diagnostic::Level for Step {
     const NAME: &'static str = "Step";
-    // The union of the pinned schema's run, regular, wait, wait-all, cancel and parallel steps.
-    const SCHEMA: &'static [&'static str] =
-        &["background", "cancel", "parallel", "wait", "wait-all"];
+    // `parallel` is the only pinned step key beyond the run and regular steps that the reader
+    // accepts by default; it rejects background, wait, wait-all and cancel unless
+    // `allowBackgroundSteps` is set, and the default is false.
+    const SCHEMA: &'static [&'static str] = &["parallel"];
 }
 
 /// Inspect a static GHA source subset without performing IO or executing workflow content.

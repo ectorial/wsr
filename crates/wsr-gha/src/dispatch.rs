@@ -91,7 +91,7 @@ fn parse(value: &Value) -> Result<Vec<Trigger>, Error> {
             Ok(triggers)
         }
         Value::Mapping(events) => {
-            fields(events, EVENTS, &[], "on")?;
+            fields(events, EVENTS, "on")?;
             if events.is_empty() {
                 return Err(Error::unsupported("on", EMPTY));
             }
@@ -152,7 +152,7 @@ fn dispatch(body: &Value) -> Result<ManualTrigger, Error> {
         return Ok(ManualTrigger::Mapping(None));
     }
     let body = mapping(body, "on.workflow_dispatch")?;
-    fields(body, &["inputs"], &[], "on.workflow_dispatch")?;
+    fields(body, &["inputs"], "on.workflow_dispatch")?;
     let inputs = body
         .get("inputs")
         .map(|value| {
@@ -185,7 +185,6 @@ fn input(id: String, value: &Mapping, route: &str) -> Result<DispatchInput, Erro
     fields(
         value,
         &["description", "type", "required", "default", "options"],
-        &[],
         route,
     )?;
     let description = value
@@ -322,17 +321,17 @@ fn converted_text(value: &Value, route: &str) -> Result<String, Error> {
     }
 }
 
-/// Reject keys outside `allowed`; those in `schema` are valid GHA that is not inspected yet.
-fn fields(value: &Mapping, allowed: &[&str], schema: &[&str], route: &str) -> Result<(), Error> {
+/// Reject keys outside `allowed`; an event name under `on`, a field elsewhere.
+fn fields(value: &Mapping, allowed: &[&str], route: &str) -> Result<(), Error> {
     for key in value.keys() {
         let key = text(key, route)?;
         if !allowed.contains(&key.as_str()) {
-            let field = format!("{route}.{key}");
-            return Err(if schema.contains(&key.as_str()) {
-                Error::unsupported(field, "unsupported field or event")
+            let detail = if route == "on" {
+                format!("unknown event '{}'", key.escape_debug())
             } else {
-                Error::invalid(field, "unsupported field or event")
-            });
+                format!("unknown field `{key}`")
+            };
+            return Err(Error::invalid(format!("{route}.{key}"), detail).shown_at(route));
         }
     }
     Ok(())

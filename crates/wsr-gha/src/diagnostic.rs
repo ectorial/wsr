@@ -313,17 +313,21 @@ struct KeyVisitor<'k, V, T>(V, &'k mut Option<String>, PhantomData<T>);
 impl<V, T: Level> KeyVisitor<'_, V, T> {
     fn classify<R, E: de::Error>(key: &str, result: Result<R, E>) -> Result<R, E> {
         if let Err(error) = &result {
-            let category = if T::SCHEMA.contains(&key) {
-                Category::Unsupported
+            // Schema membership recognizes the key, not its value, so the text claims no more.
+            let (category, detail) = if T::SCHEMA.contains(&key) {
+                (
+                    Category::Unsupported,
+                    format!("unsupported field `{key}`; this field is not inspected yet"),
+                )
             } else {
-                Category::Invalid
+                (Category::Invalid, error.to_string())
             };
             // The detail names the key, so the message shows the enclosing mapping's route.
             DETECTED.set(Some(Detected {
                 category,
                 route: Some(key.to_owned()),
                 label: None,
-                detail: Some(error.to_string()),
+                detail: Some(detail),
                 located: true,
             }));
         }
