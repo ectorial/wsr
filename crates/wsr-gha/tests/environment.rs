@@ -113,3 +113,12 @@ fn schema_valid_environments_outside_the_subset_are_unsupported() {
         assert_category(environment, Category::Unsupported, route);
     }
 }
+
+#[test]
+fn a_sequence_environment_says_what_is_expected() {
+    let error = wsr_gha::inspect(job("[a]").as_bytes()).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "jobs.b.environment: expected a string or mapping"
+    );
+}

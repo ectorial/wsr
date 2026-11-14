@@ -48,6 +48,12 @@ for delivery gates.
 - [x] Workflow `run-name` in inspection: strict optional string, literal versus unevaluated
   classification of the whole decoded text and escaped rendering. See [run-name contract](../cli/README.md#unevaluated-run-names).
   No expression parsing/validation, context lookup or default application.
+- [x] Diagnostic text matches the category (B-20): a recognized-but-uninspected schema key reads
+  ``unsupported field `x`; this field is not inspected yet``; unknown keys keep serde text; step
+  `background`, `wait`, `wait-all` and `cancel` are `Invalid` (pinned reader default); invalid `on`
+  keys and dispatch fields name event or field. Verified by `diagnostics.rs`, `triggers.rs`,
+  `environment.rs` and one CLI stderr test; dogfood goldens unchanged. See
+  [record](../implementation/inspection-diagnostic-text.md).
 - [x] Job `environment` in inspection: name, `url` and `deployment` as literal or unevaluated text,
   never selected; no protection rules evaluated (B-19). See [contract](../cli/README.md#job-environments).
 - [x] Job `outputs` in inspection: sorted names with literal or unevaluated text, never resolved

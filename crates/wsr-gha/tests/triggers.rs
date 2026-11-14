@@ -89,3 +89,29 @@ fn unknown_events_and_malformed_bodies_are_invalid() {
         );
     }
 }
+
+// B-20: invalid mapping keys under `on` read like the scalar form, and keys inside dispatch
+// bodies name the field.
+#[test]
+fn invalid_keys_render_by_what_they_are() {
+    for (on, message) in [
+        ("bogus", "on: unknown event 'bogus'"),
+        ("{bogus: null}", "on: unknown event 'bogus'"),
+        (
+            "{push: null, \"x\\e\": null}",
+            "on: unknown event 'x\\u{1b}'",
+        ),
+        (
+            "{workflow_dispatch: {bogus: 1}}",
+            "on.workflow_dispatch: unknown field `bogus`",
+        ),
+        (
+            "{workflow_dispatch: {inputs: {a: {bogus: 1}}}}",
+            "on.workflow_dispatch.inputs.a: unknown field `bogus`",
+        ),
+    ] {
+        let error = wsr_gha::inspect(format!("on: {on}\n{JOBS}").as_bytes()).unwrap_err();
+        assert_eq!(error.category(), Category::Invalid, "{on}");
+        assert_eq!(error.to_string(), message, "{on}");
+    }
+}

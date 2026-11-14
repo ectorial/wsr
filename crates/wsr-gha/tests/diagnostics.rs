@@ -221,7 +221,7 @@ fn typed_errors_keep_parser_locations_and_duplicate_key_evidence() {
     .unwrap_err();
     assert_eq!(
         error.to_string(),
-        "jobs.b: unknown field `cancel-timeout-minutes`, expected one of `name`, `runs-on`, `needs`, `if`, `permissions`, `timeout-minutes`, `continue-on-error`, `env`, `defaults`, `concurrency`, `outputs`, `environment`, `steps` at line 4 column 5"
+        "jobs.b: unsupported field `cancel-timeout-minutes`; this field is not inspected yet at line 4 column 5"
     );
     let duplicate = wsr_gha::inspect(
         format!("on: {{workflow_dispatch: null, workflow_dispatch: {{}}}}\n{JOB}").as_bytes(),
@@ -246,4 +246,83 @@ fn a_job_identifier_is_validated_before_its_body_so_it_cannot_forge_a_route() {
         error.to_string(),
         "jobs.a.steps[9]: invalid job identifier 'a.steps[9]'"
     );
+}
+
+// B-20: the message states the category. A key the pinned schema recognises is unsupported, and
+// the text says only that WSR does not inspect it; schema membership recognises the key, not the
+// value, so the text never claims the source is valid GitHub Actions.
+#[test]
+fn unsupported_fields_say_so_and_unknown_fields_keep_the_serde_text() {
+    let unsupported =
+        |field: &str| format!("unsupported field `{field}`; this field is not inspected yet");
+    for (source, category, route, message) in [
+        (
+            format!("description: x\n{JOB}"),
+            Category::Unsupported,
+            "description",
+            unsupported("description"),
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    strategy: {matrix: {a: [1]}}\n    steps:\n      - run: echo\n"
+                .to_owned(),
+            Category::Unsupported,
+            "jobs.b.strategy",
+            format!("jobs.b: {} at line 4 column 5", unsupported("strategy")),
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - parallel: [{run: echo}]\n"
+                .to_owned(),
+            Category::Unsupported,
+            "jobs.b.steps[1].parallel",
+            format!("jobs.b.steps[1]: {} at line 5 column 9", unsupported("parallel")),
+        ),
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        bogus: x\n"
+                .to_owned(),
+            Category::Invalid,
+            "jobs.b.steps[1].bogus",
+            "jobs.b.steps[1]: unknown field `bogus`, expected one of `id`, `name`, `if`, `run`, `shell`, `working-directory`, `env`, `with`, `uses`, `continue-on-error`, `timeout-minutes` at line 6 column 9"
+                .to_owned(),
+        ),
+        // The pinned reader rejects background, wait, wait-all and cancel steps unless
+        // `allowBackgroundSteps` is set, and the default is false.
+        (
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        background: true\n"
+                .to_owned(),
+            Category::Invalid,
+            "jobs.b.steps[1].background",
+            "jobs.b.steps[1]: unknown field `background`, expected one of `id`, `name`, `if`, `run`, `shell`, `working-directory`, `env`, `with`, `uses`, `continue-on-error`, `timeout-minutes` at line 6 column 9"
+                .to_owned(),
+        ),
+    ] {
+        let error = wsr_gha::inspect(source.as_bytes()).unwrap_err();
+        assert_eq!(
+            (error.category(), error.route(), error.to_string()),
+            (category, Some(route), message),
+            "{source}"
+        );
+    }
+}
+
+#[test]
+fn background_step_keys_are_invalid() {
+    for key in ["background", "wait", "wait-all", "cancel"] {
+        let source = format!(
+            "jobs:\n  b:\n    runs-on: linux\n    steps:\n      - run: echo\n        {key}: x\n"
+        );
+        assert_eq!(
+            diagnose(&source),
+            (Category::Invalid, Some(format!("jobs.b.steps[1].{key}"))),
+            "{key}"
+        );
+    }
+}
+
+#[test]
+fn dispatch_input_description_still_inspects() {
+    wsr_gha::inspect(
+        format!("on:\n  workflow_dispatch:\n    inputs:\n      a:\n        description: d\n{JOB}")
+            .as_bytes(),
+    )
+    .unwrap();
 }

@@ -272,3 +272,90 @@ Schedule A takes only ready slices.
 - Expected red: ``unknown field `environment` ``.
 - Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs`, `crates/wsr/src/commands/inspect.rs`,
   tests, `docs/cli/README.md`.
+
+## B-20 Diagnostic text matches the category
+
+- Status: **delivered** in the Schedule B architecture PR `arch/review-2026-11-13-run4`; see
+  [slice record](inspection-diagnostic-text.md). Recognized-but-uninspected keys read ``unsupported field `x`;
+  this field is not inspected yet``; step `background`, `wait`, `wait-all` and `cancel` are `Invalid`.
+
+## B-21 Case-insensitive duplicate job IDs and dispatch input IDs (audit F30)
+
+- Status: ready
+
+- Behavior: the pinned reader rejects mapping keys repeated ignoring case (template-reader.ts L208-216);
+  `crates/wsr-gha/src/lib.rs:522` uses an exact `contains_key` and `dispatch.rs:161` has no check. Keep a map
+  from uppercased to first spelling; report `Invalid` at `jobs.{id}` and `on.workflow_dispatch.inputs.{id}` with
+  ``duplicate ... 'Build'; already defined as 'build'``. Exact duplicates are unchanged.
+- Acceptance: `build`/`Build` jobs and `mode`/`MODE` inputs are `Invalid` with the routes above; exact
+  duplicates keep their current diagnostics; one CLI test.
+- Expected red: both probes exit 0.
+- Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-gha/src/dispatch.rs`, `crates/wsr-gha/tests/compiler.rs`,
+  `crates/wsr-gha/tests/dispatch_inputs.rs`, one CLI test.
+- Relies on: D-002, D-031.
+
+## B-22 Branch, tag and path filters for `push`, `pull_request`, `pull_request_target`
+
+- Status: ready
+
+- Behavior: the pinned schema (`actions/languageservices` `4043eda158e16579cc5fb1b0b07a4bce2a76f0b5`,
+  `workflow-v1.0.json`) allows different filters per event: `push` allows `branches`, `branches-ignore`, `tags`,
+  `tags-ignore`, `paths`, `paths-ignore`; `pull_request` and `pull_request_target` allow `types`, `branches`,
+  `branches-ignore`, `paths`, `paths-ignore` and no `tags`/`tags-ignore`. A key absent from the event's mapping
+  is `Invalid` (an unknown field of that event). Each allowed filter is a
+  non-empty string or a sequence of non-empty strings; the definitions have no expression context, so `${{`
+  text is `Invalid`; numbers and booleans follow B-13 (`Unsupported`); null is `Invalid`; giving both a filter
+  and its `-ignore` counterpart is `Invalid`; `types` stays `Unsupported`. Rendered as
+  `Filters (not matched): branches: ["main"]`. A new D-033-labelled variant on `Trigger` in `wsr-types`.
+  Also (audit F33): the repository-workflow inspection test in `crates/wsr/tests/inspection.rs` (~L1985-2010)
+  gets the dogfood PATH shim and executed sentinel, and pins the exit-1 first diagnostic of `ci.yml` and
+  `release.yml`, updated as slices land.
+- Acceptance: CLI goldens plus a hostile-text sentinel; temp copies of `ci.yml` and `release.yml` reach their
+  next diagnostic. Negative cases: `tags` and `tags-ignore` under `pull_request` and under
+  `pull_request_target` are rejected as `Invalid`, since the key is absent from those events' mappings in the
+  pinned schema; `tags` under `push` is accepted.
+- Expected red: ``on.push: event configuration is not inspected yet``.
+- Files: `crates/wsr-gha/src/dispatch.rs`, the `wsr-types` inspection module, `crates/wsr/src/commands/inspect.rs`,
+  `crates/wsr-gha/tests/triggers.rs`, `crates/wsr/tests/inspection.rs`, docs.
+- Relies on: D-031, D-033, B-8, B-13.
+
+## B-23 Reusable-workflow call jobs (`uses`, `with`, `secrets`)
+
+- Status: ready
+
+- Behavior: a job with `uses`, `with` and `secrets: inherit` or a mapping is reported as source text only,
+  "not loaded; not resolved". Mixing `uses` with `steps` or `runs-on` is `Invalid`; `uses` has no expression
+  context, so `${{` is `Invalid`; shape is checked like B-14; `strategy` stays `Unsupported`. A D-033 job kind.
+  The referenced file is never opened.
+- Acceptance: tests with a missing target and a sentinel prove no file is read; a temp copy of `ci.yml` exits
+  0 with a PATH sentinel (after B-22).
+- Expected red: ``jobs.check-fmt: unsupported field `uses`; this field is not inspected yet``.
+- Files: `crates/wsr-gha/src/lib.rs`, a new module, the `wsr-types` inspection module,
+  `crates/wsr/src/commands/inspect.rs`, tests, `docs/cli/README.md`.
+- Relies on: D-031, D-033.
+
+## B-24 Job and step `name` and job `runs-on` expressions as unevaluated text
+
+- Status: ready
+
+- Behavior: `${{` text in job `name`, step `name` and job `runs-on` is reported as unevaluated source text
+  (contexts: `string-strategy-context`, `step-name`, `runs-on`), using D-033 `SourceText` where the summary
+  needs it. No evaluation, binding or execution claims.
+- Acceptance: CLI and `wsr-gha` category tests, hostile-content sentinel; categories follow the pinned
+  schema contexts (B-8).
+- Expected red: `expression is unevaluated; dynamic inspection is not supported yet` (`Unsupported`).
+- Files: `crates/wsr-gha/src/lib.rs`, the `wsr-types` inspection module, `crates/wsr/src/commands/inspect.rs`,
+  tests, `docs/cli/README.md`.
+- Relies on: D-031, D-033, B-8.
+
+## B-25 Require `on` (audit F11)
+
+- Status: ready
+
+- Behavior: a workflow without `on` is `Invalid` with ``missing field `on` `` (the pinned root schema has
+  `required: true`). Test fixtures change mechanically through a shared helper; the documentation sentence
+  that says a missing `on` remains distinct is replaced.
+- Acceptance: workflow without `on` exits 1 with an empty stdout; all existing fixtures pass through the helper.
+- Expected red: a workflow without `on` exits 0.
+- Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-gha/tests/*.rs`, `crates/wsr/tests/*.rs`, docs.
+- Relies on: D-002, D-031.

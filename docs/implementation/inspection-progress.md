@@ -49,6 +49,9 @@ gpt-6.1-sol (high): no blockers; one P2 fixed (step `background` is not a valid 
 Follow-up for Schedule B: the `Step` schema-key list classifies `background`, `cancel`, `parallel`,
 `wait` and `wait-all` as `Unsupported`, but the pinned reader rejects at least `background` unless
 `allowBackgroundSteps` (default false) is enabled, so they may belong in `Invalid`.
+Resolved in B-20 ([record](inspection-diagnostic-text.md)): the reader rejects `background`, `wait`,
+`wait-all` and `cancel` by default (template-reader.ts L29-30, L221), so they are `Invalid`; only
+`parallel` stays `Unsupported`.
 
 - Red (observed): `continue_timeout.rs` failed with ``jobs.b: unknown field `continue-on-error` ``
   (Unsupported).
