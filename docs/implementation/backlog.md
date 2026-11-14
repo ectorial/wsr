@@ -437,3 +437,76 @@ Schedule A takes only ready slices.
 - Files: `crates/wsr-gha/src/lib.rs`, a new module, `crates/wsr-types/src/inspection.rs`,
   `crates/wsr/src/commands/inspect.rs`, tests, `docs/cli/README.md`.
 - Relies on: D-031, D-033, D-012, B-28, B-29.
+
+## B-31 Matrix keys duplicated ignoring case (audit F42)
+
+- Status: **delivered** in the Schedule B architecture PR `arch/review-2026-11-14-run6`.
+- Behavior: reject keys duplicated ignoring case in matrix axes, include/exclude items and nested
+  mapping values, using B-21 normalization. Keep the alias/size guard unchanged.
+- Acceptance: strategy tests cover all four positions and a distinct-key control; CLI exit 1,
+  empty stdout and a specific repeated-key route.
+- Expected red: `accepted duplicate matrix keys: {a: [1], A: [2]}`; CLI exit 0 instead of 1.
+- Files: `crates/wsr-gha/src/strategy.rs`, strategy/CLI tests, `inspection-job-strategy.md`.
+- Relies on: D-031, D-033.
+
+## B-32 Matrix literal size versus alias amplification (audit F43)
+
+- Status: ready.
+- Behavior: the strategy guard (`crates/wsr-gha/src/strategy.rs`) charges 8 bytes per number/container
+  against a fixed 512,000 budget and rejects as Unsupported "through YAML aliases" even without an
+  alias: a 128,110-byte workflow containing a nested sequence of 64,000 zeros exits 1; a single
+  512,001-character literal also fails, contrary to D-032 (no size cap; GitHub 500 KB warning).
+  Only alias amplification (materialized size exceeding source size by the guard's factor) stays
+  rejected. Literal input inspects, with the existing warning above 512,000 source bytes.
+- Acceptance: both literal fixtures generated in-test exit 0 (warning on the large one); an
+  alias-amplified fixture still fails. Keep one-job/no-expansion assertions.
+- Expected red: exit 1 `matrix expands beyond 512,000 bytes through YAML aliases; not inspected yet`
+  on the literal fixtures.
+- Files: `crates/wsr-gha/src/strategy.rs`, `crates/wsr-gha/src/lib.rs` (budget plumbing), strategy/CLI
+  tests, `docs/implementation/inspection-job-strategy.md`.
+- Relies on: D-032, D-012, D-031.
+
+## B-33 Workflow description
+
+- Status: ready.
+- Behavior: retain literal `description` text (pinned schema type), with escaped rendering.
+- Acceptance: empty text, scalar conversions per B-13, wrong shapes and expression handling per
+  the pinned schema context; a CLI golden with hostile text, the executed sentinel and the
+  positive-controlled PATH trap.
+- Expected red (live probe): ``unsupported field `description`; this field is not inspected yet``.
+- Files: `crates/wsr-gha/src/lib.rs`, `crates/wsr-types/src/inspection.rs` (`WorkflowSummary`, D-033),
+  `crates/wsr/src/commands/inspect.rs`, tests, `docs/cli/README.md`.
+- Relies on: D-031, D-033.
+
+## B-34 Job cancel-timeout-minutes
+
+- Status: ready.
+- Behavior: retain literal or unevaluated values rendered "not applied", following B-17's timeout
+  subset; nonpositive/wrong types follow the pin; stays Invalid with `uses` (B-27).
+- Acceptance: category tests for these cases and a CLI golden with hostile text, the executed
+  sentinel and the positive-controlled PATH trap.
+- Expected red (live probe): ``jobs.a: unsupported field `cancel-timeout-minutes`; this field is not inspected yet at line 5 column 5``.
+- Files: `crates/wsr-gha/src/lib.rs`, `JobSummary`, renderer, tests, docs.
+- Relies on: D-031, D-033.
+
+## B-35 runs-on group/labels selector mapping
+
+- Status: ready.
+- Behavior: retain `group` and scalar/sequence `labels` (expressions unevaluated) without selecting
+  a runner; follow pinned converter rules for group prefixes, duplicate/unknown keys and scalar categories.
+- Acceptance: category tests and a CLI golden with hostile text, the executed sentinel and the
+  positive-controlled PATH trap.
+- Expected red (live probe): `jobs.a.runs-on: unsupported runner-selector mapping at line 4 column 5`.
+- Files: runner decoder, `RunnerRequirement`, renderer, tests, docs.
+- Relies on: D-031, D-033.
+
+## B-36 pull_request / pull_request_target activity types
+
+- Status: ready.
+- Behavior: report ordered `types` as "not matched"; validate allowed values per the pinned schema;
+  coexist with B-22 filters.
+- Acceptance: category tests and a CLI golden with hostile text, the executed sentinel and the
+  positive-controlled PATH trap.
+- Expected red (live probe): ``on.pull_request.types: unsupported field `types`; this field is not inspected yet``.
+- Files: `crates/wsr-gha/src/dispatch.rs`, trigger types, renderer, tests, docs.
+- Relies on: D-031, D-033.

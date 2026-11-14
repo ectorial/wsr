@@ -80,7 +80,7 @@ fn inspect_reports_run_expressions_without_printing_the_script() {
     let directory = tempfile::tempdir().unwrap();
     let workflow = "jobs:\n  a:\n    runs-on: linux\n    steps:\n      - name: Hostile\n        run: \"echo ${{ inputs.mode }}$(touch executed)\\e[31m\\u202E\"\n      - run: echo ${{ github.ref }}\n        shell: bash\n      - run: touch executed\n";
     fs::write(directory.path().join("ci.yml"), with_on(workflow)).unwrap();
-    let output = inspect(directory.path(), "ci.yml");
+    let output = inspect_with_execution_traps(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty(), "{output:?}");
     let report = String::from_utf8(output.stdout).unwrap();
@@ -2160,26 +2160,7 @@ fn inspect_rejects_unknown_and_configured_trigger_events() {
 fn inspect_repository_workflows_from_temporary_copies() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/workflows");
     let directory = tempfile::tempdir().unwrap();
-    let bin = tempfile::tempdir().unwrap();
     let marker = directory.path().join("executed");
-    #[cfg(unix)]
-    for command in ["sh", "bash", "python", "python3", "git", "pwsh"] {
-        use std::os::unix::fs::PermissionsExt;
-        let path = bin.path().join(command);
-        fs::write(
-            &path,
-            "#!/bin/sh\n/usr/bin/touch \"$WSR_EXECUTION_MARKER\"\n",
-        )
-        .unwrap();
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
-        // Positive control: each trap leaves the marker when it is run.
-        let status = Command::new(&path)
-            .env("WSR_EXECUTION_MARKER", &marker)
-            .status()
-            .unwrap();
-        assert!(status.success() && marker.exists(), "{command} trap");
-        fs::remove_file(&marker).unwrap();
-    }
     let call = "\nTrigger: workflow_call (not evaluated)\n";
     let cases: [(&str, Result<&str, &str>); 6] = [
         ("check-docs.yml", Ok(call)),
@@ -2212,13 +2193,7 @@ fn inspect_repository_workflows_from_temporary_copies() {
     for (name, expected) in cases {
         let source = fs::read_to_string(root.join(name)).unwrap();
         fs::write(directory.path().join(name), &source).unwrap();
-        let output = Command::new(env!("CARGO_BIN_EXE_wsr"))
-            .args(["inspect", name])
-            .current_dir(directory.path())
-            .env("PATH", bin.path())
-            .env("WSR_EXECUTION_MARKER", &marker)
-            .output()
-            .expect("run inspection");
+        let output = inspect_with_execution_traps(directory.path(), name);
         match expected {
             Ok(fragment) => {
                 assert_eq!(output.status.code(), Some(0), "{name}: {output:?}");
@@ -2622,7 +2597,7 @@ fn inspect_reports_job_strategies_without_expanding_or_executing() {
     let directory = tempfile::tempdir().unwrap();
     let source = "on: workflow_dispatch\njobs:\n  a:\n    runs-on: linux\n    strategy:\n      fail-fast: false\n      max-parallel: 2\n      matrix:\n        os: [\"$(touch executed)\\e[31m\\u202E\"]\n    steps: [{run: touch executed}]\n";
     fs::write(directory.path().join("ci.yml"), source).unwrap();
-    let output = inspect(directory.path(), "ci.yml");
+    let output = inspect_with_execution_traps(directory.path(), "ci.yml");
     assert_eq!(output.status.code(), Some(0), "{output:?}");
     assert!(output.stderr.is_empty());
     assert_eq!(
@@ -2635,4 +2610,50 @@ fn inspect_reports_job_strategies_without_expanding_or_executing() {
         source
     );
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn inspect_rejects_matrix_keys_duplicated_ignoring_case() {
+    let directory = tempfile::tempdir().unwrap();
+    fs::write(directory.path().join("ci.yml"), with_on("jobs:\n  a:\n    runs-on: linux\n    strategy: {matrix: {a: [1], A: [2]}}\n    steps: [{run: echo}]\n")).unwrap();
+    let output = inspect(directory.path(), "ci.yml");
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert!(
+        String::from_utf8(output.stderr)
+            .unwrap()
+            .contains("jobs.a.strategy.matrix.A")
+    );
+}
+
+fn inspect_with_execution_traps(directory: &Path, file: &str) -> Output {
+    let bin = tempfile::tempdir().unwrap();
+    let marker = directory.join("executed");
+    #[cfg(unix)]
+    for command in ["sh", "bash", "python", "python3", "git", "pwsh"] {
+        use std::os::unix::fs::PermissionsExt;
+        let path = bin.path().join(command);
+        fs::write(
+            &path,
+            "#!/bin/sh\n/usr/bin/touch \"$WSR_EXECUTION_MARKER\"\n",
+        )
+        .unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+        // Positive control: each trap leaves the marker when it is run.
+        let status = Command::new(&path)
+            .env("WSR_EXECUTION_MARKER", &marker)
+            .status()
+            .unwrap();
+        assert!(status.success() && marker.exists(), "{command} trap");
+        fs::remove_file(&marker).unwrap();
+    }
+    let output = Command::new(env!("CARGO_BIN_EXE_wsr"))
+        .args(["inspect", file])
+        .current_dir(directory)
+        .env("PATH", bin.path())
+        .env("WSR_EXECUTION_MARKER", &marker)
+        .output()
+        .expect("run inspection");
+    assert!(!marker.exists(), "a command was executed");
+    output
 }

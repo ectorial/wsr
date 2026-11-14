@@ -82,13 +82,13 @@ Every character `char::escape_debug` escapes is escaped, including combining mar
 backslashes stay as written. If stdout is closed early (for example
 `wsr inspect big.yml | head -1`), the command stops writing and exits 0 quietly, without a panic.
 
-A key the pinned schema recognizes but WSR does not inspect reads ``unsupported field `strategy`; this field is
+A key the pinned schema recognizes but WSR does not inspect reads ``unsupported field `services`; this field is
 not inspected yet`` (the key is recognized, nothing is claimed about its value); an unknown key keeps the
 parser's ``unknown field `x`, expected one of …`` text. Event names and dispatch fields that are invalid read
 `unknown event 'x'` and ``unknown field `x` ``. B-20 intentionally changed this presentation; categories and
 routes are unchanged ([record](../implementation/inspection-diagnostic-text.md)).
 
-Event configuration other than `workflow_dispatch` inputs, runner-group objects, matrices,
+Event configuration other than `workflow_dispatch` inputs, runner-group objects,
 service containers and other GHA constructs are rejected explicitly in this first slice.
 The rejection is a limit of current inspection support, not a claim that the workflow is invalid GHA.
 Broader inspection remains pending.
@@ -413,8 +413,7 @@ case); the mappings themselves have no expression context, so an expression in p
 mapping or in a key is invalid. `secrets` is otherwise only `inherit`. `runs-on`, `steps` and other
 keys the pinned `job-factory` has but `workflow-job` lacks are invalid with `uses`
 (``jobs.b.runs-on: `runs-on` cannot be combined with `uses` at line 4 column 5``), as are `with` and
-`secrets` without it, whatever the key order and before the value is read; `strategy` stays
-unsupported. The referenced file is never opened, read or resolved, and no input
+`secrets` without it, whatever the key order and before the value is read; `strategy` is retained and rendered "not expanded", including on call jobs. The referenced file is never opened, read or resolved, and no input
 or secret is passed.
 
 ### Unevaluated job and step conditions
