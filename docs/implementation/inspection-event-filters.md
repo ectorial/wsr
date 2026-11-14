@@ -1,7 +1,9 @@
 # Event-filter iteration: `push` and pull request filters (backlog B-22)
 
 Status: **delivered on merge of its PR**, branch `feat/b22-event-filters` from `7c2225e`
-(Schedule A). Evidence lives in the [checkpoint](inspection-progress.md).
+(Schedule A). Implemented by Claude
+(claude-opus-5-5, burn mode; `wsr-types` variant under D-033); cross-reviewed by Codex gpt-6.1-sol
+(high): no findings. Evidence lives in the [checkpoint](inspection-progress.md).
 
 ## Scope
 
@@ -21,6 +23,10 @@ events allow `types`, `branches`, `branches-ignore`, `paths`, `paths-ignore`. Ea
   and a filter given with its `-ignore` counterpart are `Invalid`;
 - numbers and booleans (B-13 conversions) and pull request `types` are `Unsupported`;
 - an empty sequence is reported as `[]`.
+
+The pair rejection follows the schema descriptions ("You cannot use both the `branches` and
+`branches-ignore` filters for the same event"); the pinned converter (`model/converter/events.ts`
+L86-115) keeps both without rejecting them, so this is a documented-GitHub rule, not a reader one.
 
 Audit F33: the repository-workflow test in `crates/wsr/tests/inspection.rs` traps every PATH command
 with the dogfood shim and an `executed` marker and pins the first diagnostic of temporary `ci.yml`
